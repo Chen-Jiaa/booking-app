@@ -1,10 +1,11 @@
+import RoomList from "./components/room-list";
 
 
 export default function Home() {
   return (
     
     <div id="" className="" >
-      <h1>Hello World</h1>
+      <RoomList />
     </div>
   );
 }
