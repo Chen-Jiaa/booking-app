@@ -72,7 +72,7 @@ export default function AddRooms () {
                             required
                             onChange={(e) => setCapacity(e.target.value)}
                             />
-                        <Button>Add Rooms</Button>
+                        <Button onSubmit={handleSubmit}>Add Rooms</Button>
                         {formError && <p>{formError}</p>}
                     </form>
                 </CardContent>

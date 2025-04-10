@@ -11,11 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import BookingForm from "./booking-form";
-import { addMinutes, addMonths, format, getTime, isSameDay, startOfToday } from "date-fns"
+import { addMinutes, addMonths, format, isSameDay, startOfToday } from "date-fns"
 import { interval, room_endHour, room_startHour } from "@/lib/config";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 
 type Rooms = {
   id: string;
@@ -26,17 +28,24 @@ type Rooms = {
 }
 
 export default function RoomList() {
-  const[fetchError, setFetchError] = useState<null | string>(null)
-  const[rooms, setRooms] = useState<Rooms[]>([])
-  const[selectedRoom, setSelectedRoom] = useState<Rooms | null>(null)
+  const [fetchError, setFetchError] = useState<null | string>(null)
+  const [rooms, setRooms] = useState<Rooms[]>([])
+  const [selectedRoom, setSelectedRoom] = useState<Rooms | null>(null)
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [loading, setLoading] = useState(true)
-  const[startTime, setStartTime] = useState<string | undefined>(undefined)
-  const[endTime, setEndTime] = useState<string | undefined>(undefined)
+  const [startTime, setStartTime] = useState<string | undefined>(undefined)
+  const [endTime, setEndTime] = useState<string | undefined>(undefined)
   const [open, setOpen] = useState(false)
-  const[step,setStep] = useState("1")
+  const [step,setStep] = useState("1")
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
   const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set())
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [formError, setFormError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+  const [confirmedRoom, setConfirmedRoom] = useState<Rooms | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -82,47 +91,63 @@ export default function RoomList() {
     }
 
     setStep("2")  
-}
-
-useEffect(() => {
-  if (date && selectedRoom) {
-    checkAvailability(date, selectedRoom.id)
   }
-}, [date, selectedRoom])
 
-const checkAvailability = async (selectedDate: Date, roomId: string) => {
-  setIsCheckingAvailability(true)
-
-  const dateStr = format(selectedDate, "yyyy-MM-dd")
-
-  const {data: bookings} = await supabase
-    .from('bookings')
-    .select('start_time, end_time')
-    .eq("room_id", roomId)
-    .or(`status.eq.pending, status.eq.approved`)
-    .gte("start_time", `${dateStr}T00:00:00`)
-    .lt("start_time", `${dateStr}T23:59:59`)
-
-  const booked = new Set<string>()
-
-  bookings?.forEach((booking) => {
-    const bookingStart = new Date(booking.start_time)
-    const bookingEnd = new Date(booking.end_time)
-
-    if (isSameDay(bookingStart, selectedDate)) {
-      let currentSlot = new Date(bookingStart)
-
-      while (currentSlot < bookingEnd) {
-        const timeStr = format(currentSlot,"HH:mm")
-        booked.add(timeStr)
-        currentSlot = addMinutes(currentSlot, 30)
-      }
+  useEffect(() => {
+    if (date && selectedRoom) {
+      checkAvailability(date, selectedRoom.id)
     }
-  })
+  }, [date, selectedRoom])
 
-  setBookedSlots(booked)
-  setIsCheckingAvailability(false)
-}
+  const checkAvailability = async (selectedDate: Date, roomId: string) => {
+    setIsCheckingAvailability(true)
+
+    try{
+      const dateStr = format(selectedDate, "yyyy-MM-dd")
+
+      const {data: bookings} = await supabase
+        .from('bookings')
+        .select('start_time, end_time')
+        .eq("room_id", roomId)
+        // .or(`status.eq.pending, status.eq.approved`)
+        .gte("start_time", `${dateStr}T00:00:00`)
+        .lt("start_time", `${dateStr}T23:59:59`)
+
+      const booked = new Set<string>()
+
+      if (bookings && bookings.length > 0) {
+        bookings.forEach((booking) => {
+          const bookingStart = new Date(booking.start_time)
+          const bookingEnd = new Date(booking.end_time)
+
+          if (isSameDay(bookingStart, selectedDate)) {
+            let currentSlot = new Date(bookingStart)
+
+            while (currentSlot < bookingEnd) {
+              try {
+                const timeStr = format(currentSlot,"HH:mm")
+                booked.add(timeStr)
+                currentSlot = addMinutes(currentSlot, 30)
+              } catch (error) {
+                console.error("Error processing time slot:", error)
+                break
+              } 
+            }
+          }
+
+        })
+      }
+      setBookedSlots(booked)
+
+    } catch (error) {
+      console.error("Error checking availability:", error)
+      toast("Error", {
+        description: "Failed to check room availability. Please try again."
+      })
+    } finally {
+      setIsCheckingAvailability(false)
+    }
+  }
 
 const handleRoomChange = (roomId: string) => {
   const newRoom = rooms.find((r) => r.id === roomId)
@@ -181,7 +206,67 @@ const isTimeSlotSelected = (timeSlots: string) => {
     )
   }
 
+  function combineDateAndTime (date: Date, time: string) {
 
+      const [hours, minutes] = time.split(":").map(Number)
+
+      const combined = new Date (date)
+      combined.setHours(hours)
+      combined.setMinutes(minutes)
+      combined.setSeconds(0)
+      combined.setMilliseconds(0)
+
+      return combined
+    
+}
+
+  async function handleSubmit(e:any) {
+      e.preventDefault()
+      
+
+      if(!name || !email || !phone || !startTime || !endTime || !date || !selectedRoom) {
+          setFormError('Please fill in all the fields correctly.')
+          
+          return
+      }
+
+      const fullStartTime = combineDateAndTime(date, startTime).toISOString()
+      const fullEndTime = combineDateAndTime(date, endTime).toISOString()
+
+      const { data , error } = await supabase
+          .from('bookings')
+          .insert([{
+              name, 
+              email, 
+              phone, 
+              room_id: selectedRoom?.id, 
+              room_name: selectedRoom?.name, 
+              start_time: fullStartTime, 
+              end_time: fullEndTime,
+              status: "pending",
+          }])
+          .select()
+
+      if(error) {
+          console.log(error)
+          setFormError(error.message || 'Please fill in all the fields correctly.')
+      }
+      if (data) {
+          setName("")
+          setEmail("")
+          setPhone("")
+          setFormError("")
+          setConfirmedRoom(selectedRoom)
+          
+        }
+      
+      if (data && data[0]?.id) {
+        router.push(`/booking-confirmation/${data[0].id}`)
+      }
+        
+  }
+
+  console.log(selectedRoom?.name)
   return (
     <div className="container mx-auto py-3 px-4">
       {fetchError && (<p>{fetchError}</p>)}
@@ -205,61 +290,68 @@ const isTimeSlotSelected = (timeSlots: string) => {
                     <Button onClick={() => setSelectedRoom(room)}>Check Availability</Button>
                   </DialogTrigger>
                   <DialogContent className="h-[90vh] overflow-y-scroll">
-                    <DialogTitle>Availability</DialogTitle>
+                    <DialogTitle className={cn(
+                      step==="3" && "hidden"
+                    )}>Availability</DialogTitle>
                     <Tabs value={step} onValueChange={setStep}>
-                      <TabsList>
+                      <TabsList className={cn(
+                        step === "3" && "hidden"
+                      )}>
                           <TabsTrigger value="1">1. Select Date & Time</TabsTrigger>
-                          <TabsTrigger value="2">2. Your Information</TabsTrigger>
+                          <TabsTrigger value="2" disabled={!date || !startTime || !endTime}>2. Your Information</TabsTrigger>
                       </TabsList>
                       <TabsContent value="1" >
                           <Card>
                               <CardContent>
                                   <Label>Select Room</Label>
-                                      <Popover open={open} onOpenChange={setOpen}>
-                                          <PopoverTrigger asChild className="">
-                                              {selectedRoom && 
-                                                <Button 
-                                                    variant="outline"
-                                                    role="combobox"
-                                                    aria-expanded={open}
-                                                    className="w-[200px] justify-between"
-                                                >
-                                                    {selectedRoom.name}
-                                                <ChevronDown opacity={50} />
-                                                </Button>
-                                              }
-                                          </PopoverTrigger>
-                                          <PopoverContent>
-                                              <Command>
-                                                  <CommandInput placeholder="Select room" />
-                                                  <CommandList>
-                                                      <CommandEmpty>No rooms found.</CommandEmpty>
-                                                      <CommandGroup>
-                                                          {rooms.map((room)=>(
-                                                              <CommandItem 
-                                                                  key={room.id}
-                                                                  value={room.id}
-                                                                  onSelect={()=> {
-                                                                    handleRoomChange(room.id)
-                                                                  }}
-                                                              >
-                                                                  {room.name}
-                                                              </CommandItem>
-                                                          ))
-                                                          }
-                                                      </CommandGroup>
-                                                  </CommandList>
-                                              </Command>
-                                          </PopoverContent>
-                                      </Popover>
-                                  
+                                    <Popover open={open} onOpenChange={setOpen}>
+                                        <PopoverTrigger asChild className="">
+                                            {selectedRoom && 
+                                              <Button 
+                                                  variant="outline"
+                                                  role="combobox"
+                                                  aria-expanded={open}
+                                                  className="w-[200px] justify-between"
+                                              >
+                                                  {selectedRoom.name}
+                                              <ChevronDown opacity={50} />
+                                              </Button>
+                                            }
+                                        </PopoverTrigger>
+                                        <PopoverContent>
+                                            <Command>
+                                                <CommandInput placeholder="Select room" />
+                                                <CommandList>
+                                                    <CommandEmpty>No rooms found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {rooms.map((room)=>(
+                                                            <CommandItem 
+                                                                key={room.id}
+                                                                value={room.id}
+                                                                onSelect={()=> {
+                                                                  handleRoomChange(room.id)
+                                                                }}
+                                                            >
+                                                                {room.name}
+                                                            </CommandItem>
+                                                        ))
+                                                        }
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                
                                   <Label>Select Date</Label>
-                                  <Calendar 
-                                      mode="single"
-                                      onSelect={handleDateSelect}
-                                      selected={date}
-                                      disabled={(date) => (date < startOfToday() || date > addMonths(new Date(), 1))}
-                                  />
+                                                              
+                                    <Calendar 
+                                        mode="single"
+                                        onSelect={handleDateSelect}
+                                        selected={date}
+                                        disabled={(date) => (date < startOfToday() || date > addMonths(new Date(), 1))}
+                                        className="w-full"
+                                    />
+                                  
                                   <div className="flex justify-between items-center mb-2">
                                     <Label>Select Time</Label>
                                     {startTime && !endTime && (
@@ -275,7 +367,7 @@ const isTimeSlotSelected = (timeSlots: string) => {
                                       <span>Checking availability...</span>
                                     </div>
                                   ) : (
-                                    <div className="grid grid-cols-4 gap-1">
+                                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-1">
                                     {timeSlots.map((time) => {
                                       const isSelected = isTimeSlotSelected(time)
                                       const isAvailable = isTimeSlotAvailable(time)
@@ -303,8 +395,124 @@ const isTimeSlotSelected = (timeSlots: string) => {
                               </CardContent>
                           </Card>
                       </TabsContent>
-                      <TabsContent value="2">
-                        {selectedRoom && <BookingForm roomName={selectedRoom.name} />}
+                      <TabsContent value="2" className="mt-6">
+                        <Card>
+                          <CardContent className="mt-6">
+                            <div className="p-4 bg-muted rounded-lg">
+                              <h3 className="font-medium text-lg mb-2">Booking Summary</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Rooms</p>
+                                    <p className="font-medium">{selectedRoom?.name}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Date</p>
+                                    <p className="font-medium">{date ? format(date, "EEEE, MMMM d, yyyy") : ""}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Time</p>
+                                    <p className="font-medium">{startTime} - {endTime}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Duration</p>
+                                    <p className="font-medium">{startTime && endTime ? 
+                                    `${(parseInt(endTime.split(":")[0]) * 60 + 
+                                      parseInt(endTime.split(":")[1])) -  
+                                      (parseInt(startTime.split(":")[0]) * 60 +
+                                      parseInt(startTime.split(":")[1]))
+                                    } minutes`
+                                    : ""}</p>
+                                  </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        {selectedRoom && 
+                          <div className="mt-6">
+                          <form onSubmit={handleSubmit}>
+                              <Label htmlFor="name">Name:</Label>
+                              <Input 
+                                  type="text"
+                                  id="name"
+                                  value={name}
+                                  placeholder="Your Full Name"
+                                  onChange={(e) => setName(e.target.value)}
+                                  required
+                                  className={formError && !name ? "border-red-500" : ""}
+                              />
+                              <Label htmlFor="email">E-mail:</Label>
+                              <Input 
+                                  type="email"
+                                  id="email"
+                                  value={email}
+                                  placeholder="Your e-mail"
+                                  onChange={(e) => setEmail(e.target.value)}
+                                  required
+                                  className={formError && !email ? "border-red-500" : ""}
+                              />
+                              <Label htmlFor="phone" >Phone:</Label>
+                              <Input 
+                                  type="tel"
+                                  id="phone"
+                                  value={phone}
+                                  placeholder="Your phone number"
+                                  onChange={(e) => setPhone(e.target.value)}
+                                  required
+                                  className={formError && !phone ? "border-red-500" : ""}
+                              />
+                              <Button type="submit" disabled={loading} className="mt-6">
+                                  {loading ? (
+                                      <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Submitting...
+                                      </>
+                                      ) : (
+                                      "Submit Booking"
+                                  )}
+                              </Button>
+                              {formError && <p className="error">{formError}</p>}
+                              {successMessage && <p>{successMessage}</p>}
+                          </form>
+                      </div>
+                        }
+                      </TabsContent>
+                      <TabsContent value="3" className="flex justify-items-center items-center">
+                        <Card>
+                          <CardContent className="m-6">
+                            <div className="text-center mb-6">
+                              <h2 className="text-2xl font-bold mb-2">Booking Submitted!</h2>
+                              <p className="text-muted-foreground">Your booking request has been submitted and is pending approval.</p>
+                            </div>
+                
+                            <div className="space-y-4 mb-6">
+                              <div>
+                                <h3 className="font-medium">Room</h3>
+                                <p>{confirmedRoom?.name}</p>
+                              </div>
+                              <div>
+                                <h3 className="font-medium">Date</h3>
+                                <p>{date ? format(date, "EEEE, MMMM d, yyyy") : ""}</p>
+                              </div>
+                              <div>
+                                <h3 className="font-medium">Time</h3>
+                                <p>
+                                  {startTime} - {endTime}
+                                </p>
+                              </div>
+                              <div>
+                                <h3 className="font-medium">Status</h3>
+                                <p>Pending Approval</p>
+                              </div>
+                            </div>
+                
+                            <div className="flex justify-center space-x-4">
+                              <Button onClick={() => router.push("/my-bookings")}>View My Bookings</Button>
+                              <Button variant="outline" onClick={() => router.push("/")}>
+                                Back to Home
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </TabsContent>
                     </Tabs>
                     
@@ -318,5 +526,4 @@ const isTimeSlotSelected = (timeSlots: string) => {
     </div>
   )
 }
-
 
