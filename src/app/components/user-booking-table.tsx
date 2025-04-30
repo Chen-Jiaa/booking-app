@@ -159,7 +159,7 @@ export const columns: ColumnDef<Bookings>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Booking Date
+          Date
           <ArrowUpDown />
         </Button>
       );
@@ -210,21 +210,7 @@ export const columns: ColumnDef<Bookings>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <div className="capitalize">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost">
-              <span>{row.getValue("status")}</span>
-              <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => {}}>Approve</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {}}>Reject</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <div className="capitalize">{row.getValue("status")}</div>
     ),
     enableSorting: true,
   },
@@ -247,9 +233,11 @@ export const columns: ColumnDef<Bookings>[] = [
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(payment.id)}
             >
-              Approve
+              Copy payment ID
             </DropdownMenuItem>
-            <DropdownMenuItem>Reject</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>View customer</DropdownMenuItem>
+            <DropdownMenuItem>View payment details</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );
@@ -257,7 +245,7 @@ export const columns: ColumnDef<Bookings>[] = [
   },
 ];
 
-export default function AdminTable() {
+export default function UserDataTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -287,7 +275,11 @@ export default function AdminTable() {
 
   useEffect(() => {
     const fetchBookings = async () => {
-      const { data, error } = await supabase.from("bookings").select();
+      if (!user?.id) return;
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("user_id", user.id);
 
       if (error) {
         setFetchError("Error loading bookings");
@@ -304,9 +296,7 @@ export default function AdminTable() {
 
   return (
     <div className="m-6">
-      <h1>Recent Bookings</h1>
-      <h1>Kindly approve or reject bookings here</h1>
-      <div className="flex items-center py-4 overflow-x-scroll">
+      <div className="flex items-center py-4">
         <Input
           placeholder="Filter emails..."
           value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
