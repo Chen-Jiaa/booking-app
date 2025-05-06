@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Clock, Loader2, Users } from "lucide-react";
+import { ChevronDown, Clock, Dot, Loader2, Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -46,13 +45,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+
+import { supabase } from "@/lib/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSupabase } from "@/components/providers/supabase-providers";
 
 type Rooms = {
   id: string;
   name: string;
   capacity: number;
-  description: string | null;
   availability: boolean;
 };
 
@@ -75,31 +76,34 @@ export default function RoomList() {
   const [successMessage, setSuccessMessage] = useState("");
   const [confirmedRoom, setConfirmedRoom] = useState<Rooms | null>(null);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user } = useSupabase();
 
   useEffect(() => {
     const fetchRooms = async () => {
+      setLoading(true)
+
+      await supabase.auth.getSession()
+
       const { data, error } = await supabase
         .from("rooms")
         .select()
-        .eq("availability", true);
+        .eq("availability", true)
 
       if (error) {
-        setFetchError("Error Fetching Rooms");
-        setRooms([]);
-        console.log(error);
+        setFetchError("Error Fetching Rooms")
+        setRooms([])
+        console.log(error)
       } else if (data) {
         const sortedRooms = [...data].sort((a, b) =>
           a.name.localeCompare(b.name),
-        );
-
-        setRooms(sortedRooms);
-        setFetchError(null);
-        setLoading(false);
+        )
+        setRooms(sortedRooms)
+        setFetchError(null)
       }
-    };
+      setLoading(false)
+    }
 
-    fetchRooms();
+    fetchRooms()
   }, []);
 
   const generateTimeSlots = () => {
@@ -305,9 +309,9 @@ export default function RoomList() {
     }
   }
 
-  console.log(selectedRoom?.name);
   return (
-    <div className="container mx-auto py-3 px-4">
+    <div className="container mt-2 mx-auto py-3 px-4">
+      
       {fetchError && <p>{fetchError}</p>}
       {rooms && (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -315,13 +319,18 @@ export default function RoomList() {
             <Card key={room.id}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>{room.name}</span>
-                  <span className="flex items-center gap-1 text-sm font-normal">
-                    <Users size={16} />
-                    {room.capacity}
-                  </span>
+                  <div className="flex items-center gap-5">
+                    <span>{room.name}</span>
+                    <span className="flex items-center gap-1 text-sm font-normal ">
+                      <Users size={16} />
+                      {room.capacity}
+                    </span>
+                  </div>
+                  <div className="flex items-center bg-[#dde9dc] rounded-[20px] px-3 ">
+                    
+                    <span className="text-sm font-normal text-[#1f3527]">{room.availability ? "Available" : "Unavailable"}</span>
+                  </div>
                 </CardTitle>
-                <CardDescription>{room.description}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Dialog>
@@ -535,8 +544,7 @@ export default function RoomList() {
                               <Input
                                 type="email"
                                 id="email"
-                                // value={email}
-                                defaultValue={user?.email}
+                                value={email}
                                 placeholder="Your e-mail"
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
@@ -558,6 +566,20 @@ export default function RoomList() {
                                   formError && !phone ? "border-red-500" : ""
                                 }
                               />
+                              <Label htmlFor="purpose" className="mt-2">
+                                Purpose of Booking:
+                              </Label>
+                              <Select>
+                                <SelectTrigger className="w-[180px]">
+                                  <SelectValue placeholder="Connect Group" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="light">Light</SelectItem>
+                                  <SelectItem value="dark">Dark</SelectItem>
+                                  <SelectItem value="system">System</SelectItem>
+                                </SelectContent>
+                              </Select>
+
                               <Button
                                 type="submit"
                                 disabled={loading}

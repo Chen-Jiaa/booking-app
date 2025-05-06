@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/lib/supabase";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { formatBookingDate, formatBookingTime } from "@/lib/date-utils";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { supabase } from "@/lib/supabase/client"
+import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { formatBookingDate, formatBookingTime } from "@/lib/date-utils"
 
 type Booking = {
   id: string;

@@ -6,6 +6,15 @@ import { createClient } from "@/lib/supabase/server";
 export async function sendOtp(formData: FormData) {
   const email = formData.get("email") as string;
 
+  if (!email || typeof email !== "string") {
+    return { error: "invalid_email" };
+  }
+
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!isValidEmail) {
+    return { error: "invalid_email" };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
@@ -16,13 +25,18 @@ export async function sendOtp(formData: FormData) {
   });
 
   if (error) {
-    if (error.message.includes("Signups not allowed for this instance")) {
+    if (
+      error.message.includes("Signups not allowed") ||
+      error.message.includes("User not found") ||
+      error.status === 400
+    ) {
       return { error: "user_not_found" };
     }
 
-    console.error("Error sending OTP:", error.message);
-    return { error: "other" };
+    console.error("OTP error:", error.message);
+    return { error: "server_error" };
   }
+
 
   redirect(`/verify?email=${encodeURIComponent(email)}`);
 }

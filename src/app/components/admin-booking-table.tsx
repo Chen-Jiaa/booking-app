@@ -34,7 +34,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -46,10 +45,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useEffect, useMemo, useState } from "react";
+
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils";
-import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase/client";
 
 type Bookings = {
   id: string;
@@ -65,206 +65,234 @@ type Bookings = {
   user_id: string;
 };
 
-export const columns: ColumnDef<Bookings>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          <ArrowUpDown />
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div className="ml-4">{row.getValue("name")}</div>,
-  },
-  {
-    accessorKey: "room_name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Room
-          <ArrowUpDown />
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div className="ml-4">{row.getValue("room_name")}</div>,
-  },
-  {
-    accessorKey: "phone",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Phone Number
-          <ArrowUpDown />
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div className="ml-4">{row.getValue("phone")}</div>,
-  },
-  {
-    accessorKey: "email",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Email
-          <ArrowUpDown />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="lowercase ml-4">{row.getValue("email")}</div>
-    ),
-  },
-  {
-    id: "date",
-    accessorKey: "start_time",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Booking Date
-          <ArrowUpDown />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="ml-4">
-        {formatBookingDate(row.getValue("start_time"))}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "start_time",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Start Time
-          <ArrowUpDown />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="ml-4">
-        {formatBookingTime(row.getValue("start_time"))}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "end_time",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          End Time
-          <ArrowUpDown />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="ml-4">{formatBookingTime(row.getValue("end_time"))}</div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <div className="capitalize">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost">
-              <span>{row.getValue("status")}</span>
-              <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => {}}>Approve</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {}}>Reject</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ),
-    enableSorting: true,
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const payment = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
-            >
-              Approve
-            </DropdownMenuItem>
-            <DropdownMenuItem>Reject</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
-
 export default function AdminTable() {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
-  const [bookings, setBookings] = useState<Bookings[]>([]);
-  const [fetchError, setFetchError] = useState<null | string>(null);
-  const { user } = useAuth();
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = useState({})
+  const [bookings, setBookings] = useState<Bookings[]>([])
+  const [fetchError, setFetchError] = useState<null | string>(null)
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      const { data, error } = await supabase.from("bookings").select();
+
+      if (error) {
+        setFetchError("Error loading bookings");
+        setBookings([]);
+        console.log(error);
+      } else if (data) {
+        const sortedBookings = [...data].sort(
+          (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+        );
+        setBookings(sortedBookings);
+        setFetchError(null);
+      }
+    };
+
+    fetchBookings();
+  }, []);
+
+  const handleStatusChange = async (id: string, newStatus: 'approved' | 'rejected') => {
+    const {error} = await supabase
+    .from("bookings")
+    .update({status: newStatus})
+    .eq("id", id)
+
+    if (!error) {
+      setBookings((prev) =>
+        prev.map((booking) =>
+          booking.id === id ? { ...booking, status: newStatus } : booking
+        )
+      );
+    } else console.log("error changing booking status", error)
+  }
+
+  const columns = useMemo<ColumnDef<Bookings>[]>(()=> [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Name
+            <ArrowUpDown />
+          </Button>
+        );
+      },
+      cell: ({ row }) => <div className="ml-4">{row.getValue("name")}</div>,
+    },
+    {
+      accessorKey: "room_name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Room
+            <ArrowUpDown />
+          </Button>
+        );
+      },
+      cell: ({ row }) => <div className="ml-4">{row.getValue("room_name")}</div>,
+    },
+    {
+      accessorKey: "phone",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Phone Number
+            <ArrowUpDown />
+          </Button>
+        );
+      },
+      cell: ({ row }) => <div className="ml-4">0{row.getValue("phone")}</div>,
+    },
+    {
+      accessorKey: "email",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Email
+            <ArrowUpDown />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="lowercase ml-4">{row.getValue("email")}</div>
+      ),
+    },
+    {
+      id: "date",
+      accessorKey: "start_time",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Booking Date
+            <ArrowUpDown />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="ml-4">
+          {formatBookingDate(row.getValue("start_time"))}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "start_time",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Start Time
+            <ArrowUpDown />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="ml-4">
+          {formatBookingTime(row.getValue("start_time"))}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "end_time",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            End Time
+            <ArrowUpDown />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="ml-4">{formatBookingTime(row.getValue("end_time"))}</div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Status
+            <ArrowUpDown />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const booking = row.original
+
+        return (
+          <div className="capitalize">
+            <DropdownMenu>
+              <DropdownMenuTrigger 
+                asChild
+                className={`
+                  "px-2 py-1 rounded text-sm",
+                  ${row.getValue("status") === "pending" ? "bg-[#f9ddc7] rounded-sm p-1 text-center" : ""}
+                  ${row.getValue("status") === "approved" ? "text-green-500" : ""}
+                  ${row.getValue("status") === "rejected" ? "text-red-500" : ""}
+                  `}
+                >
+                <Button variant="ghost">
+                  {booking.status} <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => {handleStatusChange(booking.id, 'approved')}}>Approve</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {handleStatusChange(booking.id, 'rejected')}} className="text-red-500">Reject</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )
+      },
+      enableSorting: true,
+    },
+  ], [handleStatusChange])
 
   const table = useReactTable({
     data: bookings,
@@ -285,27 +313,10 @@ export default function AdminTable() {
     },
   });
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      const { data, error } = await supabase.from("bookings").select();
-
-      if (error) {
-        setFetchError("Error loading bookings");
-        setBookings([]);
-        console.log(error);
-      } else if (data) {
-        setBookings(data);
-        setFetchError(null);
-      }
-    };
-
-    fetchBookings();
-  }, []);
-
   return (
-    <div className="m-6">
-      <h1>Recent Bookings</h1>
-      <h1>Kindly approve or reject bookings here</h1>
+    <div className="mt-2 px-4">
+      <h2 className="font-bold">Recent Bookings</h2>
+      <p>Kindly approve or reject bookings here</p>
       <div className="flex items-center py-4 overflow-x-scroll">
         <Input
           placeholder="Filter emails..."
@@ -342,7 +353,7 @@ export default function AdminTable() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

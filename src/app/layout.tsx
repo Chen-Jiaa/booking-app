@@ -1,8 +1,11 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import NavBar from "./components/nav-bar";
-import { ThemeProvider } from "@/components/ui/theme-provider";
-import { AuthProvider } from "@/context/AuthContext";
+import type { Metadata } from "next"
+import "./globals.css"
+import NavBar from "./components/nav-bar"
+import Footer from "./components/footer"
+import { SupabaseProvider } from "@/components/providers/supabase-providers"
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
+
 
 export const metadata: Metadata = {
   title: "Collective Booking App",
@@ -15,19 +18,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={``}>
-        <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <NavBar />
-            {children}
-          </ThemeProvider>
-        </AuthProvider>
+    <html lang="en">
+      <body className={"grid grid-rows-[auto_1fr_auto] min-h-dvh"}>
+        <SupabaseProvider>
+          <NavBar />
+          {children}
+          <SpeedInsights />
+          <Analytics />
+          <Footer />          
+        </SupabaseProvider>
       </body>
     </html>
   );
