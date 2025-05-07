@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx";
+import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export const getErrorMessage = (
   error: unknown,
-  defaultMessage: string = "Something went wrong",
+  defaultMessage = "Something went wrong",
 ) => {
   console.error(error);
   let errorMessage = defaultMessage;

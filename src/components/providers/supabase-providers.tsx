@@ -1,24 +1,28 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+
+interface Profile {
+  role: null | string;
+}
 
 interface SupabaseContextProps {
-  user: User | null;
-  role: string | null;
   loading: boolean;
+  role: null | string;
+  user: null | User;
 }
 
 const SupabaseContext = createContext<SupabaseContextProps>({
-  user: null,
-  role: null,
   loading: true,
+  role: null,
+  user: null,
 });
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<string | null>(null);
+  const [user, setUser] = useState<null | User>(null);
+  const [role, setRole] = useState<null | string>(null);
   const [loading, setLoading] = useState(true);
 
   async function fetchSessionAndRole() {
@@ -32,13 +36,13 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .from("profiles")
         .select("role")
         .eq("id", session.user.id)
-        .single();
+        .single<Profile>();
 
-      if (!error) {
-        setRole(data?.role ?? null);
-      } else {
+      if (error) {
         console.error("Error fetching role:", error.message);
         setRole(null);
+      } else {
+        setRole(data.role ?? null);
       }
     } else {
       setRole(null);
@@ -48,10 +52,10 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    fetchSessionAndRole();
+    void fetchSessionAndRole();
 
     const onFocus = () => {
-      fetchSessionAndRole();
+      void fetchSessionAndRole();
     };
 
     window.addEventListener("focus", onFocus);
@@ -63,10 +67,10 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           .from("profiles")
           .select("role")
           .eq("id", session.user.id)
-          .single()
+          .single<Profile>()
           .then(({ data, error }) => {
-            if (!error) setRole(data?.role ?? null);
-            else console.error("Error fetching role:", error.message);
+            if (error) {console.error("Error fetching role:", error.message);}
+            else {setRole(data.role ?? null);}
           });
       } else {
         setRole(null);
@@ -79,8 +83,10 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const contextValue = useMemo(() => ({ loading, role, user }), [loading, role, user]);
+
   return (
-    <SupabaseContext.Provider value={{ user, role, loading }}>
+    <SupabaseContext.Provider value={contextValue}>
       {children}
     </SupabaseContext.Provider>
   );

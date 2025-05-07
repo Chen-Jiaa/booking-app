@@ -1,5 +1,11 @@
 import * as React from "react";
 
+type PossibleRef<T> = React.Ref<T> | undefined;
+
+/**
+ * @see https://github.com/radix-ui/primitives/blob/main/packages/react/compose-refs/src/compose-refs.tsx
+ */
+
 /**
  * A utility to compose multiple event handlers into a single event handler.
  * Call originalEventHandler first, then ourEventHandler unless prevented.
@@ -13,32 +19,12 @@ function composeEventHandlers<E>(
     originalEventHandler?.(event);
 
     if (
-      checkForDefaultPrevented === false ||
+      !checkForDefaultPrevented ||
       !(event as unknown as Event).defaultPrevented
     ) {
       return ourEventHandler?.(event);
     }
   };
-}
-
-/**
- * @see https://github.com/radix-ui/primitives/blob/main/packages/react/compose-refs/src/compose-refs.tsx
- */
-
-type PossibleRef<T> = React.Ref<T> | undefined;
-
-/**
- * Set a given ref to a given value.
- * This utility takes care of different types of refs: callback refs and RefObject(s).
- */
-function setRef<T>(ref: PossibleRef<T>, value: T) {
-  if (typeof ref === "function") {
-    return ref(value);
-  }
-
-  if (ref !== null && ref !== undefined) {
-    ref.current = value;
-  }
 }
 
 /**
@@ -60,10 +46,10 @@ function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
     // value. We don't use ref cleanups internally so this will only happen if a
     // user's ref callback returns a value, which we only expect if they are
     // using the cleanup functionality added in React 19.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (hasCleanup) {
       return () => {
-        for (let i = 0; i < cleanups.length; i++) {
-          const cleanup = cleanups[i];
+        for (const [i, cleanup] of cleanups.entries()) {
           if (typeof cleanup === "function") {
             cleanup();
           } else {
@@ -73,6 +59,20 @@ function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
       };
     }
   };
+}
+
+/**
+ * Set a given ref to a given value.
+ * This utility takes care of different types of refs: callback refs and RefObject(s).
+ */
+function setRef<T>(ref: PossibleRef<T>, value: T) {
+  if (typeof ref === "function") {
+    return ref(value);
+  }
+
+  if (ref !== null && ref !== undefined) {
+    ref.current = value;
+  }
 }
 
 /**
