@@ -1,19 +1,19 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import { User } from "@supabase/supabase-js";
 
-type SupabaseContextType = {
+interface SupabaseContextProps {
   user: User | null;
-  loading: boolean;
   role: string | null;
-};
+  loading: boolean;
+}
 
-const SupabaseContext = createContext<SupabaseContextType>({
+const SupabaseContext = createContext<SupabaseContextProps>({
   user: null,
-  loading: true,
   role: null,
+  loading: true,
 });
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
@@ -21,69 +21,71 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Listen for auth changes
-    const { data: {subscription} } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
+  async function fetchSessionAndRole() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session;
 
-        if (currentUser) {
-          try {
-            const { data, error } = await supabase
-              .from("profiles")
-              .select("role")
-              .eq("id", currentUser.id)
-              .single();
+    setUser(session?.user ?? null);
 
-            if (error) {
-              console.error("Error fetching role:", error.message);
-              setRole(null);
-            } else {
-              setRole(data?.role ?? null);
-            }
-          } catch (err) {
-            console.error("Unexpected error fetching role:", err);
-            setRole(null);
-          }
-        } else {
-          setRole(null);
-        }
+    if (session?.user) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
 
-        setLoading(false);
+      if (!error) {
+        setRole(data?.role ?? null);
+      } else {
+        console.error("Error fetching role:", error.message);
+        setRole(null);
       }
-    );
+    } else {
+      setRole(null);
+    }
 
-    // Trigger initial check to sync auth
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    fetchSessionAndRole();
+
+    const onFocus = () => {
+      fetchSessionAndRole();
+    };
+
+    window.addEventListener("focus", onFocus);
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
       if (session?.user) {
-        setUser(session.user);
         supabase
           .from("profiles")
           .select("role")
           .eq("id", session.user.id)
           .single()
           .then(({ data, error }) => {
-            setRole(error ? null : data?.role ?? null);
-            setLoading(false);
+            if (!error) setRole(data?.role ?? null);
+            else console.error("Error fetching role:", error.message);
           });
       } else {
-        setUser(null);
         setRole(null);
-        setLoading(false);
       }
     });
 
     return () => {
-      subscription.unsubscribe();
+      window.removeEventListener("focus", onFocus);
+      listener.subscription.unsubscribe();
     };
   }, []);
 
   return (
-    <SupabaseContext.Provider value={{ user, loading, role }}>
+    <SupabaseContext.Provider value={{ user, role, loading }}>
       {children}
     </SupabaseContext.Provider>
   );
 }
 
-export const useSupabase = () => useContext(SupabaseContext);
+export function useSupabase() {
+  return useContext(SupabaseContext);
+}

@@ -30,7 +30,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.0",
-    "date-fns": "^4.1.0",
+    "date-fns": "^2.30.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.479.0",
     "next": "15.1.7",
@@ -46,19 +46,28 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
+    "@eslint/eslintrc": "^3.3.0",
+    "@eslint/js": "^9.26.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9.21.0",
+    "@typescript-eslint/eslint-plugin": "^8.32.0",
+    "@typescript-eslint/parser": "^8.32.0",
+    "eslint": "^9.26.0",
     "eslint-config-next": "15.1.7",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-import-x": "^4.11.0",
+    "eslint-plugin-n": "^17.17.0",
     "eslint-plugin-perfectionist": "^4.9.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-unicorn": "^59.0.1",
+    "globals": "^16.0.0",
     "postcss": "^8",
     "prettier": "^3.5.3",
     "supabase": "^2.19.5",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.32.0"
   }
 }

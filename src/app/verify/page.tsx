@@ -70,7 +70,7 @@ function VerifyForm() {
   }
 
   return (
-    <div className="max-w-sm w-full mx-auto mt-24 space-y-4">
+    <div className="max-w-sm w-full mx-auto mt-24 space-y-4 px-6">
 
       <h1 className="text-2xl font-bold just">Check your email</h1>
       <p>We've just sent a 6-digit verification code to {email}</p>

@@ -54,7 +54,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-sm w-full mx-auto mt-24 space-y-4">
+    <div className="max-w-sm w-full mx-auto mt-24 space-y-4 px-6">
       <h1 className="text-2xl font-bold">Login</h1>
 
       <Form {...form}>

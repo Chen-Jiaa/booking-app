@@ -1,6 +1,6 @@
 "use client";
 
-import { BookingsList } from "../components/new-user-table";
+import { BookingsList } from "../components/user-booking-table";
 
 export default function AdminDashboard() {
   return (

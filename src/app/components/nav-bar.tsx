@@ -11,8 +11,8 @@ import { useSupabase } from "@/components/providers/supabase-providers";
 export default function NavBar() {
   const {user, loading, role} = useSupabase()
   const pathname = usePathname();
-  // const { user, loading, role } = useAuth();
   const router = useRouter()
+  
 
   const navigation = [
     { name: "Book a Room", href: "/" },
@@ -27,7 +27,7 @@ export default function NavBar() {
 
   return (
     <nav className="border-b">
-      <div className="container mx-auto py-3 px-4">
+      <div className="container mx-auto py-3 px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href={"/"} className="text-xl font-bold">

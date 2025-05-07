@@ -93,7 +93,7 @@ export default function AdminTable() {
     fetchBookings();
   }, []);
 
-  const handleStatusChange = async (id: string, newStatus: 'approved' | 'rejected') => {
+  const handleStatusChange = async (id: string, newStatus: 'confirmed' | 'rejected') => {
     const {error} = await supabase
     .from("bookings")
     .update({status: newStatus})
@@ -271,19 +271,19 @@ export default function AdminTable() {
               <DropdownMenuTrigger 
                 asChild
                 className={`
-                  "px-2 py-1 rounded text-sm",
+                  "px-1 py-1 rounded text-sm",
                   ${row.getValue("status") === "pending" ? "bg-[#f9ddc7] rounded-sm p-1 text-center" : ""}
-                  ${row.getValue("status") === "approved" ? "text-green-500" : ""}
-                  ${row.getValue("status") === "rejected" ? "text-red-500" : ""}
+                  ${row.getValue("status") === "confirmed" ? "text-green-700 bg-green-50" : ""}
+                  ${row.getValue("status") === "rejected" ? "text-red-700 bg-red-50" : ""}
                   `}
                 >
-                <Button variant="ghost">
+                <Button variant="ghost" className="flex">
                   {booking.status} <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => {handleStatusChange(booking.id, 'approved')}}>Approve</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {handleStatusChange(booking.id, 'confirmed')}}>Approve</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {handleStatusChange(booking.id, 'rejected')}} className="text-red-500">Reject</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -314,7 +314,7 @@ export default function AdminTable() {
   });
 
   return (
-    <div className="mt-2 px-4">
+    <div className="mt-2 px-6">
       <h2 className="font-bold">Recent Bookings</h2>
       <p>Kindly approve or reject bookings here</p>
       <div className="flex items-center py-4 overflow-x-scroll">

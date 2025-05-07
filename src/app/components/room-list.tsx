@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Clock, Dot, Loader2, Users } from "lucide-react";
+import { ChevronDown, Circle, Clock, Dot, Loader2, Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -309,8 +309,19 @@ export default function RoomList() {
     }
   }
 
+  const purposeOptions = [
+    { value: "connect_group", label: "Connect Group" },
+    { value: "combine_connect_group", label: "Combine Connect Group" },
+    { value: "bible_study", label: "Bible Study" },
+    { value: "prayer_meeting", label: "Prayer Meeting" },
+    { value: "zone_meeting", label: "Zone Meeting" },
+    { value: "practice", label: "Practice (Email Admin for approval)" },
+    { value: "event", label: "Event (Email Admin for approval)" },
+    { value: "others", label: "Others" },
+  ]
+
   return (
-    <div className="container mt-2 mx-auto py-3 px-4">
+    <div className="container mt-2 mx-auto py-3 px-6">
       
       {fetchError && <p>{fetchError}</p>}
       {rooms && (
@@ -326,9 +337,11 @@ export default function RoomList() {
                       {room.capacity}
                     </span>
                   </div>
-                  <div className="flex items-center bg-[#dde9dc] rounded-[20px] px-3 ">
-                    
-                    <span className="text-sm font-normal text-[#1f3527]">{room.availability ? "Available" : "Unavailable"}</span>
+                  <div className="flex items-center gap-1 bg-green-50 rounded-[20px] px-3 ">
+                    <Circle className="fill-green-700 w-[10px]"/>
+                    <span className="text-sm font-normal text-green-700">
+                      {room.availability ? "Available" : "Unavailable"}
+                    </span>
                   </div>
                 </CardTitle>
               </CardHeader>
@@ -336,13 +349,13 @@ export default function RoomList() {
                 <Dialog>
                   {user ? (
                     <DialogTrigger asChild>
-                      <Button onClick={() => setSelectedRoom(room)}>
-                        Check Availability
+                      <Button className="w-full text-black" variant={"outline"} onClick={() => setSelectedRoom(room)}>
+                        Book now
                       </Button>
                     </DialogTrigger>
                   ) : (
                     <Button onClick={() => router.push("/login")}>
-                      Check Availability
+                      Book now
                     </Button>
                   )}
 
@@ -570,13 +583,17 @@ export default function RoomList() {
                                 Purpose of Booking:
                               </Label>
                               <Select>
-                                <SelectTrigger className="w-[180px]">
-                                  <SelectValue placeholder="Connect Group" />
-                                </SelectTrigger>
+                                
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a purpose" />
+                                  </SelectTrigger>
+                                
                                 <SelectContent>
-                                  <SelectItem value="light">Light</SelectItem>
-                                  <SelectItem value="dark">Dark</SelectItem>
-                                  <SelectItem value="system">System</SelectItem>
+                                  {purposeOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
 

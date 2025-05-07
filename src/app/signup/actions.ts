@@ -22,7 +22,7 @@ export async function signup(formData: FormData) {
     email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: "http://localhost:3000",
+      emailRedirectTo: "https://booking.collective.my/",
     },
   });
 

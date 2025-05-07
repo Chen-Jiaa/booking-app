@@ -20,7 +20,7 @@ export async function sendOtp(formData: FormData) {
     email,
     options: {
       shouldCreateUser: false,
-      emailRedirectTo: "http://localhost:3000", // or your production URL
+      emailRedirectTo: "https://booking.collective.my/",
     },
   });
 
