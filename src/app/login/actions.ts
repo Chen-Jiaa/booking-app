@@ -1,7 +1,7 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export async function sendOtp(formData: FormData) {
   const email = formData.get("email") as string;
@@ -10,7 +10,7 @@ export async function sendOtp(formData: FormData) {
     return { error: "invalid_email" };
   }
 
-  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidEmail = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(email);
   if (!isValidEmail) {
     return { error: "invalid_email" };
   }
@@ -19,8 +19,8 @@ export async function sendOtp(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      shouldCreateUser: false,
       emailRedirectTo: "https://booking.collective.my/",
+      shouldCreateUser: false,
     },
   });
 

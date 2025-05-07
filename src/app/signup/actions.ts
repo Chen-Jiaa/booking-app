@@ -8,21 +8,21 @@ export async function signup(formData: FormData) {
   const email = formData.get("email") as string;
   const supabase = await createClient();
 
-  const { data: users, error: fetchError } = await supabase
+  const { error: fetchError } = await supabase
     .from("auth_users")
     .select("id")
     .eq("email", email)
     .single()
 
-  if (fetchError === null && users) {
+  if (fetchError === null) {
     return { error: "user_exists" };
   }
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      shouldCreateUser: true,
       emailRedirectTo: "https://booking.collective.my/",
+      shouldCreateUser: true,
     },
   });
 

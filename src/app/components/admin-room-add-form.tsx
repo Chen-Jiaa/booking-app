@@ -16,7 +16,7 @@ export default function AddRooms() {
   const [capacity, setCapacity] = useState("");
   const [formError, setFormError] = useState<null | string>(null);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!name || !description || !capacity) {
@@ -24,18 +24,13 @@ export default function AddRooms() {
       return;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("rooms")
-      .insert([{ name, description, capacity }]);
+      .insert([{ capacity, description, name }]);
 
     if (error) {
       console.log(error);
       setFormError("Please fill in all the fields correctly");
-    }
-
-    if (data) {
-      console.log(data);
-      setFormError(null);
     }
   };
 
@@ -45,35 +40,35 @@ export default function AddRooms() {
         <CardTitle>Add more rooms:</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={void handleSubmit}>
           <Label htmlFor="name">Room Name:</Label>
           <Input
-            type="text"
             id="name"
+            onChange={(e) => { setName(e.target.value); }}
             placeholder="Class Room 2"
-            value={name}
             required
-            onChange={(e) => setName(e.target.value)}
+            type="text"
+            value={name}
           />
           <Label htmlFor="description">Room Description:</Label>
           <Input
-            type="text"
             id="description"
+            onChange={(e) => { setDescription(e.target.value); }}
             placeholder="Class Room 2"
-            value={description}
             required
-            onChange={(e) => setDescription(e.target.value)}
+            type="text"
+            value={description}
           />
           <Label htmlFor="capacity">Room Capacity:</Label>
           <Input
-            type="number"
             id="capacity"
+            onChange={(e) => { setCapacity(e.target.value); }}
             placeholder="20"
-            value={capacity}
             required
-            onChange={(e) => setCapacity(e.target.value)}
+            type="number"
+            value={capacity}
           />
-          <Button onSubmit={handleSubmit}>Add Rooms</Button>
+          <Button type="submit">Add Rooms</Button>
           {formError && <p>{formError}</p>}
         </form>
       </CardContent>

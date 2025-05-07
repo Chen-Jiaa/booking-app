@@ -1,5 +1,3 @@
-import { Copyright } from "lucide-react";
-
 export default function Footer() {
     return (
         <div className="flex justify-center h-14 items-center">

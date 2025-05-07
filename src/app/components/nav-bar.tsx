@@ -1,27 +1,27 @@
 "use client";
 
+import { useSupabase } from "@/components/providers/supabase-providers";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { useSupabase } from "@/components/providers/supabase-providers";
 
 
 export default function NavBar() {
-  const {user, loading, role} = useSupabase()
+  const {loading, role, user} = useSupabase()
   const pathname = usePathname();
   const router = useRouter()
   
 
   const navigation = [
-    { name: "Book a Room", href: "/" },
-    { name: "My Bookings", href: "/bookings" },
-    ...(role === "admin" ? [{ name: "Admin Panel", href: "/admin" }] : []),
+    { href: "/", name: "Book a Room" },
+    { href: "/bookings", name: "My Bookings" },
+    ...(role === "admin" ? [{ href: "/admin", name: "Admin Panel" }] : []),
   ];
 
   async function signOut() {
-    const { error } = await supabase.auth.signOut()
+    await supabase.auth.signOut()
     router.refresh()
   }
 
@@ -30,21 +30,21 @@ export default function NavBar() {
       <div className="container mx-auto py-3 px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href={"/"} className="text-xl font-bold">
+            <Link className="text-xl font-bold" href="/">
               COLLECTIVE
             </Link>
             {!loading && (
               <div className="hidden md:flex items-center gap-4">
                 {(user ? navigation : [navigation[0]]).map((item) => (
                   <Link
-                    href={item.href}
-                    key={item.name}
                     className={cn(
                       "text-sm transition-colors hover:text-primary",
                       pathname === item.href
                         ? "text-primary font-medium"
                         : "text-muted-foreground",
                     )}
+                    href={item.href}
+                    key={item.name}
                   >
                     {item.name}
                   </Link>
@@ -59,8 +59,8 @@ export default function NavBar() {
                   <>
                     <span className="hidden md:inline text-muted-foreground">{user.email}</span>
                     <Button
+                      onClick={() => void signOut()}
                       variant="outline"
-                      onClick={() => signOut()}
                     >
                       Sign Out
                     </Button>
@@ -68,13 +68,13 @@ export default function NavBar() {
                 ) : (
                   <>
                     <Link
-                      href="/login"
                       className={cn(
                         "text-sm transition-colors hover:text-primary",
                         pathname === "/login"
                           ? "text-primary font-medium"
                           : "text-muted-foreground",
                       )}
+                      href="/login"
                     >
                       Log In
                     </Link>
@@ -91,14 +91,14 @@ export default function NavBar() {
               <div className="md:hidden flex items-center gap-2">
               {(user ? navigation : [navigation[0]]).map((item) => (
                 <Link
-                  href={item.href}
-                  key={item.name}
                   className={cn(
                     "text-sm transition-colors hover:text-primary px-3 py-1 rounded-full",
                     pathname === item.href
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-muted-foreground",
                   )}
+                  href={item.href}
+                  key={item.name}
                 >
                   {item.name}
                 </Link>

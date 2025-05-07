@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { signup } from "./actions";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { z } from "zod"
-import { useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod"
+
+import { signup } from "./actions";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -19,8 +20,8 @@ export default function SignupPage() {
   const [serverError, setServerError] = useState<React.ReactNode>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
     defaultValues: { email: "" },
+    resolver: zodResolver(formSchema),
   })
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
@@ -31,17 +32,17 @@ export default function SignupPage() {
 
     const result = await signup(formData);
 
-    if (result?.error === "user_exists") {
+    if (result.error === "user_exists") {
       setServerError(
         <span>
           The email address already exists.{" "}
-          <Link href="/login" className="underline font-bold">
+          <Link className="underline font-bold" href="/login">
             Log in instead
           </Link>
           ?
         </span>
       );
-    } else if (result?.error === "server_error") {
+    } else if (result.error === "server_error") {
       setServerError("Something went wrong. Please try again later.");
     }
   };
@@ -51,7 +52,7 @@ export default function SignupPage() {
       <h1 className="text-2xl font-bold">Sign Up</h1>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form className="space-y-4" onSubmit={() => form.handleSubmit(onSubmit)}>
           <FormField
             control={form.control}
             name="email"
@@ -65,11 +66,11 @@ export default function SignupPage() {
             )}
           />
 
-          {!form.formState.errors.email && serverError && (
+          {!form.formState.errors.email && serverError ? (
             <p className="text-sm text-red-500">{serverError}</p>
-          )}
+          ): null}
 
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button disabled={form.formState.isSubmitting} type="submit">
             {form.formState.isSubmitting ? (
               <Loader2 className="animate-spin w-4 h-4" />
             ) : (

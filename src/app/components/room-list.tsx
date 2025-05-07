@@ -1,29 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { useSupabase } from "@/components/providers/supabase-providers";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, Circle, Clock, Dot, Loader2, Users } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Calendar } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Command,
   CommandEmpty,
@@ -33,50 +19,85 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { interval, room_endHour, room_startHour } from "@/lib/config";
+import { supabase } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
+import {
   addMinutes,
   addMonths,
   format,
   isSameDay,
   startOfToday,
 } from "date-fns";
-import { interval, room_endHour, room_startHour } from "@/lib/config";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
+import { ChevronDown, Circle, Clock, Loader2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
-import { supabase } from "@/lib/supabase/client";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useSupabase } from "@/components/providers/supabase-providers";
-
-type Rooms = {
+interface Bookings {
+  email: string;
+  end_time: string;
   id: string;
   name: string;
-  capacity: number;
+  phone: string;
+  room_id: string;
+  room_name: string;
+  start_time: string;
+  status: string;
+}
+
+interface Rooms {
   availability: boolean;
+  capacity: number;
+  id: string;
+  name: string;
+}
+
+const generateTimeSlots = () => {
+  const slots = [];
+
+  for (let i = room_startHour; i <= room_endHour; i += interval / 60) {
+    const hour = Math.floor(i);
+    const minutes = i % 1 === 0 ? "00" : "30";
+    slots.push(`${hour.toString().padStart(2, "0")}:${minutes}`);
+  }
+
+  return slots;
 };
 
 export default function RoomList() {
-  const [fetchError, setFetchError] = useState<null | string>(null);
-  const [rooms, setRooms] = useState<Rooms[]>([]);
-  const [selectedRoom, setSelectedRoom] = useState<Rooms | null>(null);
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [loading, setLoading] = useState(true);
-  const [startTime, setStartTime] = useState<string | undefined>(undefined);
-  const [endTime, setEndTime] = useState<string | undefined>(undefined);
-  const [open, setOpen] = useState(false);
-  const [step, setStep] = useState("1");
-  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
-  const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [formError, setFormError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [confirmedRoom, setConfirmedRoom] = useState<Rooms | null>(null);
-  const router = useRouter();
-  const { user } = useSupabase();
+  const [fetchError, setFetchError] = useState<null | string>(null)
+  const [rooms, setRooms] = useState<Rooms[]>([])
+  const [selectedRoom, setSelectedRoom] = useState<null | Rooms>(null)
+  const [date, setDate] = useState<Date | undefined>(() => new Date())
+  const [loading, setLoading] = useState(true)
+  const [startTime, setStartTime] = useState<string | undefined>()
+  const [endTime, setEndTime] = useState<string | undefined>()
+  const [open, setOpen] = useState(false)
+  const [step, setStep] = useState("1")
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
+  const [bookedSlots, setBookedSlots] = useState<Set<string>>(() => new Set())
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [formError, setFormError] = useState("")
+  const [confirmedRoom, setConfirmedRoom] = useState<null | Rooms>(null)
+  const router = useRouter()
+  const { user } = useSupabase()
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -93,8 +114,10 @@ export default function RoomList() {
         setFetchError("Error Fetching Rooms")
         setRooms([])
         console.log(error)
-      } else if (data) {
-        const sortedRooms = [...data].sort((a, b) =>
+      } 
+      
+      if (data) {
+        const sortedRooms = [...data as Rooms[]].sort((a, b) =>
           a.name.localeCompare(b.name),
         )
         setRooms(sortedRooms)
@@ -103,20 +126,10 @@ export default function RoomList() {
       setLoading(false)
     }
 
-    fetchRooms()
+    void fetchRooms()
   }, []);
 
-  const generateTimeSlots = () => {
-    const slots = [];
-
-    for (let i = room_startHour; i <= room_endHour; i += interval / 60) {
-      const hour = Math.floor(i);
-      const minutes = i % 1 === 0 ? "00" : "30";
-      slots.push(`${hour.toString().padStart(2, "0")}:${minutes}`);
-    }
-
-    return slots;
-  };
+  
 
   const timeSlots = generateTimeSlots();
 
@@ -130,7 +143,7 @@ export default function RoomList() {
 
   useEffect(() => {
     if (date && selectedRoom) {
-      checkAvailability(date, selectedRoom.id);
+        void checkAvailability(date, selectedRoom.id);
     }
   }, [date, selectedRoom]);
 
@@ -144,14 +157,14 @@ export default function RoomList() {
         .from("bookings")
         .select("start_time, end_time")
         .eq("room_id", roomId)
-        // .or(`status.eq.pending, status.eq.approved`)
+        .or(`status.eq.pending, status.eq.approved`)
         .gte("start_time", `${dateStr}T00:00:00`)
         .lt("start_time", `${dateStr}T23:59:59`);
 
       const booked = new Set<string>();
 
       if (bookings && bookings.length > 0) {
-        bookings.forEach((booking) => {
+        for(const booking of bookings as Bookings[]) {
           const bookingStart = new Date(booking.start_time);
           const bookingEnd = new Date(booking.end_time);
 
@@ -169,7 +182,7 @@ export default function RoomList() {
               }
             }
           }
-        });
+        };
       }
       setBookedSlots(booked);
     } catch (error) {
@@ -254,7 +267,7 @@ export default function RoomList() {
     return combined;
   }
 
-  async function handleSubmit(e: any) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (
@@ -279,52 +292,51 @@ export default function RoomList() {
       .from("bookings")
       .insert([
         {
-          name,
           email,
-          phone,
-          room_id: selectedRoom?.id,
-          room_name: selectedRoom?.name,
-          start_time: fullStartTime,
           end_time: fullEndTime,
+          name,
+          phone,
+          room_id: selectedRoom.id,
+          room_name: selectedRoom.name,
+          start_time: fullStartTime,
           status: "pending",
           user_id: userId,
         },
       ])
-      .select();
+      .select()
+      .throwOnError()
+      .overrideTypes<Bookings[]>()
 
     if (error) {
       console.log(error);
       setFormError(error.message || "Please fill in all the fields correctly.");
     }
-    if (data) {
+
+    if (data?.[0]?.id) {
       setName("");
       setEmail("");
       setPhone("");
       setFormError("");
       setConfirmedRoom(selectedRoom);
-    }
-
-    if (data && data[0]?.id) {
-      router.push(`/booking-confirmation/${data[0].id}`);
+      router.push(`/booking-confirmation/${String(data[0].id)}`);
     }
   }
 
   const purposeOptions = [
-    { value: "connect_group", label: "Connect Group" },
-    { value: "combine_connect_group", label: "Combine Connect Group" },
-    { value: "bible_study", label: "Bible Study" },
-    { value: "prayer_meeting", label: "Prayer Meeting" },
-    { value: "zone_meeting", label: "Zone Meeting" },
-    { value: "practice", label: "Practice (Email Admin for approval)" },
-    { value: "event", label: "Event (Email Admin for approval)" },
-    { value: "others", label: "Others" },
+    { label: "Connect Group", value: "connect_group" },
+    { label: "Combine Connect Group", value: "combine_connect_group" },
+    { label: "Bible Study", value: "bible_study" },
+    { label: "Prayer Meeting", value: "prayer_meeting" },
+    { label: "Zone Meeting", value: "zone_meeting" },
+    { label: "Practice (Email Admin for approval)", value: "practice" },
+    { label: "Event (Email Admin for approval)", value: "event" },
+    { label: "Others", value: "others" },
   ]
 
   return (
     <div className="container mt-2 mx-auto py-3 px-6">
       
       {fetchError && <p>{fetchError}</p>}
-      {rooms && (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
           {rooms.map((room) => (
             <Card key={room.id}>
@@ -349,26 +361,26 @@ export default function RoomList() {
                 <Dialog>
                   {user ? (
                     <DialogTrigger asChild>
-                      <Button className="w-full text-black" variant={"outline"} onClick={() => setSelectedRoom(room)}>
+                      <Button className="w-full text-black" onClick={() => { setSelectedRoom(room); }} variant="outline">
                         Book now
                       </Button>
                     </DialogTrigger>
                   ) : (
-                    <Button onClick={() => router.push("/login")}>
+                    <Button onClick={() => { router.push("/login"); }}>
                       Book now
                     </Button>
                   )}
 
                   <DialogContent className="max-h-[90vh] overflow-y-scroll">
                     <DialogTitle>Availability</DialogTitle>
-                    <Tabs value={step} onValueChange={setStep} className="">
+                    <Tabs className="" onValueChange={setStep} value={step}>
                       <TabsList>
                         <TabsTrigger value="1">
                           1. Select Date & Time
                         </TabsTrigger>
                         <TabsTrigger
-                          value="2"
                           disabled={!date || !startTime || !endTime}
+                          value="2"
                         >
                           2. Your Information
                         </TabsTrigger>
@@ -377,14 +389,14 @@ export default function RoomList() {
                         <Card>
                           <CardContent className="grid grid-cols-1">
                             <Label className="mt-6 mb-2">Select Room</Label>
-                            <Popover open={open} onOpenChange={setOpen}>
+                            <Popover onOpenChange={setOpen} open={open}>
                               <PopoverTrigger asChild className="">
                                 {selectedRoom && (
                                   <Button
-                                    variant="outline"
-                                    role="combobox"
                                     aria-expanded={open}
                                     className="w-[200px] justify-between"
+                                    role="combobox"
+                                    variant="outline"
                                   >
                                     {selectedRoom.name}
                                     <ChevronDown opacity={50} />
@@ -400,10 +412,10 @@ export default function RoomList() {
                                       {rooms.map((room) => (
                                         <CommandItem
                                           key={room.id}
-                                          value={room.id}
                                           onSelect={() => {
                                             handleRoomChange(room.id);
                                           }}
+                                          value={room.id}
                                         >
                                           {room.name}
                                         </CommandItem>
@@ -415,14 +427,14 @@ export default function RoomList() {
                             </Popover>
                             <Label className="mt-6">Select Date</Label>
                             <Calendar
-                              mode="single"
-                              onSelect={handleDateSelect}
-                              selected={date}
+                              className=""
                               disabled={(date) =>
                                 date < startOfToday() ||
                                 date > addMonths(new Date(), 1)
                               }
-                              className=""
+                              mode="single"
+                              onSelect={handleDateSelect}
+                              selected={date}
                             />
                             <div className="flex justify-between items-center mt-2 mb-2">
                               <Label>Select Time</Label>
@@ -448,10 +460,6 @@ export default function RoomList() {
 
                                   return (
                                     <Button
-                                      key={time}
-                                      variant={
-                                        isSelected ? "default" : "outline"
-                                      }
                                       className={cn(
                                         "h-10 px-2 text-xs",
                                         isSelected &&
@@ -459,8 +467,12 @@ export default function RoomList() {
                                         !isAvailable &&
                                           "opacity-50 cursor-not-allowed",
                                       )}
-                                      onClick={() => handleTimeSelect(time)}
                                       disabled={!isAvailable}
+                                      key={time}
+                                      onClick={() => { handleTimeSelect(time); }}
+                                      variant={
+                                        isSelected ? "default" : "outline"
+                                      }
                                     >
                                       <Clock className="h-3 w-3 mr-1" />
                                       {time}
@@ -471,15 +483,15 @@ export default function RoomList() {
                             )}
                             <Button
                               className="mt-6"
-                              onClick={handleContinue}
                               disabled={!date || !startTime || !endTime}
+                              onClick={handleContinue}
                             >
                               Continue
                             </Button>
                           </CardContent>
                         </Card>
                       </TabsContent>
-                      <TabsContent value="2" className="mt-6">
+                      <TabsContent className="mt-6" value="2">
                         <Card>
                           <CardContent className="rounded-lg">
                             <div className="pt-6">
@@ -519,13 +531,13 @@ export default function RoomList() {
                                   </p>
                                   <p className="font-medium">
                                     {startTime && endTime
-                                      ? `${
-                                          parseInt(endTime.split(":")[0]) * 60 +
-                                          parseInt(endTime.split(":")[1]) -
-                                          (parseInt(startTime.split(":")[0]) *
+                                      ? `${String(
+                                          Number.parseInt(endTime.split(":")[0]) * 60 +
+                                          Number.parseInt(endTime.split(":")[1]) -
+                                          (Number.parseInt(startTime.split(":")[0]) *
                                             60 +
-                                            parseInt(startTime.split(":")[1]))
-                                        } minutes`
+                                            Number.parseInt(startTime.split(":")[1]))
+                                        )} minutes`
                                       : ""}
                                   </p>
                                 </div>
@@ -536,50 +548,50 @@ export default function RoomList() {
                         {selectedRoom && (
                           <div className="mt-6">
                             <form
-                              onSubmit={handleSubmit}
                               className="grid grid-cols-1 gap-1"
+                              onSubmit={(e) => void handleSubmit(e)}
                             >
                               <Label htmlFor="name">Name:</Label>
                               <Input
-                                type="text"
-                                id="name"
-                                value={name}
-                                placeholder="Your Full Name"
-                                onChange={(e) => setName(e.target.value)}
-                                required
                                 className={
                                   formError && !name ? "border-red-500" : ""
                                 }
+                                id="name"
+                                onChange={(e) => { setName(e.target.value); }}
+                                placeholder="Your Full Name"
+                                required
+                                type="text"
+                                value={name}
                               />
-                              <Label htmlFor="email" className="mt-2">
+                              <Label className="mt-2" htmlFor="email">
                                 E-mail:
                               </Label>
                               <Input
-                                type="email"
-                                id="email"
-                                value={email}
-                                placeholder="Your e-mail"
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
                                 className={
                                   formError && !email ? "border-red-500" : ""
                                 }
+                                id="email"
+                                onChange={(e) => { setEmail(e.target.value); }}
+                                placeholder="Your e-mail"
+                                required
+                                type="email"
+                                value={email}
                               />
-                              <Label htmlFor="phone" className="mt-2">
+                              <Label className="mt-2" htmlFor="phone">
                                 Phone:
                               </Label>
                               <Input
-                                type="tel"
-                                id="phone"
-                                value={phone}
-                                placeholder="Your phone number"
-                                onChange={(e) => setPhone(e.target.value)}
-                                required
                                 className={
                                   formError && !phone ? "border-red-500" : ""
                                 }
+                                id="phone"
+                                onChange={(e) => { setPhone(e.target.value); }}
+                                placeholder="Your phone number"
+                                required
+                                type="tel"
+                                value={phone}
                               />
-                              <Label htmlFor="purpose" className="mt-2">
+                              <Label className="mt-2" htmlFor="purpose">
                                 Purpose of Booking:
                               </Label>
                               <Select>
@@ -598,30 +610,22 @@ export default function RoomList() {
                               </Select>
 
                               <Button
-                                type="submit"
-                                disabled={loading}
                                 className="mt-4"
+                                disabled={loading}
+                                type="submit"
                               >
-                                {loading ? (
-                                  <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Submitting...
-                                  </>
-                                ) : (
-                                  "Submit Booking"
-                                )}
+                                  Submit Booking
                               </Button>
                               {formError && (
                                 <p className="error">{formError}</p>
                               )}
-                              {successMessage && <p>{successMessage}</p>}
                             </form>
                           </div>
                         )}
                       </TabsContent>
                       <TabsContent
-                        value="3"
                         className="flex justify-items-center items-center"
+                        value="3"
                       >
                         <Card>
                           <CardContent className="m-6">
@@ -662,13 +666,13 @@ export default function RoomList() {
 
                             <div className="flex justify-center space-x-4">
                               <Button
-                                onClick={() => router.push("/my-bookings")}
+                                onClick={() => { router.push("/my-bookings"); }}
                               >
                                 View My Bookings
                               </Button>
                               <Button
+                                onClick={() => { router.push("/"); }}
                                 variant="outline"
-                                onClick={() => router.push("/")}
                               >
                                 Back to Home
                               </Button>
@@ -683,7 +687,7 @@ export default function RoomList() {
             </Card>
           ))}
         </div>
-      )}
+      
     </div>
   );
 }

@@ -1,82 +1,117 @@
-import { FlatCompat } from '@eslint/eslintrc'
-import eslint from '@eslint/js'
-import prettier from 'eslint-config-prettier'
-import importX from 'eslint-plugin-import-x'
-import n from 'eslint-plugin-n'
-import perfectionist from 'eslint-plugin-perfectionist'
-import unicorn from 'eslint-plugin-unicorn'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import tseslint, { configs } from 'typescript-eslint'
+import react from "@eslint-react/eslint-plugin";
+import { FlatCompat } from "@eslint/eslintrc";
+import eslint from "@eslint/js";
+import stylisticJsx from "@stylistic/eslint-plugin-jsx";
+import prettier from "eslint-config-prettier";
+import importX from "eslint-plugin-import-x";
+import n from "eslint-plugin-n";
+import perfectionist from "eslint-plugin-perfectionist";
+import * as regexpPlugin from "eslint-plugin-regexp";
+import unicorn from "eslint-plugin-unicorn";
+import globals from "globals";
+import tseslint, { configs } from "typescript-eslint";
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  resolvePluginsRelativeTo: __dirname,
-})
+  baseDirectory: import.meta.dirname,
+});
 
 /** @type {import("eslint").Linter.Config[]} */
 const config = [
-  ...compat.extends('next/core-web-vitals'),
   eslint.configs.recommended,
+  ...compat.extends("next/core-web-vitals"),
+  ...tseslint.config(
+    {
+      languageOptions: {
+        parserOptions: {
+          projectService: true,
+          tsconfigRootDir: import.meta.dirname,
+        },
+      },
+    },
+    {
+      extends: [...configs.strictTypeChecked, ...configs.stylisticTypeChecked],
+      files: ["**/*.{cts,mts,ts,tsx}"],
+      rules: {
+        "@typescript-eslint/no-empty-object-type": [
+          "error",
+          {
+            allowInterfaces: "with-single-extends",
+          },
+        ],
+        "@typescript-eslint/no-unused-vars": [
+          "error",
+          {
+            ignoreRestSiblings: true,
+          },
+        ],
+      },
+    },
+    {
+      files: ["**/*.{ts,tsx}"],
+      ...react.configs["recommended-type-checked"],
+    },
+    {
+      files: ["**/*.{ts,tsx}"],
+      plugins: {
+        jsx: stylisticJsx,
+      },
+      rules: {
+        "jsx/jsx-child-element-spacing": "error",
+        "jsx/jsx-curly-brace-presence": [
+          "error",
+          {
+            propElementValues: "always",
+          },
+        ],
+        "jsx/jsx-self-closing-comp": "error",
+      },
+    },
+  ),
+
+  prettier,
   //
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
   //
-  perfectionist.configs['recommended-natural'],
+  perfectionist.configs["recommended-natural"],
   //
   unicorn.configs.recommended,
   {
     rules: {
-      'unicorn/expiring-todo-comments': 'off',
-      'unicorn/filename-case': 'off',
-      'unicorn/no-null': 'off',
-      'unicorn/prevent-abbreviations': 'off',
-      'unicorn/text-encoding-identifier-case': 'off',
+      "unicorn/filename-case": "off",
+      "unicorn/no-array-reduce": "off",
+      "unicorn/no-nested-ternary": "off",
+      "unicorn/no-null": "off",
+      "unicorn/prefer-node-protocol": "off",
+      "unicorn/prevent-abbreviations": "off",
     },
   },
+  //
+  regexpPlugin.configs["flat/recommended"],
   //
   {
     languageOptions: {
-      parserOptions: {
-        projectService: true,
-        sourceType: 'module',
-        ecmaVersion: 2022,
-        tsconfigRootDir: import.meta.dirname,
+      globals: {
+        ...globals.node,
       },
     },
-  },
-  ...tseslint.config({
-    extends: [...configs.strictTypeChecked, ...configs.stylisticTypeChecked],
-    files: ['**/*.{ts,tsx}'],
+    plugins: {
+      n: n,
+    },
     rules: {
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          args: 'after-used',
-          argsIgnorePattern: '^_',
-          ignoreRestSiblings: true,
-          vars: 'all',
-          varsIgnorePattern: '^_',
-        },
+      ...n.configs["flat/recommended"].rules,
+    },
+  },
+  {
+    rules: {
+      "n/no-missing-import": "off",
+      "n/no-unsupported-features/es-syntax": ["error", { version: ">=22.0.0" }],
+      "n/no-unsupported-features/node-builtins": [
+        "error",
+        { ignores: ["crypto"], version: ">=22.0.0" },
       ],
     },
-  }),
-  {
-    files: ['**/*.{js,cjs,mjs}'],
-    ...tseslint.disableTypeChecked,
   },
-  prettier,
-  //
-  n.configs['flat/recommended-script'],
-  {
-    rules: {
-      'n/no-missing-import': 'off',
-      'n/no-unsupported-features/es-syntax': 'off',
-      'n/no-unsupported-features/node-builtins': 'off',
-    },
-  },
-]
+];
 
-export default config
+export default config;

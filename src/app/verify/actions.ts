@@ -1,8 +1,6 @@
 "use server"
 
-import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { revalidatePath } from "next/cache"
 
 export async function handleVerify(formData: FormData) {
   const email = formData.get("email") as string
@@ -15,7 +13,7 @@ export async function handleVerify(formData: FormData) {
     type: "email",
   });
 
-  if (error || !data?.session) {
+  if (error || !data.session) {
     console.error("OTP verification failed:", error?.message)
     return { error: true }
   }

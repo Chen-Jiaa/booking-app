@@ -1,7 +1,7 @@
 'use client'
 
 import { useSupabase } from "@/components/providers/supabase-providers"
-import { AlertDialog, AlertDialogFooter, AlertDialogHeader, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger, AlertDialogAction } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils"
@@ -10,20 +10,20 @@ import { format } from "date-fns"
 import { Circle, X } from "lucide-react"
 import { useEffect, useState } from "react"
 
-type Bookings = {
+interface Bookings {
+    created_at: string;
+    email: string;
+    end_time: string;
     id: string;
     name: string;
-    email: string;
     phone: string;
+    purpose: string;
     room_id: string;
     room_name: string;
     start_time: string;
-    end_time: string;
-    purpose: string;
     status: string;
     user_id: string;
-    created_at: string;
-  };
+  }
 
 export function BookingsList() {
     const [bookings, setBookings] = useState<Bookings[]>([])
@@ -44,8 +44,10 @@ export function BookingsList() {
                 setFetchError("Error loading bookings")
                 setBookings([]);
                 console.log(error);
-            } else if (data) {
-                const sortedBookings = [...data].sort(
+            } 
+            
+            if (data) {
+                const sortedBookings = [...data as Bookings[]].sort(
                     (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
                 )
                 setBookings(sortedBookings)
@@ -53,7 +55,7 @@ export function BookingsList() {
             }
         };
 
-        fetchBookings();
+        void fetchBookings();
 
     }, [user?.id]);
 
@@ -75,6 +77,9 @@ export function BookingsList() {
         <div className="mt-4 px-6 md:max-w-[720px] w-full flex-col justify-self-center">
             <h2 className="font-bold mt-2">My Bookings</h2>
             <div className="space-y-4 mt-4 w-full">
+            {fetchError && (
+                <p className="error">{fetchError}</p>
+            )}
                 
             {bookings.map((booking) => {
                 const start = formatBookingTime(booking.start_time)
@@ -106,7 +111,7 @@ export function BookingsList() {
                             
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="outline" className="text-red-700 gap-1 mt-2"><X />Cancel booking</Button>
+                                    <Button className="text-red-700 gap-1 mt-2" variant="outline"><X />Cancel booking</Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="w-[80%] rounded-md">
                                     <AlertDialogHeader>
@@ -118,7 +123,7 @@ export function BookingsList() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => cancelBooking(booking.id)} className="bg-red-600">Continue</AlertDialogAction>
+                                    <AlertDialogAction className="bg-red-600" onClick={() => void cancelBooking(booking.id)}>Continue</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>

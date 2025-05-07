@@ -8,8 +8,8 @@
 */
 }
 
-import AddRooms from "../components/admin-room-add-form";
 import AdminTable from "../components/admin-booking-table";
+import AddRooms from "../components/admin-room-add-form";
 
 export default function AdminDashboard() {
   return (

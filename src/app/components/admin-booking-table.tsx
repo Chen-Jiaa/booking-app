@@ -12,20 +12,6 @@
 */
 }
 
-import * as React from "react";
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -45,25 +31,37 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useEffect, useMemo, useState } from "react";
-
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
+  useReactTable,
+  VisibilityState,
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown } from "lucide-react";
+import * as React from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-type Bookings = {
+interface Bookings {
+  email: string;
+  end_time: string;
   id: string;
   name: string;
-  email: string;
   phone: string;
+  purpose: string;
   room_id: string;
   room_name: string;
   start_time: string;
-  end_time: string;
-  purpose: string;
   status: string;
   user_id: string;
-};
+}
 
 export default function AdminTable() {
   const [sorting, setSorting] = useState<SortingState>([])
@@ -81,8 +79,10 @@ export default function AdminTable() {
         setFetchError("Error loading bookings");
         setBookings([]);
         console.log(error);
-      } else if (data) {
-        const sortedBookings = [...data].sort(
+      }
+      
+      if (data) {
+        const sortedBookings = [...data as Bookings[]].sort(
           (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
         );
         setBookings(sortedBookings);
@@ -90,178 +90,168 @@ export default function AdminTable() {
       }
     };
 
-    fetchBookings();
+    void fetchBookings();
   }, []);
 
-  const handleStatusChange = async (id: string, newStatus: 'confirmed' | 'rejected') => {
+  const handleStatusChange = useCallback( async (id: string, newStatus: 'confirmed' | 'rejected') => {
     const {error} = await supabase
     .from("bookings")
     .update({status: newStatus})
     .eq("id", id)
 
-    if (!error) {
+    if (error) {
+      console.log("error changing booking status", error)
+    } else {
       setBookings((prev) =>
-        prev.map((booking) =>
-          booking.id === id ? { ...booking, status: newStatus } : booking
-        )
-      );
-    } else console.log("error changing booking status", error)
-  }
+      prev.map((booking) =>
+        booking.id === id ? { ...booking, status: newStatus } : booking
+      ))
+    }
+  }, [])
 
   const columns = useMemo<ColumnDef<Bookings>[]>(()=> [
     {
-      id: "select",
+      cell: ({ row }) => (
+        <Checkbox
+          aria-label="Select row"
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => { row.toggleSelected(!!value); }}
+        />
+      ),
+      enableHiding: false,
+      enableSorting: false,
       header: ({ table }) => (
         <Checkbox
+          aria-label="Select all"
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
+          onCheckedChange={(value) => { table.toggleAllPageRowsSelected(!!value); }}
         />
       ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
+      id: "select",
     },
     {
       accessorKey: "name",
+      cell: ({ row }) => <div className="ml-4">{row.getValue("name")}</div>,
       header: ({ column }) => {
         return (
           <Button
+            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Name
             <ArrowUpDown />
           </Button>
         );
       },
-      cell: ({ row }) => <div className="ml-4">{row.getValue("name")}</div>,
     },
     {
       accessorKey: "room_name",
+      cell: ({ row }) => <div className="ml-4">{row.getValue("room_name")}</div>,
       header: ({ column }) => {
         return (
           <Button
+            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Room
             <ArrowUpDown />
           </Button>
         );
       },
-      cell: ({ row }) => <div className="ml-4">{row.getValue("room_name")}</div>,
     },
     {
       accessorKey: "phone",
+      cell: ({ row }) => <div className="ml-4">0{row.getValue("phone")}</div>,
       header: ({ column }) => {
         return (
           <Button
+            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Phone Number
             <ArrowUpDown />
           </Button>
         );
       },
-      cell: ({ row }) => <div className="ml-4">0{row.getValue("phone")}</div>,
     },
     {
       accessorKey: "email",
+      cell: ({ row }) => (
+        <div className="lowercase ml-4">{row.getValue("email")}</div>
+      ),
       header: ({ column }) => {
         return (
           <Button
+            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Email
             <ArrowUpDown />
           </Button>
         );
       },
-      cell: ({ row }) => (
-        <div className="lowercase ml-4">{row.getValue("email")}</div>
-      ),
     },
     {
-      id: "date",
       accessorKey: "start_time",
+      cell: ({ row }) => (
+        <div className="ml-4">
+          {formatBookingDate(row.getValue("start_time"))}
+        </div>
+      ),
       header: ({ column }) => {
         return (
           <Button
+            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Booking Date
             <ArrowUpDown />
           </Button>
         );
       },
-      cell: ({ row }) => (
-        <div className="ml-4">
-          {formatBookingDate(row.getValue("start_time"))}
-        </div>
-      ),
+      id: "date",
     },
     {
       accessorKey: "start_time",
+      cell: ({ row }) => (
+        <div className="ml-4">
+          {formatBookingTime(row.getValue("start_time"))}
+        </div>
+      ),
       header: ({ column }) => {
         return (
           <Button
+            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Start Time
             <ArrowUpDown />
           </Button>
         );
       },
-      cell: ({ row }) => (
-        <div className="ml-4">
-          {formatBookingTime(row.getValue("start_time"))}
-        </div>
-      ),
     },
     {
       accessorKey: "end_time",
+      cell: ({ row }) => (
+        <div className="ml-4">{formatBookingTime(row.getValue("end_time"))}</div>
+      ),
       header: ({ column }) => {
         return (
           <Button
+            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             End Time
             <ArrowUpDown />
           </Button>
         );
       },
-      cell: ({ row }) => (
-        <div className="ml-4">{formatBookingTime(row.getValue("end_time"))}</div>
-      ),
     },
     {
       accessorKey: "status",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Status
-            <ArrowUpDown />
-          </Button>
-        );
-      },
       cell: ({ row }) => {
         const booking = row.original
 
@@ -277,39 +267,50 @@ export default function AdminTable() {
                   ${row.getValue("status") === "rejected" ? "text-red-700 bg-red-50" : ""}
                   `}
                 >
-                <Button variant="ghost" className="flex">
+                <Button className="flex" variant="ghost">
                   {booking.status} <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => {handleStatusChange(booking.id, 'confirmed')}}>Approve</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {handleStatusChange(booking.id, 'rejected')}} className="text-red-500">Reject</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {void handleStatusChange(booking.id, 'confirmed')}}>Approve</DropdownMenuItem>
+                <DropdownMenuItem className="text-red-500" onClick={() => {void handleStatusChange(booking.id, 'rejected')}}>Reject</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         )
       },
       enableSorting: true,
+      header: ({ column }) => {
+        return (
+          <Button
+            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
+            variant="ghost"
+          >
+            Status
+            <ArrowUpDown />
+          </Button>
+        );
+      },
     },
   ], [handleStatusChange])
 
   const table = useReactTable({
-    data: bookings,
     columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    data: bookings,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
+    onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
     state: {
-      sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      sorting,
     },
   });
 
@@ -319,16 +320,16 @@ export default function AdminTable() {
       <p>Kindly approve or reject bookings here</p>
       <div className="flex items-center py-4 overflow-x-scroll">
         <Input
-          placeholder="Filter emails..."
-          value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
+          className="max-w-sm"
           onChange={(event) =>
             table.getColumn("email")?.setFilterValue(event.target.value)
           }
-          className="max-w-sm"
+          placeholder="Filter emails..."
+          value={(table.getColumn("email")?.getFilterValue() as string) || ""}
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
+            <Button className="ml-auto" variant="outline">
               Columns <ChevronDown />
             </Button>
           </DropdownMenuTrigger>
@@ -339,11 +340,11 @@ export default function AdminTable() {
               .map((column) => {
                 return (
                   <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
                     checked={column.getIsVisible()}
+                    className="capitalize"
+                    key={column.id}
                     onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
+                      { column.toggleVisibility(!!value); }
                     }
                   >
                     {column.id}
@@ -374,11 +375,12 @@ export default function AdminTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {fetchError ? <p>{fetchError}</p> : ""}
+            {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
-                  key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  key={row.id}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -393,8 +395,8 @@ export default function AdminTable() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
                   className="h-24 text-center"
+                  colSpan={columns.length}
                 >
                   No results.
                 </TableCell>
@@ -410,18 +412,18 @@ export default function AdminTable() {
         </div>
         <div className="space-x-2">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            onClick={() => { table.previousPage(); }}
+            size="sm"
+            variant="outline"
           >
             Previous
           </Button>
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            onClick={() => { table.nextPage(); }}
+            size="sm"
+            variant="outline"
           >
             Next
           </Button>
