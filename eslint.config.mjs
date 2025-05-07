@@ -114,4 +114,9 @@ const config = [
   },
 ];
 
+/** Ignore ShadCN-generated UI components */
+config.unshift({
+  ignores: ["src/components/ui/**"],
+})
+
 export default config;
