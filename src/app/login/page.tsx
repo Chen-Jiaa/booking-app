@@ -51,7 +51,7 @@ export default function LoginPage() {
       
     } else if (result.error === "server_error") {
       setServerError("Something went wrong. Please try again later.")
-    }
+    } 
   };
 
   return (
@@ -59,7 +59,8 @@ export default function LoginPage() {
       <h1 className="text-2xl font-bold">Login</h1>
 
       <Form {...form}>
-        <form className="space-y-4" onSubmit={() => form.handleSubmit(onSubmit)}>
+        <form className="space-y-4" onSubmit={
+          form.handleSubmit(onSubmit) as unknown as () => void}>
           <FormField
             control={form.control}
             name="email"

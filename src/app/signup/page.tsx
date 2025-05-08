@@ -52,7 +52,7 @@ export default function SignupPage() {
       <h1 className="text-2xl font-bold">Sign Up</h1>
 
       <Form {...form}>
-        <form className="space-y-4" onSubmit={() => form.handleSubmit(onSubmit)}>
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit) as unknown as () => void}>
           <FormField
             control={form.control}
             name="email"

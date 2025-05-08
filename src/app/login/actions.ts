@@ -19,7 +19,7 @@ export async function sendOtp(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: "https://booking.collective.my/",
+      emailRedirectTo: "https://booking.collective.my",
       shouldCreateUser: false,
     },
   });
@@ -36,7 +36,6 @@ export async function sendOtp(formData: FormData) {
     console.error("OTP error:", error.message);
     return { error: "server_error" };
   }
-
-
+  
   redirect(`/verify?email=${encodeURIComponent(email)}`);
 }

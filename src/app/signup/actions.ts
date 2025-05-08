@@ -6,8 +6,8 @@ import { redirect } from "next/navigation";
 
 export async function signup(formData: FormData) {
   const email = formData.get("email") as string;
+  
   const supabase = await createClient();
-
   const { error: fetchError } = await supabase
     .from("auth_users")
     .select("id")
@@ -21,7 +21,7 @@ export async function signup(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: "https://booking.collective.my/",
+      emailRedirectTo: "https://booking.collective.my",
       shouldCreateUser: true,
     },
   });
