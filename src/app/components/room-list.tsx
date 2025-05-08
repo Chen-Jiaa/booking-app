@@ -313,6 +313,23 @@ export default function RoomList() {
     }
 
     if (data?.[0]?.id) {
+
+      await fetch("/api/insert-booking", {
+        body: JSON.stringify({
+          description: `Phone: ${phone}, Email: ${email}`,
+          end_time: fullEndTime,
+          id: data[0].id,
+          name,
+          room_name: selectedRoom.name,
+          start_time: fullStartTime,
+          status: "pending",
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+
       setName("");
       setEmail("");
       setPhone("");

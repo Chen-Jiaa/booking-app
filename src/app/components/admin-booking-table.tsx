@@ -50,17 +50,18 @@ import * as React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface Bookings {
-  email: string;
-  end_time: string;
-  id: string;
-  name: string;
-  phone: string;
-  purpose: string;
-  room_id: string;
-  room_name: string;
-  start_time: string;
-  status: string;
-  user_id: string;
+  email: string
+  end_time: string
+  event_id: string
+  id: string
+  name: string
+  phone: string
+  purpose: string
+  room_id: string
+  room_name: string
+  start_time: string
+  status: string
+  user_id: string
 }
 
 export default function AdminTable() {
@@ -107,7 +108,21 @@ export default function AdminTable() {
         booking.id === id ? { ...booking, status: newStatus } : booking
       ))
     }
-  }, [])
+
+    const updatedBooking = bookings.find((booking) => booking.id === id)
+  if (!updatedBooking) return
+
+  await fetch("/api/update-calendar-event", {
+    body: JSON.stringify({
+      eventId: updatedBooking.event_id,
+      name: updatedBooking.name,
+      newStatus,
+      room_name: updatedBooking.room_name,
+    }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  })
+  }, [bookings])
 
   const columns = useMemo<ColumnDef<Bookings>[]>(()=> [
     {

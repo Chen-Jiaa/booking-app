@@ -45,7 +45,10 @@ function VerifyForm() {
         return
       }
 
-      globalThis.location.href = "/"
+      if(result.success) {
+        globalThis.location.href = "/"
+      }
+
     })
   }
 

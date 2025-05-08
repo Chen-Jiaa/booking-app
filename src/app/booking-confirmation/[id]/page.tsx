@@ -76,7 +76,7 @@ export default function BookingConfirmation() {
               View My Bookings
             </Button>
             <Button onClick={() => {router.push("/")}} variant="outline">
-              Back to Home
+              Make another booking
             </Button>
           </div>
         </CardContent>
