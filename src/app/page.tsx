@@ -1,9 +1,14 @@
-import RoomList from "./components/room-list";
+import { fetchRooms } from "./actions/fetchRooms";
+import { RoomList } from "./components/RoomList";
 
-export default function Home() {
+export default async function Home() {
+  const rooms = await fetchRooms()
+  
+  if (!rooms) {
+      return <p className="text-center - mt-10">Failed to load rooms</p>
+  }
+  
   return (
-    <div>
-      <RoomList />
-    </div>
-  );
+      <RoomList rooms={rooms} />
+  )
 }

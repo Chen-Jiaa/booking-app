@@ -7,6 +7,7 @@ interface BookingPayload {
     end_time: string
     id: string,
     name: string
+    purpose: string
     room_name: string
     start_time: string
     status: string

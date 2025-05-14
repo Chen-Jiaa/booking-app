@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils";
 import { supabase } from "@/lib/supabase/client";
+import { Bookings } from "@/types/booking";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -48,21 +49,6 @@ import {
 import { ArrowUpDown, ChevronDown } from "lucide-react";
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-interface Bookings {
-  email: string
-  end_time: string
-  event_id: string
-  id: string
-  name: string
-  phone: string
-  purpose: string
-  room_id: string
-  room_name: string
-  start_time: string
-  status: string
-  user_id: string
-}
 
 export default function AdminTable() {
   const [sorting, setSorting] = useState<SortingState>([])

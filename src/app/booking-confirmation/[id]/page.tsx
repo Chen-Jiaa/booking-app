@@ -1,42 +1,40 @@
-"use client";
+export const dynamic = "force-dynamic"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils"
-import { supabase } from "@/lib/supabase/client"
-import { useParams, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import Link from "next/link";
 
-interface Booking {
-  end_time: string;
-  id: string;
-  room_name: string;
-  start_time: string;
-  status: string;
+import fetchBookings from "./actions"
+
+interface PageProps {
+  params: Promise<{id: string}>
 }
 
-export default function BookingConfirmation() {
-  const { id } = useParams();
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const router = useRouter();
+const purposeOptions = [
+  { label: "Connect Group", value: "connect_group" },
+  { label: "Combine Connect Group", value: "combine_connect_group" },
+  { label: "Bible Study", value: "bible_study" },
+  { label: "Prayer Meeting", value: "prayer_meeting" },
+  { label: "Zone Meeting", value: "zone_meeting" },
+  { label: "Practice (Email Admin for approval)", value: "practice" },
+  { label: "Event (Email Admin for approval)", value: "event" },
+  { label: "Others", value: "others" },
+]
 
-  useEffect(() => {
-    async function fetchBooking() {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("id", id)
-        .single<Booking>();
+export default async function BookingConfirmation({ params }: PageProps) {
+  
+  const { id } = await params
 
-        if (error) console.log(error)
+  if (!id) {
+    return <p className="text-center mt-10">No booking ID found.</p>
+  }
 
-      setBooking(data);
-    }
-
-    void fetchBooking();
-  }, [id]);
-
-  if (!booking) return <p>loading...</p>;
+  const booking = await fetchBookings(id)
+  
+  if (!booking) {
+    return <p className="text-center mt-10">Failed to load booking</p>
+  }
 
   return (
     <div className="flex mt-6 self-start px-4">
@@ -66,21 +64,32 @@ export default function BookingConfirmation() {
               </p>
             </div>
             <div>
+              <h3 className="font-bold">Purpose</h3>
+              <p>
+                {getPurposeLabel(booking.purpose)}
+              </p>
+            </div>
+            <div>
               <h3 className="font-bold">Status</h3>
               <p>{booking.status}</p>
             </div>
           </div>
 
           <div className="flex justify-center space-x-4">
-            <Button onClick={() => {router.push("/bookings")}}>
-              View My Bookings
+            <Button asChild>
+              <Link href="/bookings">View My Bookings</Link>
             </Button>
-            <Button onClick={() => {router.push("/")}} variant="outline">
-              Make another booking
+            <Button asChild variant="outline">
+              <Link href="/">Make another booking</Link>
             </Button>
           </div>
         </CardContent>
       </Card>
     </div>
   );
+}
+
+function getPurposeLabel (value: string) {
+  const option = purposeOptions.find((opt) => opt.value === value)
+  return option?.label ?? value
 }
