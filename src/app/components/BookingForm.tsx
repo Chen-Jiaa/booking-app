@@ -72,9 +72,8 @@ export default function BookingForm2({
                 userId: user?.id,
             })
 
-            form.reset()
-            
             router.push(`/booking-confirmation/${booking.id}`)
+            
         } catch (error) {
             console.error("Booking failed:", error)
         } finally {

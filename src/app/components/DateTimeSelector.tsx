@@ -102,57 +102,129 @@ export default function DateTimeSelector({date, endTime, goToStep2, rooms, selec
         } finally {
           setIsCheckingAvailability(false);
         }
-      };
+      }
+    
+    const getNextTimeSlot = (currentTime: string): null | string => {
+      const currentIndex = timeSlots.indexOf(currentTime)
+      if (currentIndex === -1 || currentIndex >= timeSlots.length - 1) return null
+      return timeSlots[currentIndex + 1]
+    }
 
+    const areAllSlotsAvailable = (start: string, end: string): boolean => {
+        if (!date || isCheckingAvailability) return false
+        
+        const startIndex = timeSlots.indexOf(start)
+        const endIndex = timeSlots.indexOf(end)
+        
+        if (startIndex === -1 || endIndex === -1) return false
+      
+        for (let i = startIndex; i < endIndex; i++) {
+          if (bookedSlots.has(timeSlots[i])) {
+            return false
+          }
+        }
+  
+          return true
+    }
 
     const handleDateSelect = (selectedDate: Date | undefined) => {
-        setDate(selectedDate)
-        setStartTime(undefined)
-        setEndTime(undefined)
-      };
-    
-      const handleTimeSelect = (time: string) => {
+      setDate(selectedDate)
+      setStartTime(undefined)
+      setEndTime(undefined)
+    }
+
+    const handleTimeSelect = (time: string) => {
+        // Case 1: No time selected yet - set as start time and auto-select 30-min end time
         if (!startTime) {
           setStartTime(time);
-        } else if (time === startTime) {
+          
+          // Automatically set end time to next 30-min slot
+          const nextSlot = getNextTimeSlot(time);
+          if (nextSlot && !bookedSlots.has(time)) {
+            setEndTime(nextSlot);
+          }
+        } 
+        // Case 2: Time selected and clicked on same start time - deselect all
+        else if (time === startTime) {
           setStartTime(undefined);
           setEndTime(undefined);
-        } else if (!endTime && time > startTime) {
-          setEndTime(time);
-        } else if (endTime && time === endTime) {
+        }
+        // Case 3: Time selected and clicked on current end time - deselect end time only
+        else if (endTime && time === endTime) {
           setEndTime(undefined);
-        } else if (
-          time < startTime ||
-          (endTime !== undefined && time !== endTime)
-        ) {
+        }
+        // Case 4: Time selected and clicked on earlier time - start new selection
+        else if (time < startTime) {
           setStartTime(time);
-          setEndTime(undefined);
+          
+          // Automatically set end time to next 30-min slot
+          const nextSlot = getNextTimeSlot(time);
+          if (nextSlot && !bookedSlots.has(time)) {
+            setEndTime(nextSlot);
+          } else {
+            setEndTime(undefined);
+          }
+        }
+        // Case 5: Time selected and clicked on later time - extend selection if available
+        else if (time > startTime) {
+          // Check if all slots between start and this time are available
+          if (areAllSlotsAvailable(startTime, time)) {
+            // Set the end time to the next slot after the selected time
+            const nextSlot = getNextTimeSlot(time);
+            setEndTime(nextSlot ?? time);
+          } else {
+            toast("Unavailable Time Range", {
+              description: "Your selected time range contains unavailable slots. Please select a fully available range.",
+            });
+          }
         }
       };
-    
-      const isTimeSlotAvailable = (timeSlots: string) => {
-        if (!date || isCheckingAvailability) return false;
-    
-        return !bookedSlots.has(timeSlots);
-      };
-    
-      const isTimeSlotSelected = (timeSlots: string) => {
-        if (!startTime) return false;
-    
-        if (!endTime) {
-          return timeSlots === startTime;
-        }
-    
-        return timeSlots >= startTime && timeSlots < endTime;
-      };
-    
-      if (loading) {
-        return (
-          <div className="flex justify-center items-center min-h-[200px]">
-            <Loader2 className="w-6 h-6 animate-spin" />
-          </div>
-        );
+    // const handleTimeSelect = (time: string) => {
+    //   if (!startTime) {
+    //     setStartTime(time)
+    //     const nextSlot = getNextTimeSlot(time)
+    //     if (nextSlot && !bookedSlots.has(time)) {
+    //       setEndTime(nextSlot);
+    //     }
+    //   } else if (time === startTime) {
+    //     setStartTime(undefined)
+    //     setEndTime(undefined)
+    //   } else if (!endTime && time > startTime && areAllSlotsAvailable(startTime, time)) {
+    //       setEndTime(time)
+    //   } else if (endTime && time === endTime) {
+    //     setEndTime(undefined)
+    //   } else if (
+    //     time < startTime ||
+    //     (endTime !== undefined && time !== endTime)
+    //   ) {
+    //     setStartTime(time)
+    //     setEndTime(undefined)
+    //   }
+    // }
+  
+    const isTimeSlotAvailable = (timeSlots: string) => {
+      if (!date || isCheckingAvailability) return false;
+  
+      return !bookedSlots.has(timeSlots);
+    };
+  
+    const isTimeSlotSelected = (timeSlots: string) => {
+      if (!startTime) return false;
+  
+      if (!endTime) {
+        return timeSlots === startTime;
       }
+  
+      return timeSlots >= startTime && timeSlots < endTime;
+    };
+  
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center min-h-[200px]">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </div>
+      );
+    }
 
     return (
         <Card>

@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils"
+import { getPurposeLabel } from "@/lib/getPurposeLabel";
+import { CircleCheckBig, Hourglass } from "lucide-react";
 import Link from "next/link";
 
 import fetchBookings from "./actions"
@@ -10,17 +12,6 @@ import fetchBookings from "./actions"
 interface PageProps {
   params: Promise<{id: string}>
 }
-
-const purposeOptions = [
-  { label: "Connect Group", value: "connect_group" },
-  { label: "Combine Connect Group", value: "combine_connect_group" },
-  { label: "Bible Study", value: "bible_study" },
-  { label: "Prayer Meeting", value: "prayer_meeting" },
-  { label: "Zone Meeting", value: "zone_meeting" },
-  { label: "Practice (Email Admin for approval)", value: "practice" },
-  { label: "Event (Email Admin for approval)", value: "event" },
-  { label: "Others", value: "others" },
-]
 
 export default async function BookingConfirmation({ params }: PageProps) {
   
@@ -41,9 +32,15 @@ export default async function BookingConfirmation({ params }: PageProps) {
       <Card className="m-auto">
         <CardContent className="md:m-6 justify-items-center">
           <div className="text-center my-6">
+            {booking.status === "pending" 
+              ? <Hourglass className="justify-self-center p-2 m-2" size={48}/> 
+              : <CircleCheckBig className="justify-self-center p-2 m-2 text-green-500" size={48}/>}
             <h2 className="text-2xl font-bold mb-2">Booking Submitted!</h2>
             <p className="text-muted-foreground">
-              Your booking request has been submitted and is pending approval.
+              {booking.status === "pending" 
+                ? "Your booking request is pending approval."
+                : "Your booking request is approved."
+              }
             </p>
           </div>
 
@@ -69,10 +66,6 @@ export default async function BookingConfirmation({ params }: PageProps) {
                 {getPurposeLabel(booking.purpose)}
               </p>
             </div>
-            <div>
-              <h3 className="font-bold">Status</h3>
-              <p>{booking.status}</p>
-            </div>
           </div>
 
           <div className="flex justify-center space-x-4">
@@ -89,7 +82,4 @@ export default async function BookingConfirmation({ params }: PageProps) {
   );
 }
 
-function getPurposeLabel (value: string) {
-  const option = purposeOptions.find((opt) => opt.value === value)
-  return option?.label ?? value
-}
+

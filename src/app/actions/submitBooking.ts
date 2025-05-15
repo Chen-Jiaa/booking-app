@@ -1,5 +1,6 @@
 "use server"
 
+import { sendBookingEmail } from "@/lib/sendBookingEmail";
 import { createClient } from "@/lib/supabase/server";
 import { Bookings } from "@/types/booking";
 import { z } from "zod";
@@ -77,6 +78,17 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
       selectedRoomName,
     })
     
+    await sendBookingEmail({
+      bookingId: booking.id,
+      email: values.email,
+      fullEndTime,
+      fullStartTime,
+      name,
+      phone: values.phone,
+      purpose,
+      selectedRoomName,
+      to: 'eongchenjia@gmail.com'
+    })
     return booking
     
 }

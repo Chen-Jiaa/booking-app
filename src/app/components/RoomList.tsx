@@ -17,11 +17,22 @@ import DateTimeSelector from "./DateTimeSelector";
 export function RoomList({rooms} : {rooms: Rooms[]}) {
   const { user } = useSupabase()
   const [selectedRoom, setSelectedRoom] = useState<null | Rooms>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [step, setStep] = useState("1")
   const [startTime, setStartTime] = useState<string | undefined>()
   const [endTime, setEndTime] = useState<string | undefined>()
   const router = useRouter()
   const [date, setDate] = useState<Date | undefined>(() => new Date())
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open)
+    if(!open) {
+      setStep("1")
+      setStartTime(undefined)
+      setEndTime(undefined)
+      setDate(new Date())
+    }
+  }
 
     return (
         <div className="container mt-2 mx-auto py-3 px-6">
@@ -46,10 +57,10 @@ export function RoomList({rooms} : {rooms: Rooms[]}) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Dialog>
+                  <Dialog onOpenChange={handleDialogOpenChange} open={isDialogOpen && selectedRoom?.id === room.id}>
                     {user ? (
                       <DialogTrigger asChild>
-                        <Button className="w-full text-black" onClick={() => { setSelectedRoom(room); }} variant="outline">
+                        <Button className="w-full text-black" onClick={() => { setSelectedRoom(room); setIsDialogOpen(true) }} variant="outline">
                           Book now
                         </Button>
                       </DialogTrigger>
