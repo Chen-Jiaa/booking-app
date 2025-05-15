@@ -1,5 +1,6 @@
-import { fetchRooms } from "./actions/fetchRooms";
+import { fetchRooms } from "./actions.ts/fetchRooms";
 import { RoomList } from "./components/RoomList";
+
 
 export default async function Home() {
   const rooms = await fetchRooms()

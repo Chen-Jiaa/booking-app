@@ -3,9 +3,9 @@ export const dynamic = "force-dynamic"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils"
-import { getPurposeLabel } from "@/lib/getPurposeLabel";
-import { CircleCheckBig, Hourglass } from "lucide-react";
-import Link from "next/link";
+import { getPurposeLabel } from "@/lib/getPurposeLabel"
+import { CircleCheckBig, Hourglass } from "lucide-react"
+import Link from "next/link"
 
 import fetchBookings from "./actions"
 

@@ -11,12 +11,11 @@ import { generateTimeSlots } from "@/lib/date-utils";
 import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Bookings } from "@/types/booking";
+import { Rooms } from "@/types/room";
 import { addMinutes, addMonths, format, isSameDay, startOfToday } from "date-fns";
 import { ChevronDown, Clock, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
-import { Rooms } from "../../types/room";
 
 interface Props {
     date: Date | undefined

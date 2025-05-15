@@ -2,10 +2,9 @@
 
 import { sendBookingEmail } from "@/lib/sendBookingEmail";
 import { createClient } from "@/lib/supabase/server";
+import { syncToCalendar } from "@/lib/sync-calendar";
 import { Bookings } from "@/types/booking";
 import { z } from "zod";
-
-import { syncToCalendar } from "../../lib/sync-calendar";
 
 const formSchema = z.object({
     email: z.string().email(),

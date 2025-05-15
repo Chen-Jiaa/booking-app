@@ -13,7 +13,9 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { submitBooking } from "../actions/submitBooking"
+import { submitBooking } from "../actions.ts/submitBooking"
+
+
 
 interface BookingFormProps {
     date: Date

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { Bookings } from "@/types/booking"
 
+
 export async function cancelUserBooking(id:string): Promise<void> {
     const supabase = await createClient()
     const {error} = await supabase

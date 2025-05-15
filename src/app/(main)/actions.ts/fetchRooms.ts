@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-import { Rooms } from "../../types/room";
+import { Rooms } from "../../../types/room";
 
 export async function fetchRooms(): Promise< Rooms[] | undefined > {
     const supabase = await createClient()

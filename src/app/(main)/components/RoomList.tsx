@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Rooms } from "@/types/room";
 import { Circle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Rooms } from "../../types/room";
 import BookingForm2 from "./BookingForm";
 import BookingSummary from "./BookingSummary";
 import DateTimeSelector from "./DateTimeSelector";
