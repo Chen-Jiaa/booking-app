@@ -1,4 +1,3 @@
-// lib/email.ts
 import { Resend } from 'resend'
 
 import { formatBookingTime } from './date-utils'
