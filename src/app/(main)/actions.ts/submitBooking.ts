@@ -1,6 +1,6 @@
 "use server"
 
-import { sendBookingEmail } from "@/lib/sendBookingEmail";
+import { sendBookingConfirmationEmail, sendBookingEmail } from "@/lib/sendBookingEmail";
 import { createClient } from "@/lib/supabase/server";
 import { syncToCalendar } from "@/lib/sync-calendar";
 import { Bookings } from "@/types/booking";
@@ -34,15 +34,27 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
         selectedRoomName,
         userId,
       } = values
-    
 
-    const {data, error} : {
-      data: Bookings | null,
-      error: Error | null
-    } = await supabase
-        .from("bookings")
-        .insert([
-            {
+      const { data: room, error: roomError } = await supabase
+        .from("rooms")
+        .select("approval_required, approvers")
+        .eq("id", selectedRoomId)
+        .single()
+
+      if (roomError) throw new Error("Failed to fetch room data: " + roomError.message)
+
+      const approvalRequired = room.approval_required === true
+      const approvers: string[] = room.approvers as string[]
+
+      const status = approvalRequired ? "pending" : "confirmed"
+    
+      const {data, error} : {
+        data: Bookings | null,
+        error: Error | null
+      } = await supabase
+          .from("bookings")
+          .insert([
+              {
                 email,
                 end_time: fullEndTime,
                 name,
@@ -51,43 +63,56 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
                 room_id: selectedRoomId,
                 room_name: selectedRoomName,
                 start_time: fullStartTime,
-                status: "pending",
+                status,
                 user_id: userId ?? null,
-            }
-        ])
-        .select()
-        .single()
+              }
+          ])
+          .select()
+          .single()
 
-    if (error) throw new Error(error.message)
+      if (error) throw new Error(error.message)
 
-    if (!data) {
-      throw new Error("Booking data is null after insert.");
-    }
+      if (!data) {
+        throw new Error("Booking data is null after insert.");
+      }
 
-    const booking = data
-    
-    await syncToCalendar({
-      bookingId: booking.id,
-      email: values.email,
-      fullEndTime,
-      fullStartTime,
-      name: values.name,
-      phone: values.phone,
-      purpose: values.purpose,
-      selectedRoomName,
-    })
-    
-    await sendBookingEmail({
-      bookingId: booking.id,
-      email: values.email,
-      fullEndTime,
-      fullStartTime,
-      name,
-      phone: values.phone,
-      purpose,
-      selectedRoomName,
-      to: 'eongchenjia@gmail.com'
-    })
-    return booking
+      const booking = data
+      
+      await syncToCalendar({
+        bookingId: booking.id,
+        email: values.email,
+        fullEndTime,
+        fullStartTime,
+        name: values.name,
+        phone: values.phone,
+        purpose: values.purpose,
+        selectedRoomName,
+      })
+      
+      await (approvalRequired && approvers.length > 0 ? Promise.all(approvers.map((approverEmail) =>
+          sendBookingEmail({
+            bookingId: booking.id,
+            email: values.email,
+            fullEndTime,
+            fullStartTime,
+            name,
+            phone: values.phone,
+            purpose,
+            selectedRoomName,
+            to: approverEmail,
+          })
+        )) : sendBookingConfirmationEmail({
+          bookingId: booking.id,
+          email,
+          fullEndTime,
+          fullStartTime,
+          name,
+          phone,
+          purpose,
+          selectedRoomName,
+          to: email,
+        }));
+        
+      return booking
     
 }

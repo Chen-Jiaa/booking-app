@@ -1,11 +1,9 @@
-import AdminTable from "./components/admin-booking-table";
-import AddRooms from "./components/admin-room-add-form";
+import AdminTable from "./components/admin-booking-table"
 
-export default function AdminDashboard() {
+export default function page() {
   return (
-      <div className="container items-center mx-auto mt-5 grid gap-5">
+      <div className="container items-center mx-auto grid gap-5 max-w-full">
         <AdminTable />
-        <AddRooms />
       </div>
   );
 }

@@ -26,11 +26,15 @@ export default function RootLayout({
     <html lang="en">
       <body className="grid grid-rows-[auto_1fr_auto] min-h-dvh">
         <SupabaseProvider>
-          <NavBar />
+          <nav>
+            <NavBar />
+          </nav>
           {children}
           <SpeedInsights />
           <Analytics />
-          <Footer />          
+          <footer>
+            <Footer />          
+          </footer>
         </SupabaseProvider>
       </body>
     </html>

@@ -6,6 +6,46 @@ import { getPurposeLabel } from './getPurposeLabel'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+export async function sendBookingConfirmationEmail({
+  email,
+  fullEndTime,
+  fullStartTime,
+  name,
+  phone,
+  purpose,
+  selectedRoomName,
+  to
+}: {
+  bookingId: string
+  email: string
+  fullEndTime: string
+  fullStartTime: string
+  name: string
+  phone: string
+  purpose: string
+  selectedRoomName: string
+  to: string
+}) {
+  const { error } = await resend.emails.send({
+    from: 'Collective Booking <system@booking.collective.my>', // same sender used in Supabase
+    html: `
+      <p>Your booking has been approved.</p>
+      <p><strong>Room:</strong> ${selectedRoomName}</p>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Phone:</strong> +6${phone}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Time:</strong> ${formatBookingTime(fullStartTime)} - ${formatBookingTime(fullEndTime)}</p>
+      <p><strong>Purpose:</strong> ${getPurposeLabel(purpose)}</p>
+    `,
+    subject: `Your Booking has Been Approved - ${selectedRoomName}`,
+    to,
+  })
+
+  if (error) {
+    console.error('Failed to send email:', error)
+  }
+}
+
 export async function sendBookingEmail({
   bookingId,
   email,
@@ -28,7 +68,7 @@ export async function sendBookingEmail({
   to: string
 }) {
   const { error } = await resend.emails.send({
-    from: 'system@booking.collective.my', // same sender used in Supabase
+    from: 'Collective Booking <system@booking.collective.my>', // same sender used in Supabase
     html: `
       <p>You have a new booking request for:</p>
       <p><strong>Room:</strong> ${selectedRoomName}</p>
@@ -47,7 +87,47 @@ export async function sendBookingEmail({
         ❌ Reject
       </a>
     `,
-    subject: `New Booking Request – ${selectedRoomName}`,
+    subject: `New Booking Request - ${selectedRoomName}`,
+    to,
+  })
+
+  if (error) {
+    console.error('Failed to send email:', error)
+  }
+}
+
+export async function sendBookingRejectionEmail({
+  email,
+  fullEndTime,
+  fullStartTime,
+  name,
+  phone,
+  purpose,
+  selectedRoomName,
+  to
+}: {
+  bookingId: string
+  email: string
+  fullEndTime: string
+  fullStartTime: string
+  name: string
+  phone: string
+  purpose: string
+  selectedRoomName: string
+  to: string
+}) {
+  const { error } = await resend.emails.send({
+    from: 'Collective Booking <system@booking.collective.my>', // same sender used in Supabase
+    html: `
+      <p>Your booking has been rejected. Kindly make another booking.</p>
+      <p><strong>Room:</strong> ${selectedRoomName}</p>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Phone:</strong> +6${phone}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Time:</strong> ${formatBookingTime(fullStartTime)} - ${formatBookingTime(fullEndTime)}</p>
+      <p><strong>Purpose:</strong> ${getPurposeLabel(purpose)}</p>
+    `,
+    subject: `Your Booking has Been Rejected - ${selectedRoomName}`,
     to,
   })
 

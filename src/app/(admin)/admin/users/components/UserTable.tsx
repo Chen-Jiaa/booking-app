@@ -1,10 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -19,9 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatBookingDate, formatBookingTime } from "@/lib/date-utils";
 import { supabase } from "@/lib/supabase/client";
-import { Bookings } from "@/types/booking";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -38,119 +34,110 @@ import { ArrowUpDown, ChevronDown } from "lucide-react";
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export default function AdminTable() {
+interface User {
+    id: string,
+    role: 'admin' | 'user'
+}
+
+export default function UserTable() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({email:false})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
-  const [bookings, setBookings] = useState<Bookings[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [fetchError, setFetchError] = useState<null | string>(null)
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      const { data, error } = await supabase.from("bookings").select();
+    const fetchUser = async () => {
+      const { data, error } = await supabase.from("profiles").select();
 
       if (error) {
-        setFetchError("Error loading bookings");
-        setBookings([]);
+        setFetchError("Error loading users");
+        setUsers([]);
         console.log(error);
       }
       
       if (data) {
-        const sortedBookings = [...data as Bookings[]].sort(
-          (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
-        );
-        setBookings(sortedBookings);
+        setUsers(data);
         setFetchError(null);
       }
     };
 
-    void fetchBookings();
+    void fetchUser();
   }, []);
 
-  const handleStatusChange = useCallback( async (id: string, newStatus: 'confirmed' | 'rejected') => {
+  const handleRoleChange = useCallback( async (id: string, newRole: User['role']) => {
     const {error} = await supabase
-    .from("bookings")
-    .update({status: newStatus})
+    .from("profiles")
+    .update({role: newRole})
     .eq("id", id)
+    .select()
 
     if (error) {
-      console.log("error changing booking status", error)
-    } else {
-      setBookings((prev) =>
-      prev.map((booking) =>
-        booking.id === id ? { ...booking, status: newStatus } : booking
+      console.log("error changing user status", error)
+      return
+    }  
+      
+    setUsers((prev) =>
+      prev.map((user) =>
+        user.id === id ? { ...user, role: newRole } : user
       ))
-    }
 
-    const updatedBooking = bookings.find((booking) => booking.id === id)
-  if (!updatedBooking) return
+  }, [])
 
-  await fetch("/api/update-calendar-event", {
-    body: JSON.stringify({
-      eventId: updatedBooking.event_id,
-      name: updatedBooking.name,
-      newStatus,
-      room_name: updatedBooking.room_name,
-    }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  })
-  }, [bookings])
-
-  const columns = useMemo<ColumnDef<Bookings>[]>(()=> [
-    {
-      cell: ({ row }) => (
-        <Checkbox
-          aria-label="Select row"
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => { row.toggleSelected(!!value); }}
-        />
-      ),
-      enableHiding: false,
-      enableSorting: false,
-      header: ({ table }) => (
-        <Checkbox
-          aria-label="Select all"
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => { table.toggleAllPageRowsSelected(!!value); }}
-        />
-      ),
-      id: "select",
-    },
-    {
-      accessorKey: "name",
-      cell: ({ row }) => <div className="ml-4">{row.getValue("name")}</div>,
-      header: ({ column }) => {
-        return (
-          <Button
-            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-            variant="ghost"
-          >
-            Name
-            <ArrowUpDown />
-          </Button>
-        );
-      },
-    },
-    {
-      accessorKey: "phone",
-      cell: ({ row }) => <div className="ml-4">0{row.getValue("phone")}</div>,
-      header: ({ column }) => {
-        return (
-          <Button
-            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-            variant="ghost"
-          >
-            Phone Number
-            <ArrowUpDown />
-          </Button>
-        );
-      },
-    },
+  const columns = useMemo<ColumnDef<User>[]>(()=> [
+    // {
+    //   cell: ({ row }) => (
+    //     <Checkbox
+    //       aria-label="Select row"
+    //       checked={row.getIsSelected()}
+    //       onCheckedChange={(value) => { row.toggleSelected(!!value); }}
+    //     />
+    //   ),
+    //   enableHiding: false,
+    //   enableSorting: false,
+    //   header: ({ table }) => (
+    //     <Checkbox
+    //       aria-label="Select all"
+    //       checked={
+    //         table.getIsAllPageRowsSelected() ||
+    //         (table.getIsSomePageRowsSelected() && "indeterminate")
+    //       }
+    //       onCheckedChange={(value) => { table.toggleAllPageRowsSelected(!!value); }}
+    //     />
+    //   ),
+    //   id: "select",
+    // },
+    // {
+    //   accessorKey: "name",
+    //   cell: ({ row }) => <div className="ml-4">{row.getValue("name")}</div>,
+    //   header: ({ column }) => {
+    //     return (
+    //       <Button
+    //         onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
+    //         variant="ghost"
+    //       >
+    //         Name
+    //         <ArrowUpDown />
+    //       </Button>
+    //     );
+    //   },
+    // },
+    // {
+    //   accessorKey: "phone",
+    //   cell: ({ row }) => <div className="ml-4">0{row.getValue("phone")}</div>,
+    //   header: ({ column }) => {
+    //     return (
+    //       <Button
+    //         onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
+    //         variant="ghost"
+    //       >
+    //         Phone Number
+    //         <ArrowUpDown />
+    //       </Button>
+    //     );
+    //   },
+    // },
     {
       accessorKey: "email",
       cell: ({ row }) => (
@@ -167,103 +154,27 @@ export default function AdminTable() {
           </Button>
         );
       },
-    },
+    },    
     {
-      accessorKey: "room_name",
-      cell: ({ row }) => <div className="ml-4">{row.getValue("room_name")}</div>,
-      header: ({ column }) => {
-        return (
-          <Button
-            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-            variant="ghost"
-          >
-            Room
-            <ArrowUpDown />
-          </Button>
-        );
-      },
-    },
-    {
-      accessorKey: "start_time",
-      cell: ({ row }) => (
-        <div className="ml-4">
-          {formatBookingDate(row.getValue("start_time"))}
-        </div>
-      ),
-      header: ({ column }) => {
-        return (
-          <Button
-            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-            variant="ghost"
-          >
-            Booking Date
-            <ArrowUpDown />
-          </Button>
-        );
-      },
-      id: "date",
-    },
-    {
-      accessorKey: "start_time",
-      cell: ({ row }) => (
-        <div className="ml-4">
-          {formatBookingTime(row.getValue("start_time"))}
-        </div>
-      ),
-      header: ({ column }) => {
-        return (
-          <Button
-            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-            variant="ghost"
-          >
-            Start Time
-            <ArrowUpDown />
-          </Button>
-        );
-      },
-    },
-    {
-      accessorKey: "end_time",
-      cell: ({ row }) => (
-        <div className="ml-4">{formatBookingTime(row.getValue("end_time"))}</div>
-      ),
-      header: ({ column }) => {
-        return (
-          <Button
-            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-            variant="ghost"
-          >
-            End Time
-            <ArrowUpDown />
-          </Button>
-        );
-      },
-    },
-    {
-      accessorKey: "status",
+      accessorKey: "role",
       cell: ({ row }) => {
-        const booking = row.original
+        const user = row.original
 
         return (
           <div className="capitalize">
             <DropdownMenu>
               <DropdownMenuTrigger 
                 asChild
-                className={`
-                  "px-1 py-1 rounded text-sm",
-                  ${row.getValue("status") === "pending" ? "bg-[#f9ddc7] rounded-sm p-1 text-center" : ""}
-                  ${row.getValue("status") === "confirmed" ? "text-green-700 bg-green-50" : ""}
-                  ${row.getValue("status") === "rejected" ? "text-red-700 bg-red-50" : ""}
-                  `}
+                className="px-1 py-1 rounded text-sm"
                 >
-                <Button className="flex" variant="ghost">
-                  {booking.status} <ChevronDown />
+                <Button className="flex capitalize" variant="ghost">
+                  {user.role} <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => {void handleStatusChange(booking.id, 'confirmed')}}>Approve</DropdownMenuItem>
-                <DropdownMenuItem className="text-red-500" onClick={() => {void handleStatusChange(booking.id, 'rejected')}}>Reject</DropdownMenuItem>
+                <DropdownMenuLabel>Make User</DropdownMenuLabel>
+                <DropdownMenuItem disabled={user.role === 'admin'} onClick={() => {void handleRoleChange(user.id, 'admin')}}>Admin</DropdownMenuItem>
+                <DropdownMenuItem disabled={user.role === 'user'} onClick={() => {void handleRoleChange(user.id, 'user')}}>User</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -282,11 +193,11 @@ export default function AdminTable() {
         );
       },
     },
-  ], [handleStatusChange])
+  ], [handleRoleChange])
 
   const table = useReactTable({
     columns,
-    data: bookings,
+    data: users,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -304,9 +215,9 @@ export default function AdminTable() {
   })
 
   return (
-    <div className="px-6">
-      <h2 className="font-bold">Recent Bookings</h2>
-      <p>Kindly approve or reject bookings here</p>
+    <div className="px-6 w-full">
+      <h2 className="font-bold">Users Table</h2>
+      <p>Change user role here</p>
       <div className="flex items-center py-4 overflow-x-scroll">
         <Input
           className="max-w-sm"
@@ -316,7 +227,7 @@ export default function AdminTable() {
           placeholder="Filter emails..."
           value={(table.getColumn("email")?.getFilterValue() as string) || ""}
         />
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="ml-auto" variant="outline">
               Columns <ChevronDown />
@@ -341,7 +252,7 @@ export default function AdminTable() {
                 );
               })}
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
       </div>
       <div className="rounded-md border overflow-auto">
         <Table>

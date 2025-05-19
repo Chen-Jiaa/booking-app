@@ -1,5 +1,6 @@
 'use client'
 
+import { useSupabase } from "@/components/providers/supabase-providers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -12,7 +13,7 @@ import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Bookings } from "@/types/booking";
 import { Rooms } from "@/types/room";
-import { addMinutes, addMonths, format, isSameDay, startOfToday } from "date-fns";
+import { addMinutes, addWeeks, format, isSameDay, startOfToday } from "date-fns";
 import { ChevronDown, Clock, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -35,6 +36,8 @@ export default function DateTimeSelector({date, endTime, goToStep2, rooms, selec
     const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
     const [bookedSlots, setBookedSlots] = useState<Set<string>>(() => new Set())
     const [open, setOpen] = useState(false)
+    const {role} = useSupabase()
+    const isAdmin = role === "admin"
 
     const timeSlots = generateTimeSlots();
 
@@ -178,28 +181,6 @@ export default function DateTimeSelector({date, endTime, goToStep2, rooms, selec
           }
         }
       };
-    // const handleTimeSelect = (time: string) => {
-    //   if (!startTime) {
-    //     setStartTime(time)
-    //     const nextSlot = getNextTimeSlot(time)
-    //     if (nextSlot && !bookedSlots.has(time)) {
-    //       setEndTime(nextSlot);
-    //     }
-    //   } else if (time === startTime) {
-    //     setStartTime(undefined)
-    //     setEndTime(undefined)
-    //   } else if (!endTime && time > startTime && areAllSlotsAvailable(startTime, time)) {
-    //       setEndTime(time)
-    //   } else if (endTime && time === endTime) {
-    //     setEndTime(undefined)
-    //   } else if (
-    //     time < startTime ||
-    //     (endTime !== undefined && time !== endTime)
-    //   ) {
-    //     setStartTime(time)
-    //     setEndTime(undefined)
-    //   }
-    // }
   
     const isTimeSlotAvailable = (timeSlots: string) => {
       if (!date || isCheckingAvailability) return false;
@@ -266,9 +247,9 @@ export default function DateTimeSelector({date, endTime, goToStep2, rooms, selec
                 <Label className="mt-6">Select Date</Label>
                 <Calendar
                     className=""
-                    disabled={(date) =>
-                    date < startOfToday() ||
-                    date > addMonths(new Date(), 1)
+                    disabled={
+                      isAdmin ? (date) => date < startOfToday()
+                      : (date) => date < startOfToday() || date > addWeeks(new Date(), 1)
                     }
                     mode="single"
                     onSelect={handleDateSelect}
