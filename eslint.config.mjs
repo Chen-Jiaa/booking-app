@@ -116,7 +116,7 @@ const config = [
 
 /** Ignore ShadCN-generated UI components */
 config.unshift({
-  ignores: ["src/components/ui/**", "src/hooks/**"],
+  ignores: ["src/components/ui/**", "src/hooks/**", "supabase"],
 })
 
 export default config;
