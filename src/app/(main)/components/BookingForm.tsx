@@ -31,11 +31,11 @@ const formSchema = z.object({
 })
 
 const purposeOptions = [
-    { label: "Connect Group", value: "connect_group" },
-    { label: "Combine Connect Group", value: "combine_connect_group" },
-    { label: "Bible Study", value: "bible_study" },
-    { label: "Prayer Meeting", value: "prayer_meeting" },
-    { label: "Zone Meeting", value: "zone_meeting" },
+    { label: "Connect Group", value: "Connect Group" },
+    { label: "Combine Connect Group", value: "Combine Connect Group" },
+    { label: "Bible Study", value: "Bible Study" },
+    { label: "Prayer Meeting", value: "Prayer Meeting" },
+    { label: "Zone Meeting", value: "Zone Meeting" },
     // { label: "Others", value: "others" },
 ]
     
@@ -80,9 +80,7 @@ export default function BookingForm2({
             
         } catch (error) {
             console.error("Booking failed:", error)
-        } finally {
-            setIsLoading(false)
-        }
+        } 
     }
 
     return (

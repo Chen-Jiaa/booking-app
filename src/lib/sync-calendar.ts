@@ -7,6 +7,7 @@ interface SyncData {
     phone: string
     purpose: string
     selectedRoomName: string
+    status: string
   }
   
 
@@ -19,6 +20,7 @@ export async function syncToCalendar({
     phone,
     purpose,
     selectedRoomName,
+    status
 }: SyncData) {
     try {
         if (!process.env.NEXT_PUBLIC_SITE_URL) {
@@ -32,9 +34,10 @@ export async function syncToCalendar({
                 end_time: fullEndTime,
                 id: bookingId,
                 name: name,
+                purpose,
                 room_name: selectedRoomName,
                 start_time: fullStartTime,
-                status: "pending",
+                status
             }),
             headers: {
                 "Content-Type": "application/json",

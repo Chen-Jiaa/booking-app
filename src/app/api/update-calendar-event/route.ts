@@ -34,7 +34,16 @@ export async function POST(req: NextRequest) {
 
     const calendar = google.calendar({ auth, version: 'v3' });
 
-    if (newStatus === 'confirmed') {
+    switch (newStatus) {
+    case 'cancelled': {
+      await calendar.events.delete({
+        calendarId,
+        eventId,
+      });
+    
+    break;
+    }
+    case 'confirmed': {
       await calendar.events.patch({
         calendarId,
         eventId,
@@ -42,11 +51,18 @@ export async function POST(req: NextRequest) {
           summary: `[CONFIRMED] ${room_name} booked by ${name} for ${purpose}`,
         },
       });
-    } else if (newStatus === 'rejected') {
+    
+    break;
+    }
+    case 'rejected': {
       await calendar.events.delete({
         calendarId,
         eventId,
       });
+    
+    break;
+    }
+    // No default
     }
 
     return NextResponse.json({ message: 'Google Calendar event updated.' });

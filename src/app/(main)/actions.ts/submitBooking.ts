@@ -87,6 +87,7 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
         phone: values.phone,
         purpose: values.purpose,
         selectedRoomName,
+        status
       })
       
       await (approvalRequired && approvers.length > 0 ? Promise.all(approvers.map((approverEmail) =>

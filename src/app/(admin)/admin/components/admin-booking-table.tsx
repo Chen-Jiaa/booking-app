@@ -84,18 +84,18 @@ export default function AdminTable() {
     }
 
     const updatedBooking = bookings.find((booking) => booking.id === id)
-  if (!updatedBooking) return
+    if (!updatedBooking) return
 
-  await fetch("/api/update-calendar-event", {
-    body: JSON.stringify({
-      eventId: updatedBooking.event_id,
-      name: updatedBooking.name,
-      newStatus,
-      room_name: updatedBooking.room_name,
-    }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  })
+    await fetch("/api/update-calendar-event", {
+      body: JSON.stringify({
+        eventId: updatedBooking.event_id,
+        name: updatedBooking.name,
+        newStatus,
+        room_name: updatedBooking.room_name,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    })
   }, [bookings])
 
   const columns = useMemo<ColumnDef<Bookings>[]>(()=> [
