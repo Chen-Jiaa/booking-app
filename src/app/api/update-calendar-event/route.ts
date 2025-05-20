@@ -5,6 +5,7 @@ interface UpdatePayload {
     eventId: string
     name: string
     newStatus: string
+    purpose: string
     room_name: string
   }
 
@@ -21,7 +22,7 @@ const calendarId = requireEnv("GOOGLE_CALENDAR_ID")
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as UpdatePayload
-    const { eventId, name, newStatus, room_name } = body
+    const { eventId, name, newStatus, purpose, room_name } = body
 
 
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
         calendarId,
         eventId,
         requestBody: {
-          summary: `[CONFIRMED] ${room_name} booked by ${name}`,
+          summary: `[CONFIRMED] ${room_name} booked by ${name} for ${purpose}`,
         },
       });
     } else if (newStatus === 'rejected') {

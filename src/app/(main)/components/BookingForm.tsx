@@ -23,6 +23,7 @@ interface BookingFormProps {
 }
 
 const formSchema = z.object({
+    customPurpose: z.string().optional(),
     email: z.string().email("Enter a valid email"),
     name: z.string().min(2, "Name is required"),
     phone: z.string().min(7, "Enter a valid phone number"),
@@ -35,14 +36,13 @@ const purposeOptions = [
     { label: "Bible Study", value: "bible_study" },
     { label: "Prayer Meeting", value: "prayer_meeting" },
     { label: "Zone Meeting", value: "zone_meeting" },
-    { label: "Practice (Email Admin for approval)", value: "practice" },
-    { label: "Event (Email Admin for approval)", value: "event" },
-    { label: "Others", value: "others" },
+    // { label: "Others", value: "others" },
 ]
     
 export default function BookingForm2({
     date, endTime, selectedRoom, startTime
 }: BookingFormProps) {
+    const [selectedPurpose, setSelectedPurpose] = useState("")
     
     const form = useForm<z.infer<typeof formSchema>>({
         defaultValues: {
@@ -61,12 +61,16 @@ export default function BookingForm2({
         setIsLoading(true)
         const fullStartTime = combineDateAndTime(date, startTime).toISOString()
         const fullEndTime = combineDateAndTime(date, endTime).toISOString()
+        const finalPurpose = values.purpose === "others" && values.customPurpose
+            ? values.customPurpose
+            : values.purpose
             
         try {
             const booking = await submitBooking({
                 ...values,
                 fullEndTime,
                 fullStartTime,
+                purpose: finalPurpose,
                 selectedRoomId: selectedRoom.id,
                 selectedRoomName: selectedRoom.name,
                 userId: user?.id,
@@ -135,7 +139,14 @@ export default function BookingForm2({
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Purpose of Booking:</FormLabel>
-                            <Select defaultValue={field.value} onValueChange={field.onChange}>
+                            <Select 
+                                defaultValue={field.value} 
+                                onValueChange={(value) => {
+                                    field.onChange(value)
+                                    setSelectedPurpose(value)
+                                }} 
+                                value={selectedPurpose}
+                            >
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a purpose for booking" />
@@ -153,6 +164,23 @@ export default function BookingForm2({
                         </FormItem>
                     )}
                 />
+
+                {/* {selectedPurpose === "others" && (
+                    <FormField
+                        control={form.control}
+                        name="customPurpose"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Please specify your purpose:</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Enter your purpose" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                )} */}
+                
 
                 <Button disabled={isLoading} type="submit">
                     {isLoading ? (

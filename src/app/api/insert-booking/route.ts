@@ -26,7 +26,7 @@ const calendarId = requireEnv("GOOGLE_CALENDAR_ID")
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as BookingPayload
-    const { description, end_time, name, room_name, start_time, status } = body
+    const { description, end_time, name, purpose, room_name, start_time, status } = body
 
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
 
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         dateTime: new Date(start_time).toISOString(),
         timeZone: 'Asia/Kuala_Lumpur',
       },
-      summary: `[${status}] ${room_name} booked by ${name}`,
+      summary: `[${status}] ${room_name} booked by ${name} for ${purpose}`,
     }
 
     const response = await calendar.events.insert({
