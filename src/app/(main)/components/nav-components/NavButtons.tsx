@@ -20,12 +20,12 @@ export function AuthButton() {
     )
 }
 
-export function SignOutButton() {
-
-  async function handleSignOut() {
+export async function handleSignOut() {
     await supabase.auth.signOut()
     globalThis.location.href = "/"
   }
+
+export function SignOutButton() {
 
   return (
     <Button onClick={()=> void handleSignOut()} variant="outline">
