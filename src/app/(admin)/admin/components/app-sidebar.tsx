@@ -9,9 +9,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { ListChecks, Settings, Undo2, Users } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 
 import { NavUser } from "./nav-user"
 
@@ -32,11 +34,7 @@ const data = {
     title: "User List",
     url: "/admin/users",
   },
-  {
-    icon: Undo2,
-    title: "Back to Home Page",
-    url: "/",
-  },]
+  ]
 }
 
 export function AppSidebar() {
@@ -54,7 +52,7 @@ export function AppSidebar() {
           />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsed=true]/sidebar:hidden">
-            <span className="truncate font-semibold">Collective Booking</span>
+            <span className="truncate font-semibold"><Link href="/">Collective Booking</Link></span>
           </div>
         </div>
       </SidebarHeader>
@@ -73,6 +71,19 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+          <SidebarSeparator/>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/">
+                    <Undo2/>
+                    <span>Back to Home Page</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
