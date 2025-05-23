@@ -2,7 +2,7 @@
 
 import { sendBookingConfirmationEmail, sendBookingEmail } from "@/lib/sendBookingEmail";
 import { createClient } from "@/lib/supabase/server";
-import { syncToCalendar } from "@/lib/sync-calendar";
+// import { syncToCalendar } from "@/lib/sync-calendar";
 import { Bookings } from "@/types/booking";
 import { z } from "zod";
 
@@ -78,17 +78,17 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
 
       const booking = data
       
-      await syncToCalendar({
-        bookingId: booking.id,
-        email: values.email,
-        fullEndTime,
-        fullStartTime,
-        name: values.name,
-        phone: values.phone,
-        purpose: values.purpose,
-        selectedRoomName,
-        status
-      })
+      // await syncToCalendar({
+      //   bookingId: booking.id,
+      //   email: values.email,
+      //   fullEndTime,
+      //   fullStartTime,
+      //   name: values.name,
+      //   phone: values.phone,
+      //   purpose: values.purpose,
+      //   selectedRoomName,
+      //   status
+      // })
       
       await (approvalRequired && approvers.length > 0 ? Promise.all(approvers.map((approverEmail) =>
           sendBookingEmail({

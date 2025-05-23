@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 interface BookingPayload {
     description: string
     end_time: string
-    id: string,
+    id: string
     name: string
     purpose: string
     room_name: string

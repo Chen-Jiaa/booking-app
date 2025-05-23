@@ -89,17 +89,18 @@ export default function RoomTable({adminEmails} : {adminEmails: string[]}) {
 
     if (error) {
       console.log("Error updating availability", error)
-    } else {
+      return
+    } 
       setRooms((prev) =>
         prev.map((room) =>
           room.id === id ? { ...room, availability: newAvailability } : room
         ))
-    }
+    
 
-    const updatedBooking = rooms.find((booking) => booking.id === id)
-  if (!updatedBooking) return
+  //   const updatedBooking = rooms.find((booking) => booking.id === id)
+  // if (!updatedBooking) return
 
-  }, [rooms])
+  }, [])
 
   const handleAvailabilityTo = useCallback(async (id: string, newAvailabilityTo: string) => {
     const {error} = await supabase

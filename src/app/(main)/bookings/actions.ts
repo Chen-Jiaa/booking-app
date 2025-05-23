@@ -51,15 +51,12 @@ export async function fetchUserBookings(userId: string): Promise<Bookings[]> {
     .select("*")
     .eq("user_id", userId)
     .neq("status", "cancelled")
+    .order("start_time", {ascending: false})
 
   if (error) {
     console.error("Error loading bookings", error)
     return []
   }
-  
-  const sortedBookings = [...data as Bookings[]].sort(
-    (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
-  )
 
-  return sortedBookings
+  return data as Bookings[]
 }

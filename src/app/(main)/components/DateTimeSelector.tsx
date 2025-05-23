@@ -68,9 +68,9 @@ export default function DateTimeSelector({date, endTime, goToStep2, rooms, selec
             .from("bookings")
             .select("start_time, end_time")
             .eq("room_id", roomId)
-            .or(`status.eq.pending, status.eq.approved`)
+            .in("status", ["pending", "confirmed"])
             .gte("start_time", `${dateStr}T00:00:00`)
-            .lt("start_time", `${dateStr}T23:59:59`);
+            .lt("start_time", `${dateStr}T23:59:59`)
     
           const booked = new Set<string>();
     
@@ -95,7 +95,8 @@ export default function DateTimeSelector({date, endTime, goToStep2, rooms, selec
               }
             };
           }
-          setBookedSlots(booked);
+          setBookedSlots(booked)
+
         } catch (error) {
           console.error("Error checking availability:", error);
           toast("Error", {

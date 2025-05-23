@@ -49,22 +49,22 @@ export default function UserTable() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data, error } = await supabase.from("profiles").select();
+      const { data, error } = await supabase.from("profiles").select().order("created_at", {ascending: false})
 
       if (error) {
-        setFetchError("Error loading users");
-        setUsers([]);
-        console.log(error);
+        setFetchError("Error loading users")
+        setUsers([])
+        console.log(error)
       }
       
       if (data) {
-        setUsers(data);
-        setFetchError(null);
+        setUsers(data)
+        setFetchError(null)
       }
-    };
-
-    void fetchUser();
-  }, []);
+    }
+    
+    void fetchUser()
+  }, [])
 
   const handleRoleChange = useCallback( async (id: string, newRole: User['role']) => {
     const {error} = await supabase
