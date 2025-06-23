@@ -80,7 +80,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild>
                   <Link href="/">
                     <Undo2/>
-                    <span>Back to Home Page</span>
+                    <span>Back to Room Booking</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

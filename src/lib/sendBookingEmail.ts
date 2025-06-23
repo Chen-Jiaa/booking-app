@@ -33,6 +33,11 @@ export async function sendBookingConfirmationEmail({
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Phone:</strong> +6${phone}</p>
       <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Date:</strong> ${new Date(fullStartTime).toLocaleDateString('en-my', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })}</p>
       <p><strong>Time:</strong> ${formatBookingTime(fullStartTime)} - ${formatBookingTime(fullEndTime)}</p>
       <p><strong>Purpose:</strong> ${getPurposeLabel(purpose)}</p>
     `,
@@ -74,6 +79,11 @@ export async function sendBookingEmail({
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Phone:</strong> +6${phone}</p>
       <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Date:</strong> ${new Date(fullStartTime).toLocaleDateString('en-my', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })}</p>
       <p><strong>Time:</strong> ${formatBookingTime(fullStartTime)} - ${formatBookingTime(fullEndTime)}</p>
       <p><strong>Purpose:</strong> ${getPurposeLabel(purpose)}</p>
       <a href="https://booking.collective.my/api/approve?id=${bookingId}"
@@ -123,6 +133,11 @@ export async function sendBookingRejectionEmail({
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Phone:</strong> +6${phone}</p>
       <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Date:</strong> ${new Date(fullStartTime).toLocaleDateString('en-my', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })}</p>
       <p><strong>Time:</strong> ${formatBookingTime(fullStartTime)} - ${formatBookingTime(fullEndTime)}</p>
       <p><strong>Purpose:</strong> ${getPurposeLabel(purpose)}</p>
     `,

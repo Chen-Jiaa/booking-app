@@ -60,7 +60,8 @@ export function RoomList({rooms} : {rooms: Rooms[]}) {
                   <Dialog onOpenChange={handleDialogOpenChange} open={isDialogOpen && selectedRoom?.id === room.id}>
                     {user ? (
                       <DialogTrigger asChild>
-                        <Button className="w-full text-black" onClick={() => { setSelectedRoom(room); setIsDialogOpen(true) }} variant="outline">
+                        <Button className="w-full text-black" onClick={() => { setSelectedRoom(room)
+    ;setIsDialogOpen(true); setDate(new Date()) }} variant="outline">
                           Book now
                         </Button>
                       </DialogTrigger>

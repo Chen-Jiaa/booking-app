@@ -2,8 +2,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Rooms } from "@/types/room";
 import { format } from "date-fns";
 
-
-
 interface BookingSummaryProps {
     date?: Date;
     endTime?: string;

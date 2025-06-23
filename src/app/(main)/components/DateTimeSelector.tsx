@@ -32,7 +32,6 @@ interface Props {
 }
 
 export default function DateTimeSelector({date, endTime, goToStep2, rooms, selectedRoom, setDate, setEndTime, setSelectedRoom, setStartTime, startTime} : Props) {
-    const [loading] = useState(false)
     const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
     const [bookedSlots, setBookedSlots] = useState<Set<string>>(() => new Set())
     const [open, setOpen] = useState(false)
@@ -54,58 +53,60 @@ export default function DateTimeSelector({date, endTime, goToStep2, rooms, selec
 
     useEffect(() => {
         if (date && selectedRoom) {
-            void checkAvailability(date, selectedRoom.id);
+           void checkAvailability(date, selectedRoom.id);
         }
       }, [date, selectedRoom]);
+      
     
-      const checkAvailability = async (selectedDate: Date, roomId: string) => {
-        setIsCheckingAvailability(true);
-    
-        try {
-          const dateStr = format(selectedDate, "yyyy-MM-dd");
-    
-          const { data: bookings } = await supabase
-            .from("bookings")
-            .select("start_time, end_time")
-            .eq("room_id", roomId)
-            .in("status", ["pending", "confirmed"])
-            .gte("start_time", `${dateStr}T00:00:00`)
-            .lt("start_time", `${dateStr}T23:59:59`)
-    
-          const booked = new Set<string>();
-    
-          if (bookings && bookings.length > 0) {
-            for(const booking of bookings as Bookings[]) {
-              const bookingStart = new Date(booking.start_time);
-              const bookingEnd = new Date(booking.end_time);
-    
-              if (isSameDay(bookingStart, selectedDate)) {
-                let currentSlot = new Date(bookingStart);
-    
-                while (currentSlot < bookingEnd) {
-                  try {
-                    const timeStr = format(currentSlot, "HH:mm");
-                    booked.add(timeStr);
-                    currentSlot = addMinutes(currentSlot, 30);
-                  } catch (error) {
-                    console.error("Error processing time slot:", error);
-                    break;
-                  }
+    const checkAvailability = async (selectedDate: Date, roomId: string) => {
+      setIsCheckingAvailability(true);
+  
+      try {
+        const dateStr = format(selectedDate, "yyyy-MM-dd");
+  
+        const { data: bookings } = await supabase
+          .from("bookings")
+          .select("start_time, end_time")
+          .eq("room_id", roomId)
+          .in("status", ["pending", "confirmed"])
+          .gte("start_time", `${dateStr}T00:00:00`)
+          .lt("start_time", `${dateStr}T23:59:59`)
+  
+        const booked = new Set<string>();
+        console.log(booked)
+  
+        if (bookings && bookings.length > 0) {
+          for(const booking of bookings as Bookings[]) {
+            const bookingStart = new Date(booking.start_time);
+            const bookingEnd = new Date(booking.end_time);
+  
+            if (isSameDay(bookingStart, selectedDate)) {
+              let currentSlot = new Date(bookingStart);
+  
+              while (currentSlot < bookingEnd) {
+                try {
+                  const timeStr = format(currentSlot, "HH:mm");
+                  booked.add(timeStr);
+                  currentSlot = addMinutes(currentSlot, 30);
+                } catch (error) {
+                  console.error("Error processing time slot:", error);
+                  break;
                 }
               }
-            };
-          }
-          setBookedSlots(booked)
-
-        } catch (error) {
-          console.error("Error checking availability:", error);
-          toast("Error", {
-            description: "Failed to check room availability. Please try again.",
-          });
-        } finally {
-          setIsCheckingAvailability(false);
+            }
+          };
         }
+        setBookedSlots(booked)
+
+      } catch (error) {
+        console.error("Error checking availability:", error);
+        toast("Error", {
+          description: "Failed to check room availability. Please try again.",
+        });
+      } finally {
+        setIsCheckingAvailability(false);
       }
+    }
     
     const getNextTimeSlot = (currentTime: string): null | string => {
       const currentIndex = timeSlots.indexOf(currentTime)
@@ -198,14 +199,6 @@ export default function DateTimeSelector({date, endTime, goToStep2, rooms, selec
   
       return timeSlots >= startTime && timeSlots < endTime;
     };
-  
-    if (loading) {
-      return (
-        <div className="flex justify-center items-center min-h-[200px]">
-          <Loader2 className="w-6 h-6 animate-spin" />
-        </div>
-      );
-    }
 
     return (
         <Card>
