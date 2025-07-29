@@ -20,6 +20,7 @@ const formSchema = z.object({
   })
   
 export async function submitBooking(values: z.infer<typeof formSchema>) {
+  const bookingWithEventId = await db.transaction(async (tx) => {
     formSchema.parse(values)
     
     const {
@@ -34,7 +35,7 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
         userId,
       } = values
 
-      const selectedRoom = await db
+      const selectedRoom = await tx
         .select({
           approvalRequired: rooms.approvalRequired,
           approvers: rooms.approvers,
@@ -53,7 +54,7 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
       const approvers = room.approvers ?? [];
       const status = approvalRequired ? "pending" : "confirmed";
 
-      const insertedBookingresult = await db
+      const insertedBookingresult = await tx
         .insert(bookings)
         .values({
           email,
@@ -74,24 +75,31 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
       if (!insertedBooking) {
         throw new Error("Failed to create booking in the database.");
       }
+
+      const eventId = await createCalendarEvent(insertedBooking);
+
+      const [finalBooking] = await tx
+        .update(bookings)
+        .set({eventId: eventId})
+        .where(eq(bookings.id, insertedBooking.id))
+        .returning()
       
-      await Promise.all([
-        createCalendarEvent(insertedBooking),
-        approvalRequired && approvers.length > 0 
-          ? Promise.all(
+      
+        await (approvalRequired && approvers.length > 0 ? Promise.all(
               approvers.map((approverEmail) =>
                 sendBookingEmail({
                   ...insertedBooking,
                   to: approverEmail,
                 })
               )
-            ) 
-          : sendBookingConfirmationEmail({
+            ) : sendBookingConfirmationEmail({
               ...insertedBooking,
               to: email
-            }),
-      ]);
+          }));
       
-      return insertedBooking;
-    
+      
+      return finalBooking;
+  });
+
+  return bookingWithEventId
 }
