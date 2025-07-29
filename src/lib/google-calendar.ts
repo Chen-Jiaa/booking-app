@@ -22,7 +22,11 @@ const calendar = google.calendar({ auth, version: 'v3' });
 
 // --- Function 1: CREATE a new event ---
 export async function createCalendarEvent(booking: Bookings) {
-  console.log('Creating calendar event for booking:', booking.id);
+  console.log(`Creating calendar event for booking: ${booking.id.toString()} with status: ${booking.status}`)
+
+  const summaryStatus = booking.status ? `[${booking.status.toUpperCase()}]` : '[STATUS UNKNOWN]';
+  const summary = `${summaryStatus} ${booking.roomName} by ${booking.name} for ${booking.purpose}`;
+
   try {
     const event = await calendar.events.insert({
       calendarId,
@@ -30,7 +34,7 @@ export async function createCalendarEvent(booking: Bookings) {
         description: `Phone: ${booking.phone}\nEmail: ${booking.email}\nPurpose: ${booking.purpose}`,
         end: { dateTime: booking.endTime.toISOString(), timeZone: 'Asia/Singapore' },
         start: { dateTime: booking.startTime.toISOString(), timeZone: 'Asia/Singapore' },
-        summary: `[PENDING] ${booking.roomName} by ${booking.name} for ${booking.purpose}`,
+        summary: summary,
       },
     });
 
