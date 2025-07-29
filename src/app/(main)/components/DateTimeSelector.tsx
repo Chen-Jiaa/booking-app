@@ -8,17 +8,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Rooms } from "@/db/schema";
 import { generateTimeSlots } from "@/lib/date-utils";
-import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Bookings } from "@/types/booking";
-import { Rooms } from "@/types/room";
-import { addMinutes, addWeeks, format, isSameDay, startOfToday } from "date-fns";
+import { addWeeks, startOfToday } from "date-fns";
 import { ChevronDown, Clock, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-interface Props {
+import { getUnavailableSlots } from "../actions/getUnavailableSlots";
+
+interface DateTimeSelectorProps {
     date: Date | undefined
     endTime: string | undefined
     goToStep2: () => void
@@ -31,10 +31,13 @@ interface Props {
     startTime: string | undefined
 }
 
-export default function DateTimeSelector({date, endTime, goToStep2, rooms, selectedRoom, setDate, setEndTime, setSelectedRoom, setStartTime, startTime} : Props) {
+export default function DateTimeSelector(props : DateTimeSelectorProps) {
+    const {date, endTime, goToStep2, rooms, selectedRoom, setDate, setEndTime, setSelectedRoom, setStartTime, startTime} = props
+
     const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
     const [bookedSlots, setBookedSlots] = useState<Set<string>>(() => new Set())
     const [open, setOpen] = useState(false)
+
     const {role} = useSupabase()
     const isAdmin = role === "admin"
 
@@ -62,40 +65,8 @@ export default function DateTimeSelector({date, endTime, goToStep2, rooms, selec
       setIsCheckingAvailability(true);
   
       try {
-        const dateStr = format(selectedDate, "yyyy-MM-dd");
-  
-        const { data: bookings } = await supabase
-          .from("bookings")
-          .select("start_time, end_time")
-          .eq("room_id", roomId)
-          .in("status", ["pending", "confirmed"])
-          .gte("start_time", `${dateStr}T00:00:00`)
-          .lt("start_time", `${dateStr}T23:59:59`)
-  
-        const booked = new Set<string>();
-        console.log(booked)
-  
-        if (bookings && bookings.length > 0) {
-          for(const booking of bookings as Bookings[]) {
-            const bookingStart = new Date(booking.start_time);
-            const bookingEnd = new Date(booking.end_time);
-  
-            if (isSameDay(bookingStart, selectedDate)) {
-              let currentSlot = new Date(bookingStart);
-  
-              while (currentSlot < bookingEnd) {
-                try {
-                  const timeStr = format(currentSlot, "HH:mm");
-                  booked.add(timeStr);
-                  currentSlot = addMinutes(currentSlot, 30);
-                } catch (error) {
-                  console.error("Error processing time slot:", error);
-                  break;
-                }
-              }
-            }
-          };
-        }
+
+        const booked = await getUnavailableSlots(roomId, selectedDate);
         setBookedSlots(booked)
 
       } catch (error) {

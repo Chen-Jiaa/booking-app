@@ -9,9 +9,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import Footer from "./components/footer"
 import NavBar from "./components/nav-bar"
 
-
-
-
 export const metadata: Metadata = {
   description: "Booking App for Church Resources",
   title: "Collective Booking App",

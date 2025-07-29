@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Rooms } from "@/types/room";
+import { Rooms } from "@/db/schema";
 import { format } from "date-fns";
 
 interface BookingSummaryProps {
@@ -9,12 +9,8 @@ interface BookingSummaryProps {
     startTime?: string;
   }
 
-export default function BookingSummary({
-    date,
-    endTime,
-    selectedRoom,
-    startTime,
-}: BookingSummaryProps) {
+export default function BookingSummary(props: BookingSummaryProps) {
+    const {date, endTime, selectedRoom, startTime,} = props
     
     return (
         <Card>

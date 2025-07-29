@@ -17,8 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from "@/lib/supabase/client";
-import { Rooms } from "@/types/room";
+import { Rooms } from "@/db/schema";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -33,95 +32,59 @@ import {
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown } from "lucide-react";
 import * as React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-export default function RoomTable({adminEmails} : {adminEmails: string[]}) {
+import { updateRoomApprovers, updateRoomAvailabilityTo, updateRoomBoolean } from "../actions";
+
+interface RoomTableProps {
+  adminEmails: string[]
+  initialData: Rooms[];
+}
+
+export default function RoomTable({adminEmails, initialData} : RoomTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({email:false})
   const [rowSelection, setRowSelection] = useState({})
-  const [rooms, setRooms] = useState<Rooms[]>([])
-  const [fetchError, setFetchError] = useState<null | string>(null)
+  const [rooms, setRooms] = useState<Rooms[]>(initialData)
 
-  useEffect(() => {
-    const fetchRooms = async () => {
-      const { data, error } = await supabase.from("rooms").select()
+  const handleToggle = useCallback(async (id: string, field: 'approval_required' | 'availability', value: boolean) => {
+    setRooms(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
 
-      if (error) {
-        setFetchError("Error loading rooms")
-        setRooms([])
-        console.log(error)
-      }
-      
-      if (data) {
-        setRooms(data)
-        setFetchError(null)
-      }
-    };
-
-    void fetchRooms()
-  }, [])
-
-  const handleToggle = useCallback(async (id: string, newApproval: boolean) => {
-    const {error} = await supabase
-    .from("rooms")
-    .update({approval_required: newApproval})
-    .eq("id", id)
-    .select()
-
-    if (error) {
-      console.log(error)
-    } else {
-      setRooms((prev) =>
-        prev.map((room) =>
-          room.id === id ? { ...room, approval_required: newApproval } : room
-        ))
+    const result = await updateRoomBoolean(id, field, value);
+    if (!result.success) {
+      toast.error(result.error);
+      // Revert UI on failure
+      setRooms(prev => prev.map(r => r.id === id ? { ...r, [field]: !value } : r));
     }
-    
-  },[])
+}, [])
 
-  const handleAvailabilityChange = useCallback(async (id: string, newAvailability: boolean) => {
-    const {error} = await supabase
-    .from("rooms")
-    .update({availability: newAvailability})
-    .eq("id", id)
-    .select()
+  const handleAvailabilityTo = useCallback(async (id: string, value: 'superUser' | 'user') => {
+    const originalValue = rooms.find(r => r.id === id)?.availableTo;
+    setRooms(prev => prev.map(r => r.id === id ? { ...r, availableTo: value } : r));
 
-    if (error) {
-      console.log("Error updating availability", error)
-      return
-    } 
-      setRooms((prev) =>
-        prev.map((room) =>
-          room.id === id ? { ...room, availability: newAvailability } : room
-        ))
-    
-
-  //   const updatedBooking = rooms.find((booking) => booking.id === id)
-  // if (!updatedBooking) return
-
-  }, [])
-
-  const handleAvailabilityTo = useCallback(async (id: string, newAvailabilityTo: string) => {
-    const {error} = await supabase
-    .from("rooms")
-    .update({available_to: newAvailabilityTo})
-    .eq("id", id)
-    .select()
-
-    if (error) {
-      console.log("Error updating availability", error)
-    } else {
-      setRooms((prev) =>
-        prev.map((room) =>
-          room.id === id ? { ...room, available_to: newAvailabilityTo } : room
-        ))
+    const result = await updateRoomAvailabilityTo(id, value);
+    if (!result.success) {
+      toast.error(result.error);
+      setRooms(prev => prev.map(r => r.id === id ? { ...r, availableTo: originalValue ?? null } : r));
     }
-
-    const updatedBooking = rooms.find((booking) => booking.id === id)
-  if (!updatedBooking) return
-
   }, [rooms])
+
+  const toggleApprover = useCallback(async (room: Rooms, email: string) => {
+    const originalApprovers = room.approvers ?? [];
+    const newApprovers = originalApprovers.includes(email)
+      ? originalApprovers.filter(e => e !== email)
+      : [...originalApprovers, email];
+    
+    setRooms(prev => prev.map(r => r.id === room.id ? { ...r, approvers: newApprovers } : r));
+    
+    const result = await updateRoomApprovers(room.id, newApprovers);
+    if (!result.success) {
+      toast.error(result.error);
+      setRooms(prev => prev.map(r => r.id === room.id ? { ...r, approvers: originalApprovers } : r));
+    }
+  }, [])
 
   const columns = useMemo<ColumnDef<Rooms>[]>(()=> [
     {
@@ -172,8 +135,8 @@ export default function RoomTable({adminEmails} : {adminEmails: string[]}) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Make room</DropdownMenuLabel>
-                <DropdownMenuItem disabled={rooms.availability} onClick={() => {void handleAvailabilityChange(rooms.id, true)}}>Available</DropdownMenuItem>
-                <DropdownMenuItem className="text-red-500" disabled={!rooms.availability} onClick={() => {void handleAvailabilityChange(rooms.id, false)}}>Unavailable</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void handleToggle(rooms.id, 'availability', true)}>Available</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void handleToggle(rooms.id, 'availability', false)}>Unavailable</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -205,13 +168,13 @@ export default function RoomTable({adminEmails} : {adminEmails: string[]}) {
                 className="px-1 py-1 rounded text-sm"
                 >
                 <Button className="flex capitalize" variant="ghost">
-                  {rooms.available_to === "superUser" ? "super user" : "user"} <ChevronDown />
+                  {rooms.availableTo === "superUser" ? "super user" : "user"} <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Make Available To</DropdownMenuLabel>
-                <DropdownMenuItem disabled={rooms.available_to === 'user'} onClick={() => {void handleAvailabilityTo(rooms.id, 'user')}}>User</DropdownMenuItem>
-                <DropdownMenuItem disabled={rooms.available_to === 'superUser'} onClick={() => {void handleAvailabilityTo(rooms.id, 'superUser')}}>Super User</DropdownMenuItem>
+                <DropdownMenuItem disabled={rooms.availableTo === 'user'} onClick={() => {void handleAvailabilityTo(rooms.id, 'user')}}>User</DropdownMenuItem>
+                <DropdownMenuItem disabled={rooms.availableTo === 'superUser'} onClick={() => {void handleAvailabilityTo(rooms.id, 'superUser')}}>Super User</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -237,8 +200,8 @@ export default function RoomTable({adminEmails} : {adminEmails: string[]}) {
 
         return (
           <Checkbox
-            checked={rooms.approval_required}
-            onClick={() => void handleToggle(rooms.id, !rooms.approval_required)}
+            checked={rooms.approvalRequired === true}
+            onClick={() => void handleToggle(rooms.id, 'approval_required', !rooms.approvalRequired)}
           />
         );
       },
@@ -259,27 +222,6 @@ export default function RoomTable({adminEmails} : {adminEmails: string[]}) {
         const room = row.original
         const approvers = room.approvers ?? []
 
-        const toggleApprover = async (email: string) => {
-          const updatedApprovers = approvers.includes(email)
-            ? approvers.filter(e => e !== email)
-            : [...approvers, email]
-
-          const { error } = await supabase
-            .from("rooms")
-            .update({ approvers: updatedApprovers })
-            .eq("id", room.id)
-
-          if (error) {
-            console.error("Error updating approvers", error)
-          } else {
-            setRooms((prev) =>
-              prev.map((r) =>
-                r.id === room.id ? { ...r, approvers: updatedApprovers } : r
-              )
-            )
-          }
-        }
-
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -293,7 +235,7 @@ export default function RoomTable({adminEmails} : {adminEmails: string[]}) {
                 <DropdownMenuItem
                   className="flex items-center gap-2"
                   key={email}
-                  onClick={() => void toggleApprover(email)}
+                  onClick={() => void toggleApprover(room, email)}
                 >
                   <input
                     checked={approvers.includes(email)}
@@ -320,7 +262,7 @@ export default function RoomTable({adminEmails} : {adminEmails: string[]}) {
         </Button>
       ),
     },
-  ], [handleAvailabilityChange, handleAvailabilityTo, handleToggle, adminEmails])
+  ], [adminEmails, handleToggle, handleAvailabilityTo, toggleApprover])
 
   const table = useReactTable({
     columns,
@@ -365,7 +307,6 @@ export default function RoomTable({adminEmails} : {adminEmails: string[]}) {
             ))}
           </TableHeader>
           <TableBody>
-            {fetchError ? <p>{fetchError}</p> : ""}
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow

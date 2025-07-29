@@ -1,6 +1,8 @@
+import { db } from "@/db";
+import { bookings } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
+import { and, desc, eq, ne } from "drizzle-orm";
 
-import { fetchUserBookings } from "./actions";
 import { BookingsList } from "./user-booking-table";
 
 export default async function AdminDashboard() {
@@ -10,11 +12,17 @@ export default async function AdminDashboard() {
   if (!user) {
     return <div>Please log in to view bookings.</div>
   }
-  const bookings = await fetchUserBookings(user.id)
+  // const bookings = await fetchUserBookings(user.id)
+
+  const booking = await db
+    .select()
+    .from(bookings)
+    .where(and(eq(bookings.userId,user.id), ne(bookings.status, "cancelled")))
+    .orderBy(desc(bookings.startTime))
 
   return (
     <div className="container items-top mx-auto grid gap-5">
-      <BookingsList bookings={bookings}/>
+      <BookingsList bookings={booking}/>
     </div>
   );
 }

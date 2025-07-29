@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
 
-
 export async function fetchAdmins() {
     const supabase = await createClient()
 

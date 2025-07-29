@@ -13,7 +13,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { submitBooking } from "../actions.ts/submitBooking"
+import { submitBooking } from "../actions/submitBooking"
 
 interface BookingFormProps {
     date: Date
@@ -39,9 +39,9 @@ const purposeOptions = [
     // { label: "Others", value: "others" },
 ]
     
-export default function BookingForm2({
-    date, endTime, selectedRoom, startTime
-}: BookingFormProps) {
+export default function BookingForm2(props: BookingFormProps) {
+    const { date, endTime, selectedRoom, startTime } = props
+    
     const [selectedPurpose, setSelectedPurpose] = useState("")
     
     const form = useForm<z.infer<typeof formSchema>>({
@@ -76,7 +76,7 @@ export default function BookingForm2({
                 userId: user?.id,
             })
 
-            router.push(`/booking-confirmation/${booking.id}`)
+            router.push(`/booking-confirmation/${booking.id.toString()}`)
             
         } catch (error) {
             console.error("Booking failed:", error)

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Rooms } from "@/types/room";
+import { type Rooms } from "@/db/schema";
 import { Circle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,7 +14,7 @@ import BookingForm2 from "./BookingForm";
 import BookingSummary from "./BookingSummary";
 import DateTimeSelector from "./DateTimeSelector";
 
-export function RoomList({rooms} : {rooms: Rooms[]}) {
+export function RoomList({roomData} : {roomData: Rooms[]}) {
   const { user } = useSupabase()
   const [selectedRoom, setSelectedRoom] = useState<null | Rooms>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -37,7 +37,7 @@ export function RoomList({rooms} : {rooms: Rooms[]}) {
     return (
         <div className="container mt-2 mx-auto py-3 px-6">
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">          
-            {rooms.map((room) => (
+            {roomData.map((room) => (
               <Card key={room.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -89,7 +89,7 @@ export function RoomList({rooms} : {rooms: Rooms[]}) {
                           date = {date} 
                           endTime = {endTime} 
                           goToStep2 = {() => { setStep("2"); }}
-                          rooms={rooms}
+                          rooms={roomData}
                           selectedRoom = {selectedRoom}
                           setDate={setDate}
                           setEndTime = {setEndTime}

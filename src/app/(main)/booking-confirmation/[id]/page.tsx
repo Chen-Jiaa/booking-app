@@ -2,29 +2,36 @@ export const dynamic = "force-dynamic"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { db } from "@/db"
+import { bookings } from "@/db/schema"
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils"
 import { getPurposeLabel } from "@/lib/getPurposeLabel"
+import { eq } from "drizzle-orm"
 import { CircleCheckBig, Hourglass } from "lucide-react"
 import Link from "next/link"
 
-import fetchBookings from "./actions"
-
 interface PageProps {
-  params: Promise<{id: string}>
+  params: Promise<{ id: string }>
 }
 
 export default async function BookingConfirmation({ params }: PageProps) {
-  
-  const { id } = await params
+  const { id: idParam } = await params
+  const id = Number(idParam)
 
-  if (!id) {
+  if (Number.isNaN(id)) {
     return <p className="text-center mt-10">No booking ID found.</p>
   }
 
-  const booking = await fetchBookings(id)
-  
+  const result = await db
+    .select()
+    .from(bookings)
+    .where(eq(bookings.id,id))
+    .limit(1)
+
+  const booking = result[0] as typeof result[0] | undefined
+
   if (!booking) {
-    return <p className="text-center mt-10">Failed to load booking</p>
+    return <p className="text-center mt-10">Failed to load booking.</p>
   }
 
   return (
@@ -47,17 +54,17 @@ export default async function BookingConfirmation({ params }: PageProps) {
           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 gap-x-8 text-center md:text-left">
             <div>
               <h3 className="font-bold">Room</h3>
-              <p>{booking.room_name}</p>
+              <p>{booking.roomName}</p>
             </div>
             <div>
               <h3 className="font-bold">Date</h3>
-              <p>{formatBookingDate(booking.start_time)}</p>
+              <p>{formatBookingDate(booking.startTime)}</p>
             </div>
             <div>
               <h3 className="font-bold">Time</h3>
               <p>
-                {formatBookingTime(booking.start_time)} -{" "}
-                {formatBookingTime(booking.end_time)}
+                {formatBookingTime(booking.startTime)} -{" "}
+                {formatBookingTime(booking.endTime)}
               </p>
             </div>
             <div>

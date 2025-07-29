@@ -1,62 +1,34 @@
 'use server'
 
-import { createClient } from "@/lib/supabase/server"
-import { Bookings } from "@/types/booking"
+import { db } from "@/db"
+import { bookings } from "@/db/schema"
+import { updateCalendarEvent } from "@/lib/google-calendar"
+import { eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 
+export async function cancelUserBooking(id:number): Promise<void> {
 
-export async function cancelUserBooking(id:string): Promise<void> {
-    const supabase = await createClient()
+  try {
+    await db.transaction(async (tx) => {
+      const result = await tx
+        .update(bookings)
+        .set({status: "cancelled"})
+        .where(eq(bookings.id, id))
+        .returning();
 
-    const {error} = await supabase
-    .from("bookings")
-    .update({status: "cancelled"})
-    .eq('id', id)
+      const cancelledBooking = result[0] as typeof result[0] | undefined
 
-    if(error) {
-      console.log('Error cancelling booking:', error.message)
-      throw new Error('Failed to cancel booking')
-    }
-
-    const {data: bookingData, error: fetchError} = await supabase
-      .from("bookings")
-      .select("event_id, name, room_name, purpose")
-      .eq("id", id)
-      .single<Bookings>()
-
-      
-      if (fetchError || !bookingData.event_id) {
-        console.log("Error fetching cancelled booking details:", fetchError?.message)
-        return
+      if (!cancelledBooking) {
+        throw new Error("Failed to cancel booking: Booking not found.");
       }
 
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
+      await updateCalendarEvent(cancelledBooking)
+    });
 
-      await fetch(`${String(baseUrl)}/api/update-calendar-event`, {
-        body: JSON.stringify({
-          eventId: bookingData.event_id,
-          name: bookingData.name,
-          newStatus: "cancelled",
-          purpose: bookingData.purpose,
-          room_name: bookingData.room_name,
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-    })
-}
-
-export async function fetchUserBookings(userId: string): Promise<Bookings[]> {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-    .from("bookings")
-    .select("*")
-    .eq("user_id", userId)
-    .neq("status", "cancelled")
-    .order("start_time", {ascending: false})
-
-  if (error) {
-    console.error("Error loading bookings", error)
-    return []
+    revalidatePath("/bookings")
+  } catch (error) {
+    console.error("Error in cancelUserBooking:", error);
+    // Re-throw the error so the client-side code knows the operation failed.
+    throw new Error("Failed to cancel the booking.");
   }
-
-  return data as Bookings[]
 }
