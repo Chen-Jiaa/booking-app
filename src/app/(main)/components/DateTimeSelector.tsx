@@ -11,9 +11,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Rooms } from "@/db/schema";
 import { generateTimeSlots } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
-import { addWeeks, format, startOfToday } from "date-fns";
+import { addWeeks, startOfToday } from "date-fns";
 import { ChevronDown, Clock, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { getUnavailableSlots } from "../actions/getUnavailableSlots";
@@ -43,6 +43,9 @@ export default function DateTimeSelector(props : DateTimeSelectorProps) {
 
     const timeSlots = generateTimeSlots();
 
+    const selectedRoomId = selectedRoom?.id;
+    const dateString = date?.toDateString();
+
     const handleRoomChange = (roomId: string) => {
         const newRoom = rooms.find((r) => r.id === roomId);
     
@@ -52,38 +55,60 @@ export default function DateTimeSelector(props : DateTimeSelectorProps) {
             setStartTime(undefined)
             setEndTime(undefined)
         }
-      };
+    };
+
+    const resetSlots = useCallback(() => {
+        setBookedSlots(new Set());
+    }, []);
+
+    // Create a callback for updating booked slots
+    const updateBookedSlots = useCallback((slots: Set<string>) => {
+        setBookedSlots(slots);
+    }, []);
 
     useEffect(() => {
-      if (date && selectedRoom) {
-          console.log('Checking availability for:', {
-              date: format(date, 'yyyy-MM-dd HH:mm:ss'),
-              roomId: selectedRoom.id,
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          });
-          void checkAvailability(date, selectedRoom.id);
-      }
-    }, [date, selectedRoom]);
+        console.log('Resetting slots - room or date changed');
+        resetSlots()
+        setStartTime(undefined);
+        setEndTime(undefined);
+    }, [selectedRoomId, dateString, setEndTime, setStartTime, resetSlots]);
       
     
-    const checkAvailability = async (selectedDate: Date, roomId: string) => {
-      setIsCheckingAvailability(true);
-  
-      try {
-        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kuala_Lumpur';
+    useEffect(() => {
+        let isCancelled = false;
 
-        const booked = await getUnavailableSlots(roomId, selectedDate, userTimezone);
-        setBookedSlots(booked)
+        const fetchAvailability = async () => {
+            if (!date || !selectedRoom) return;
 
-      } catch (error) {
-        console.error("Error checking availability:", error);
-        toast("Error", {
-          description: "Failed to check room availability. Please try again.",
-        });
-      } finally {
-        setIsCheckingAvailability(false);
-      }
-    }
+            setIsCheckingAvailability(true);
+
+            try {
+                const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kuala_Lumpur';
+                const booked = await getUnavailableSlots(selectedRoom.id, date, userTimezone);
+                
+                if (!isCancelled) {
+                    updateBookedSlots(booked);
+                }
+            } catch (error) {
+                if (!isCancelled) {
+                    console.error("Error checking availability:", error);
+                    toast("Error", {
+                        description: "Failed to check room availability. Please try again.",
+                    });
+                }
+            } finally {
+                if (!isCancelled) {
+                    setIsCheckingAvailability(false);
+                }
+            }
+        };
+
+        void fetchAvailability();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [selectedRoom, date, selectedRoomId, dateString, updateBookedSlots]);
     
     const getNextTimeSlot = (currentTime: string): null | string => {
       const currentIndex = timeSlots.indexOf(currentTime)
@@ -109,9 +134,15 @@ export default function DateTimeSelector(props : DateTimeSelectorProps) {
     }
 
     const handleDateSelect = (selectedDate: Date | undefined) => {
-      setDate(selectedDate)
-      setStartTime(undefined)
-      setEndTime(undefined)
+      if (selectedDate) {
+        const newDate = new Date(selectedDate);
+        newDate.setHours(0, 0, 0, 0);
+        setDate(newDate);
+      } else {
+        setDate(undefined);
+      }
+      setStartTime(undefined);
+      setEndTime(undefined);
     }
 
     const handleTimeSelect = (time: string) => {
@@ -159,7 +190,7 @@ export default function DateTimeSelector(props : DateTimeSelectorProps) {
             });
           }
         }
-      };
+    };
   
     const isTimeSlotAvailable = (timeSlots: string) => {
       if (!date || isCheckingAvailability) return false;
