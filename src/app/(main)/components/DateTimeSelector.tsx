@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Rooms } from "@/db/schema";
 import { generateTimeSlots } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
-import { addWeeks, startOfToday } from "date-fns";
+import { addWeeks, format, startOfToday } from "date-fns";
 import { ChevronDown, Clock, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -55,18 +55,24 @@ export default function DateTimeSelector(props : DateTimeSelectorProps) {
       };
 
     useEffect(() => {
-        if (date && selectedRoom) {
-           void checkAvailability(date, selectedRoom.id);
-        }
-      }, [date, selectedRoom]);
+      if (date && selectedRoom) {
+          console.log('Checking availability for:', {
+              date: format(date, 'yyyy-MM-dd HH:mm:ss'),
+              roomId: selectedRoom.id,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          });
+          void checkAvailability(date, selectedRoom.id);
+      }
+    }, [date, selectedRoom]);
       
     
     const checkAvailability = async (selectedDate: Date, roomId: string) => {
       setIsCheckingAvailability(true);
   
       try {
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kuala_Lumpur';
 
-        const booked = await getUnavailableSlots(roomId, selectedDate);
+        const booked = await getUnavailableSlots(roomId, selectedDate, userTimezone);
         setBookedSlots(booked)
 
       } catch (error) {

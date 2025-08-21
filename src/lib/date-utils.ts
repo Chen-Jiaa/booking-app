@@ -16,15 +16,12 @@ export function combineDateAndTime(date: Date, time: string) {
   return combined
 }
 
-
 export function formatBookingDate(timestamp: Date) {
   const date = new Date(timestamp)
   const malaysiaTimeZone = 'Asia/Kuala_Lumpur'
   const localTime = toZonedTime(date, malaysiaTimeZone)
   return format(localTime, "EE, MMM d")
 }
-
-
 
 export function formatBookingTime(timestamp: Date) {
   const date = new Date(timestamp)
