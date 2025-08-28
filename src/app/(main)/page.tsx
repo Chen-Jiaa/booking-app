@@ -1,22 +1,23 @@
-import { db } from "@/db";
-import { rooms } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { createClient } from "@/lib/supabase/server";
 
 import { RoomList } from "./components/RoomList";
 
 export default async function Home() {
-  // const rooms = await fetchRooms()
+  const supabase = await createClient();
 
-  const roomData = await db
-    .select()
-    .from(rooms)
-    .where(eq(rooms.availability, true))
-  
-  if (roomData.length === 0) {
-      return <p className="text-center - mt-10">Failed to load rooms</p>
+  const { data: roomData, error } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("availability", true);
+
+  if (error) {
+    console.error("Error fetching rooms:", error);
+    return <p className="text-center mt-10">Failed to load rooms</p>;
   }
-  
-  return (
-      <RoomList roomData={roomData} />
-  )
+
+  if (roomData.length === 0) {
+    return <p className="text-center - mt-10">Failed to load rooms</p>;
+  }
+
+  return <RoomList roomData={roomData} />;
 }

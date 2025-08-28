@@ -5,14 +5,11 @@ import { bookings } from "@/db/schema";
 import { addMinutes, format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { and, eq, gte, inArray, lt } from "drizzle-orm";
-import { unstable_noStore as noStore } from "next/cache";
 
 export async function getUnavailableSlots(
     roomId: string, selectedDate: Date, timezone = 'Asia/Kuala_Lumpur'
 ): Promise<Set<string>> {
 
-    noStore()
-    
     try {
         const year = selectedDate.getFullYear();
         const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
