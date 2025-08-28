@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export function AuthButton() {
   return (
