@@ -21,31 +21,12 @@ export function AuthButton() {
   );
 }
 
-// export async function handleSignOut() {
-//   await supabase.auth.signOut();
-//   globalThis.location.href = "/";
-// }
-
-// export function SignOutButton() {
-//   return (
-//     <Button onClick={() => void handleSignOut()} variant="outline">
-//       Sign Out
-//     </Button>
-//   );
-// }
+export async function handleSignOut() {
+  await supabase.auth.signOut();
+  globalThis.location.href = "/";
+}
 
 export function SignOutButton() {
-  const router = useRouter();
-
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error(error.message);
-      return;
-    }
-    router.push("/"); // smoother redirect
-  };
-
   return (
     <Button onClick={() => void handleSignOut()} variant="outline">
       Sign Out
