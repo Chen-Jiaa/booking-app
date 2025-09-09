@@ -47,7 +47,7 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
   return (
     <div className="container mt-2 mx-auto py-3 px-6">
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-        {roomData.map((room) => (
+        {rooms.map((room) => (
           <Card key={room.id}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -76,7 +76,8 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                     <Button
                       className="w-full text-black"
                       onClick={() => {
-                        handleBookNowClickAlwaysReset(room);
+                        setSelectedRoom(room);
+                        setIsDialogOpen(true);
                       }}
                       variant="outline"
                     >
@@ -113,7 +114,7 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                         goToStep2={() => {
                           setStep("2");
                         }}
-                        rooms={roomData}
+                        rooms={rooms}
                         selectedRoom={selectedRoom}
                         setDate={setDate}
                         setEndTime={setEndTime}

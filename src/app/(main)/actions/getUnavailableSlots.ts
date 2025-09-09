@@ -2,6 +2,7 @@
 
 import { db } from "@/db";
 import { bookings } from "@/db/schema";
+import { createClient } from "@/lib/supabase/server";
 import { addMinutes, format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { and, eq, gte, inArray, lt } from "drizzle-orm";
@@ -18,31 +19,30 @@ export async function getUnavailableSlots(
         const dayStartUTC = new Date(`${String(year)}-${month}-${day}T00:00:00+08:00`);
         const dayEndUTC = new Date(`${String(year)}-${month}-${day}T23:59:59+08:00`);
 
-        // console.log('Query range:', {
-        //     dayEndUTC: dayEndUTC.toISOString(),
-        //     dayStartUTC: dayStartUTC.toISOString(),
-        //     selectedDate: `${String(year)}-${month}-${day}`,
-        // });
+        // const existingBookings = await db
+        //     .select({
+        //         endTime: bookings.endTime,
+        //         startTime: bookings.startTime
+        //     })
+        //     .from(bookings)
+        //     .where(
+        //         and(
+        //             eq(bookings.roomId, roomId),
+        //             inArray(bookings.status, ["pending", "confirmed"]),
+        //             gte(bookings.startTime, dayStartUTC),
+        //             lt(bookings.startTime, dayEndUTC)
+        //         )
+        //     )
 
-        const existingBookings = await db
-            .select({
-                endTime: bookings.endTime,
-                startTime: bookings.startTime
-            })
-            .from(bookings)
-            .where(
-                and(
-                    eq(bookings.roomId, roomId),
-                    inArray(bookings.status, ["pending", "confirmed"]),
-                    gte(bookings.startTime, dayStartUTC),
-                    lt(bookings.startTime, dayEndUTC)
-                )
-            )
-        
-        // console.log('Found bookings:', existingBookings.map(b => ({
-        //     end: b.endTime.toISOString(),
-        //     start: b.startTime.toISOString()
-        // })));
+        const supabase = await createClient()
+
+        const {data: bookings} = await supabase
+          .from("bookings")
+          .select("start_time, end_time")
+          .eq("room_id", roomId)
+          .in("status", ["pending", "confirmed"])
+          .gte("start_time", `${dayStartUTC}T00:00:00`)
+          .lt("start_time", `${dayEndUTC}T23:59:59`)
 
         const booked = new Set<string>()
         if (existingBookings.length > 0) {
