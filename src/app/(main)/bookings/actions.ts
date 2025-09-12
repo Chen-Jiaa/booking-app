@@ -1,34 +1,38 @@
 'use server'
 
-import { db } from "@/db"
-import { bookings } from "@/db/schema"
-import { updateCalendarEvent } from "@/lib/google-calendar"
-import { eq } from "drizzle-orm"
-import { revalidatePath } from "next/cache"
+import { updateCalendarEvent } from "@/lib/google-calendar";
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
-export async function cancelUserBooking(id:number): Promise<void> {
+export async function cancelUserBooking(id: number): Promise<void> {
 
-  try {
-    await db.transaction(async (tx) => {
-      const result = await tx
-        .update(bookings)
-        .set({status: "cancelled"})
-        .where(eq(bookings.id, id))
-        .returning();
+    try {
+        const supabase = await createClient();
 
-      const cancelledBooking = result[0] as typeof result[0] | undefined
+        const { data: result, error } = await supabase
+            .from("bookings")
+            .update({ status: "cancelled" })
+            .eq("id", id)
+            .select()
+            .single();
 
-      if (!cancelledBooking) {
-        throw new Error("Failed to cancel booking: Booking not found.");
-      }
+         const cancelledBooking = result[0] as typeof result[0] | undefined
 
-      await updateCalendarEvent(cancelledBooking)
-    });
+        if (error) {
+            console.error("Supabase error:", error);
+            throw new Error(error.message);
+        }
 
-    revalidatePath("/bookings")
-  } catch (error) {
-    console.error("Error in cancelUserBooking:", error);
-    // Re-throw the error so the client-side code knows the operation failed.
-    throw new Error("Failed to cancel the booking.");
-  }
+        if (!cancelledBooking) {
+            throw new Error("Failed to cancel booking: Booking not found.");
+        }
+
+        // The logic for updating the calendar event can remain the same
+        await updateCalendarEvent(cancelledBooking);
+
+        revalidatePath("/bookings");
+    } catch (error) {
+        console.error("Error in cancelUserBooking:", error);
+        throw new Error("Failed to cancel the booking.");
+    }
 }

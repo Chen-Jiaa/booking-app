@@ -17,12 +17,7 @@ export async function sendBookingConfirmationEmail(props: SendEmailProps) {
     from: 'Collective Booking <system@booking.collective.my>', // same sender used in Supabase
     html: `
       <p>Your booking has been approved.</p>
-      <p><strong>Room:</strong> ${selectedRoomName}</p>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Phone:</strong> +6${phone}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Time:</strong> ${formatBookingTime(fullStartTime)} - ${formatBookingTime(fullEndTime)}</p>
-      <p><strong>Purpose:</strong> ${getPurposeLabel(purpose)}</p>
+      ${renderBookingDetailsHtml(bookingDetails)}
     `,
     subject: `Your Booking has Been Approved - ${bookingDetails.roomName}`,
     to,
@@ -41,13 +36,8 @@ export async function sendBookingEmail(props: SendEmailProps) {
     from: 'Collective Booking <system@booking.collective.my>', // same sender used in Supabase
     html: `
       <p>You have a new booking request for:</p>
-      <p><strong>Room:</strong> ${selectedRoomName}</p>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Phone:</strong> +6${phone}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Time:</strong> ${formatBookingTime(fullStartTime)} - ${formatBookingTime(fullEndTime)}</p>
-      <p><strong>Purpose:</strong> ${getPurposeLabel(purpose)}</p>
-      <a href="https://booking.collective.my/api/approve?id=${bookingId}"
+      ${renderBookingDetailsHtml(bookingDetails)}
+      <a href="https://booking.collective.my/api/approve?id=${bookingDetails.id.toString()}"
         style="display: inline-block; padding: 10px 20px; margin-right: 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
         ✅ Approve
       </a>
@@ -73,12 +63,7 @@ export async function sendBookingRejectionEmail(props: SendEmailProps) {
     from: 'Collective Booking <system@booking.collective.my>', // same sender used in Supabase
     html: `
       <p>Your booking has been rejected. Kindly make another booking.</p>
-      <p><strong>Room:</strong> ${selectedRoomName}</p>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Phone:</strong> +6${phone}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Time:</strong> ${formatBookingTime(fullStartTime)} - ${formatBookingTime(fullEndTime)}</p>
-      <p><strong>Purpose:</strong> ${getPurposeLabel(purpose)}</p>
+      ${renderBookingDetailsHtml(bookingDetails)}
     `,
     subject: `Your Booking has Been Rejected - ${bookingDetails.roomName}`,
     to,

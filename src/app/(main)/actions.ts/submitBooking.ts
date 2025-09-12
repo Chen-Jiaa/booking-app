@@ -1,9 +1,10 @@
-"use server"
+'use server'
 
+import { db } from "@/db";
+import { bookings, rooms } from "@/db/schema";
+import { createCalendarEvent } from "@/lib/google-calendar";
 import { sendBookingConfirmationEmail, sendBookingEmail } from "@/lib/sendBookingEmail";
-import { createClient } from "@/lib/supabase/server";
-// import { syncToCalendar } from "@/lib/sync-calendar";
-import { Bookings } from "@/types/booking";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 const formSchema = z.object({
@@ -19,9 +20,8 @@ const formSchema = z.object({
   })
   
 export async function submitBooking(values: z.infer<typeof formSchema>) {
+  const bookingWithEventId = await db.transaction(async (tx) => {
     formSchema.parse(values)
-
-    const supabase = await createClient()
     
     const {
         email,
@@ -35,85 +35,71 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
         userId,
       } = values
 
-      const { data: room, error: roomError } = await supabase
-        .from("rooms")
-        .select("approval_required, approvers")
-        .eq("id", selectedRoomId)
-        .single()
+      const selectedRoom = await tx
+        .select({
+          approvalRequired: rooms.approvalRequired,
+          approvers: rooms.approvers,
+        })
+        .from(rooms)
+        .where(eq(rooms.id, selectedRoomId))
+        .limit(1)
 
-      if (roomError) throw new Error("Failed to fetch room data: " + roomError.message)
+      const room = selectedRoom[0] as typeof selectedRoom[0] | undefined
 
-      const approvalRequired = room.approval_required === true
-      const approvers: string[] = room.approvers as string[]
-
-      const status = approvalRequired ? "pending" : "confirmed"
-    
-      const {data, error} : {
-        data: Bookings | null,
-        error: Error | null
-      } = await supabase
-          .from("bookings")
-          .insert([
-              {
-                email,
-                end_time: fullEndTime,
-                name,
-                phone,
-                purpose,
-                room_id: selectedRoomId,
-                room_name: selectedRoomName,
-                start_time: fullStartTime,
-                status,
-                user_id: userId ?? null,
-              }
-          ])
-          .select()
-          .single()
-
-      if (error) throw new Error(error.message)
-
-      if (!data) {
-        throw new Error("Booking data is null after insert.");
+      if (!room) {
+        throw new Error("The selected room could not be found.")
       }
 
-      const booking = data
-      
-      // await syncToCalendar({
-      //   bookingId: booking.id,
-      //   email: values.email,
-      //   fullEndTime,
-      //   fullStartTime,
-      //   name: values.name,
-      //   phone: values.phone,
-      //   purpose: values.purpose,
-      //   selectedRoomName,
-      //   status
-      // })
-      
-      await (approvalRequired && approvers.length > 0 ? Promise.all(approvers.map((approverEmail) =>
-          sendBookingEmail({
-            bookingId: booking.id,
-            email: values.email,
-            fullEndTime,
-            fullStartTime,
-            name,
-            phone: values.phone,
-            purpose,
-            selectedRoomName,
-            to: approverEmail,
-          })
-        )) : sendBookingConfirmationEmail({
-          bookingId: booking.id,
+      const approvalRequired = room.approvalRequired === true;
+      const approvers = room.approvers ?? [];
+      const status = approvalRequired ? "pending" : "confirmed";
+
+      const insertedBookingresult = await tx
+        .insert(bookings)
+        .values({
           email,
-          fullEndTime,
-          fullStartTime,
+          endTime: new Date(fullEndTime),
           name,
           phone,
           purpose,
-          selectedRoomName,
-          to: email,
-        }));
+          roomId: selectedRoomId,
+          roomName: selectedRoomName,
+          startTime: new Date(fullStartTime),
+          status,
+          userId: userId ?? null,
+        })
+        .returning()
+
+      const insertedBooking = insertedBookingresult[0] as typeof insertedBookingresult [0] | undefined
         
-      return booking
-    
+      if (!insertedBooking) {
+        throw new Error("Failed to create booking in the database.");
+      }
+
+      const eventId = await createCalendarEvent(insertedBooking);
+
+      const [finalBooking] = await tx
+        .update(bookings)
+        .set({eventId: eventId})
+        .where(eq(bookings.id, insertedBooking.id))
+        .returning()
+      
+      
+        await (approvalRequired && approvers.length > 0 ? Promise.all(
+              approvers.map((approverEmail) =>
+                sendBookingEmail({
+                  ...insertedBooking,
+                  to: approverEmail,
+                })
+              )
+            ) : sendBookingConfirmationEmail({
+              ...insertedBooking,
+              to: email
+          }));
+      
+      
+      return finalBooking;
+  });
+
+  return bookingWithEventId
 }

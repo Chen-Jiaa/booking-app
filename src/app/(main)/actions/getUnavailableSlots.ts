@@ -1,54 +1,43 @@
 'use server'
 
-import { db } from "@/db";
-import { bookings } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
-import { addMinutes, format } from "date-fns";
+import { addMinutes, format, parseISO } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-import { and, eq, gte, inArray, lt } from "drizzle-orm";
+
+interface BookingType {
+  end_time: string;
+  start_time: string;
+}
 
 export async function getUnavailableSlots(
     roomId: string, selectedDate: Date, timezone = 'Asia/Kuala_Lumpur'
 ): Promise<Set<string>> {
 
     try {
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(selectedDate.getDate()).padStart(2, '0');
-        
-        const dayStartUTC = new Date(`${String(year)}-${month}-${day}T00:00:00+08:00`);
-        const dayEndUTC = new Date(`${String(year)}-${month}-${day}T23:59:59+08:00`);
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
 
-        // const existingBookings = await db
-        //     .select({
-        //         endTime: bookings.endTime,
-        //         startTime: bookings.startTime
-        //     })
-        //     .from(bookings)
-        //     .where(
-        //         and(
-        //             eq(bookings.roomId, roomId),
-        //             inArray(bookings.status, ["pending", "confirmed"]),
-        //             gte(bookings.startTime, dayStartUTC),
-        //             lt(bookings.startTime, dayEndUTC)
-        //         )
-        //     )
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        const dayStartISO = startOfDay.toISOString();
+        const dayEndISO = endOfDay.toISOString();
 
         const supabase = await createClient()
 
-        const {data: bookings} = await supabase
+        const { data: existingBookings } = await supabase
           .from("bookings")
-          .select("start_time, end_time")
+          .select<string, BookingType>("start_time, end_time")
           .eq("room_id", roomId)
           .in("status", ["pending", "confirmed"])
-          .gte("start_time", `${dayStartUTC}T00:00:00`)
-          .lt("start_time", `${dayEndUTC}T23:59:59`)
+          .gte("start_time", dayStartISO)
+          .lt("start_time", dayEndISO)
 
         const booked = new Set<string>()
-        if (existingBookings.length > 0) {
+        if (existingBookings && existingBookings.length > 0) {
             for (const booking of existingBookings) {
-                let currentSlot = toZonedTime(booking.startTime, timezone);
-                const endTimeLocal = toZonedTime(booking.endTime, timezone);
+                let currentSlot = toZonedTime(parseISO(booking.start_time), timezone);
+                const endTimeLocal = toZonedTime(parseISO(booking.end_time), timezone);
 
                 while (currentSlot < endTimeLocal) {
                     const timeStr = format(currentSlot, "HH:mm");
@@ -58,7 +47,7 @@ export async function getUnavailableSlots(
             }
         }
 
-        // console.log('Booked slots:', [...booked]);
+        console.log('Booked slots:', [...booked]);
 
 
         return booked;

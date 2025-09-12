@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type Rooms } from "@/db/schema";
 import { Circle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import BookingForm2 from "./BookingForm";
 import BookingSummary from "./BookingSummary";
@@ -38,16 +38,16 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
     }
   };
 
-  const handleBookNowClickAlwaysReset = useCallback((room: Rooms) => {
-    setSelectedRoom(room);
-    setIsDialogOpen(true);
-    setDate(createTodayDate()); // Always reset to clean today
-  }, []);
+  // const handleBookNowClickAlwaysReset = useCallback((room: Rooms) => {
+  //   setSelectedRoom(room);
+  //   setIsDialogOpen(true);
+  //   setDate(createTodayDate()); // Always reset to clean today
+  // }, []);
 
   return (
     <div className="container mt-2 mx-auto py-3 px-6">
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-        {rooms.map((room) => (
+        {roomData.map((room) => (
           <Card key={room.id}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -114,7 +114,7 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                         goToStep2={() => {
                           setStep("2");
                         }}
-                        rooms={rooms}
+                        rooms={roomData}
                         selectedRoom={selectedRoom}
                         setDate={setDate}
                         setEndTime={setEndTime}
