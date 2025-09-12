@@ -1,9 +1,22 @@
-"use client"
+"use client";
 
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { type Bookings } from "@/db/schema";
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
@@ -19,9 +32,10 @@ interface TableProps {
 }
 
 export function Table2({
-  bookingData, page, pageCount
-}: TableProps): ReactElement{
-
+  bookingData,
+  page,
+  pageCount,
+}: TableProps): ReactElement {
   return (
     <div className="p-6">
       <h2 className="font-bold">Recent Bookings</h2>
@@ -41,56 +55,61 @@ export function Table2({
         <TableBody>
           {bookingData.map(
             ({ endTime, id, name, phone, roomName, startTime, status }) => (
-            <TableRow key={id}>
-              <TableCell>{name}</TableCell>
-              <TableCell className="text-left">{phone}</TableCell>
-              <TableCell className="text-left">{roomName}</TableCell>
-              <TableCell className="text-left">
-                {formatBookingDate(startTime)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatBookingTime(startTime)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatBookingTime(endTime)}
-              </TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      className={cn(
-                        "flex ml-auto px-2 py-1 rounded-sm text-sm capitalize",
-                        status === "pending" && "bg-orange-100 text-orange-800 hover:bg-orange-200",
-                        status === "confirmed" && "bg-green-100 text-green-800 hover:bg-green-200",
-                        status === "rejected" && "bg-red-100 text-red-800 hover:bg-red-200"
-                      )}
-                      variant="ghost"
-                    >
-                      {status}<ChevronDown />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        void updateBookingStatus(id, 'confirmed')
-                      }}
-                    >
+              <TableRow key={id}>
+                <TableCell>{name}</TableCell>
+                <TableCell className="text-left">{phone}</TableCell>
+                <TableCell className="text-left">{roomName}</TableCell>
+                <TableCell className="text-left">
+                  {formatBookingDate(startTime)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatBookingTime(startTime)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatBookingTime(endTime)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        className={cn(
+                          "flex ml-auto px-2 py-1 rounded-sm text-sm capitalize",
+                          status === "pending" &&
+                            "bg-orange-100 text-orange-800 hover:bg-orange-200",
+                          status === "confirmed" &&
+                            "bg-green-100 text-green-800 hover:bg-green-200",
+                          status === "rejected" &&
+                            "bg-red-100 text-red-800 hover:bg-red-200"
+                        )}
+                        variant="ghost"
+                      >
+                        {status}
+                        <ChevronDown />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          void updateBookingStatus(id, "confirmed");
+                        }}
+                      >
                         Approve
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-red-500" 
-                      onClick={() => {
-                        void updateBookingStatus(id, 'rejected')
-                      }}
-                    >
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-500"
+                        onClick={() => {
+                          void updateBookingStatus(id, "rejected");
+                        }}
+                      >
                         Reject
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            )
+          )}
         </TableBody>
       </Table>
       <div className="mt-4">
