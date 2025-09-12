@@ -1,38 +1,34 @@
 'use server'
 
-import { updateCalendarEvent } from "@/lib/google-calendar";
-import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+import { db } from "@/db"
+import { bookings } from "@/db/schema"
+import { updateCalendarEvent } from "@/lib/google-calendar"
+import { eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 
-export async function cancelUserBooking(id: number): Promise<void> {
+export async function cancelUserBooking(id:number): Promise<void> {
 
-    try {
-        const supabase = await createClient();
+  try {
+    await db.transaction(async (tx) => {
+      const result = await tx
+        .update(bookings)
+        .set({status: "cancelled"})
+        .where(eq(bookings.id, id))
+        .returning();
 
-        const { data: result, error } = await supabase
-            .from("bookings")
-            .update({ status: "cancelled" })
-            .eq("id", id)
-            .select()
-            .single();
+      const cancelledBooking = result[0] as typeof result[0] | undefined
 
-         const cancelledBooking = result[0] as typeof result[0] | undefined
+      if (!cancelledBooking) {
+        throw new Error("Failed to cancel booking: Booking not found.");
+      }
 
-        if (error) {
-            console.error("Supabase error:", error);
-            throw new Error(error.message);
-        }
+      await updateCalendarEvent(cancelledBooking)
+    });
 
-        if (!cancelledBooking) {
-            throw new Error("Failed to cancel booking: Booking not found.");
-        }
-
-        // The logic for updating the calendar event can remain the same
-        await updateCalendarEvent(cancelledBooking);
-
-        revalidatePath("/bookings");
-    } catch (error) {
-        console.error("Error in cancelUserBooking:", error);
-        throw new Error("Failed to cancel the booking.");
-    }
+    revalidatePath("/bookings")
+  } catch (error) {
+    console.error("Error in cancelUserBooking:", error);
+    // Re-throw the error so the client-side code knows the operation failed.
+    throw new Error("Failed to cancel the booking.");
+  }
 }
