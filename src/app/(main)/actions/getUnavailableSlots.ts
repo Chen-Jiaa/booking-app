@@ -14,14 +14,14 @@ export async function getUnavailableSlots(
 ): Promise<Set<string>> {
 
     try {
-        const startOfDay = new Date(selectedDate);
-        startOfDay.setHours(0, 0, 0, 0);
+        const startOfDayLocal = toZonedTime(selectedDate, timezone);
+        startOfDayLocal.setHours(0, 0, 0, 0);
 
-        const endOfDay = new Date(selectedDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        const endOfDayLocal = toZonedTime(selectedDate, timezone);
+        endOfDayLocal.setHours(23, 59, 59, 999);
         
-        const dayStartISO = startOfDay.toISOString();
-        const dayEndISO = endOfDay.toISOString();
+        const dayStartISO = startOfDayLocal.toISOString();
+        const dayEndISO = endOfDayLocal.toISOString();
 
         const supabase = await createClient()
 
