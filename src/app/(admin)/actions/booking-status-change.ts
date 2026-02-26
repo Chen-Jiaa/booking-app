@@ -3,7 +3,7 @@
 import { createCalendarEvent, updateCalendarEvent } from "@/lib/google-calendar";
 import { sendBookingConfirmationEmail, sendBookingRejectionEmail } from "@/lib/sendBookingEmail";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+
 
 // Corrected Bookings interface to match the camelCase Drizzle schema
 export interface Bookings {
@@ -139,11 +139,21 @@ export async function updateBookingStatus(
           await sendBookingRejectionEmail({ ...updatedBooking, to: updatedBooking.email });
         }
       })();
-    revalidatePath('/admin/bookings');
-    return { success: true };
+    return {
+      booking: {
+        email: updatedBooking.email,
+        endTime: updatedBooking.endTime.toISOString(),
+        name: updatedBooking.name,
+        purpose: updatedBooking.purpose,
+        roomName: updatedBooking.roomName,
+        startTime: updatedBooking.startTime.toISOString(),
+        status: updatedBooking.status,
+      },
+      success: true as const,
+    };
 
   } catch (error) {
     console.error('Failed to update booking status:', error);
-    return { error: 'Failed to update booking status', success: false };
+    return { error: 'Failed to update booking status', success: false as const };
   }
 }

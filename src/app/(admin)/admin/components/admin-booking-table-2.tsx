@@ -79,7 +79,7 @@ export function Table2({
                           status === "confirmed" &&
                             "bg-green-100 text-green-800 hover:bg-green-200",
                           status === "rejected" &&
-                            "bg-red-100 text-red-800 hover:bg-red-200"
+                            "bg-red-100 text-red-800 hover:bg-red-200",
                         )}
                         variant="ghost"
                       >
@@ -108,7 +108,7 @@ export function Table2({
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            )
+            ),
           )}
         </TableBody>
       </Table>

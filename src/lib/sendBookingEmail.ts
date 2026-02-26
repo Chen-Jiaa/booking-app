@@ -37,12 +37,12 @@ export async function sendBookingEmail(props: SendEmailProps) {
     html: `
       <p>You have a new booking request for:</p>
       ${renderBookingDetailsHtml(bookingDetails)}
-      <a href="https://booking.collective.my/api/approve?id=${bookingDetails.id.toString()}"
+      <a href="https://booking.collective.my/admin/bookings/approve/${bookingDetails.id.toString()}"
         style="display: inline-block; padding: 10px 20px; margin-right: 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
         ✅ Approve
       </a>
 
-      <a href="https://booking.collective.my/api/reject?id=${bookingDetails.id.toString()}"
+      <a href="https://booking.collective.my/admin/bookings/reject/${bookingDetails.id.toString()}"
         style="display: inline-block; padding: 10px 20px; background-color: #f44336; color: white; text-decoration: none; border-radius: 5px;">
         ❌ Reject
       </a>
