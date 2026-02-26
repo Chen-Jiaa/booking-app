@@ -3,6 +3,7 @@
 import { createCalendarEvent, updateCalendarEvent } from "@/lib/google-calendar";
 import { sendBookingConfirmationEmail, sendBookingRejectionEmail } from "@/lib/sendBookingEmail";
 import { createClient } from "@/lib/supabase/server";
+import { after } from "next/server";
 
 
 // Corrected Bookings interface to match the camelCase Drizzle schema
@@ -126,19 +127,22 @@ export async function updateBookingStatus(
         await updateCalendarEvent(bookingForCalendar);
     }
 
-    await (async () => {
-        if (!updatedBooking.email) {
-          console.warn(`Booking ID ${updatedBooking.id.toString()} was updated to "${newStatus}", but no email is on file.`);
+    // Schedule email sending after the response is sent — non-blocking
+    const bookingEmail = updatedBooking.email;
+    const bookingId_str = updatedBooking.id.toString();
+    after(async () => {
+        if (!bookingEmail) {
+          console.warn(`Booking ID ${bookingId_str} was updated to "${newStatus}", but no email is on file.`);
           return;
         }
 
         if (newStatus === 'confirmed') {
-          // Pass the original updatedBooking object, which now correctly matches the SendEmailProps type
-          await sendBookingConfirmationEmail({ ...updatedBooking, to: updatedBooking.email });
+          await sendBookingConfirmationEmail({ ...updatedBooking, to: bookingEmail });
         } else if (newStatus === 'rejected') {
-          await sendBookingRejectionEmail({ ...updatedBooking, to: updatedBooking.email });
+          await sendBookingRejectionEmail({ ...updatedBooking, to: bookingEmail });
         }
-      })();
+    });
+
     return {
       booking: {
         email: updatedBooking.email,
