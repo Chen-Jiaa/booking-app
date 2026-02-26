@@ -34,9 +34,11 @@ import { ArrowUpDown, ChevronDown } from "lucide-react";
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { updateUserRole } from "../actions";
+
 interface User {
     id: string,
-    role: 'admin' | 'user'
+    role: 'admin' | 'event_manager' | 'user'
 }
 
 export default function UserTable() {
@@ -67,14 +69,10 @@ export default function UserTable() {
   }, [])
 
   const handleRoleChange = useCallback( async (id: string, newRole: User['role']) => {
-    const {error} = await supabase
-    .from("profiles")
-    .update({role: newRole})
-    .eq("id", id)
-    .select()
+    const result = await updateUserRole(id, newRole)
 
-    if (error) {
-      console.log("error changing user status", error)
+    if (!result.success) {
+      console.log("error changing user role", result.error)
       return
     }  
       
@@ -174,6 +172,7 @@ export default function UserTable() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Make User</DropdownMenuLabel>
                 <DropdownMenuItem disabled={user.role === 'admin'} onClick={() => {void handleRoleChange(user.id, 'admin')}}>Admin</DropdownMenuItem>
+                <DropdownMenuItem disabled={user.role === 'event_manager'} onClick={() => {void handleRoleChange(user.id, 'event_manager')}}>Event Manager</DropdownMenuItem>
                 <DropdownMenuItem disabled={user.role === 'user'} onClick={() => {void handleRoleChange(user.id, 'user')}}>User</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

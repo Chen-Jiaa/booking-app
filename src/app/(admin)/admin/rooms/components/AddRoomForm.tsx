@@ -6,12 +6,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { supabase } from "@/lib/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
+
+import { addRoom } from "../actions"
 
 const RoomSchema = z.object({
     approval_required: z.boolean(),
@@ -64,18 +65,15 @@ export default function AddRooms({adminEmails} : {adminEmails: string[]}) {
     
     const onSubmit = async (data: RoomFormData) => {
         setIsLoading(true)
-        const { error } = await supabase
-            .from("rooms")
-            .insert([data])
+        const result = await addRoom(data)
 
-        if (error) {
-        console.log(error)
-        setFormError("Something went wrong. Please try again.")
-        setIsLoading(false)
-        } else {
+        if (result.success) {
         setFormError(null)
         setIsLoading(false)
         form.reset()
+        } else {
+        setFormError(result.error ?? "Something went wrong. Please try again.")
+        setIsLoading(false)
         }
     };
 
