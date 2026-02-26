@@ -16,23 +16,6 @@ interface CalendarListProps {
 
 const TIMEZONE = "Asia/Kuala_Lumpur"
 
-function formatTime(date: Date) {
-  return format(toZonedTime(date, TIMEZONE), "h:mm a")
-}
-
-function getStatusStyles(status: string) {
-  switch (status) {
-    case "confirmed":
-      return "bg-green-100 text-green-800"
-    case "pending":
-      return "bg-orange-100 text-orange-800"
-    case "rejected":
-      return "bg-red-100 text-red-800"
-    default:
-      return "bg-gray-100 text-gray-800"
-  }
-}
-
 export function CalendarList({ bookings, weekStart }: CalendarListProps) {
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
@@ -99,4 +82,25 @@ export function CalendarList({ bookings, weekStart }: CalendarListProps) {
       })}
     </div>
   )
+}
+
+function formatTime(date: Date) {
+  return format(toZonedTime(date, TIMEZONE), "h:mm a")
+}
+
+function getStatusStyles(status: string) {
+  switch (status) {
+    case "confirmed": {
+      return "bg-green-100 text-green-800"
+    }
+    case "pending": {
+      return "bg-orange-100 text-orange-800"
+    }
+    case "rejected": {
+      return "bg-red-100 text-red-800"
+    }
+    default: {
+      return "bg-gray-100 text-gray-800"
+    }
+  }
 }

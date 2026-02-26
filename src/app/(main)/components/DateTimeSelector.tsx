@@ -24,7 +24,7 @@ import { generateTimeSlots } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 import { addWeeks, startOfToday } from "date-fns";
 import { ChevronDown, Clock, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { getUnavailableSlots } from "../actions/getUnavailableSlots";
@@ -79,26 +79,15 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
     }
   };
 
-  const resetSlots = useCallback(() => {
-    setBookedSlots(new Set());
-  }, []);
-
-  // Create a callback for updating booked slots
-  const updateBookedSlots = useCallback((slots: Set<string>) => {
-    setBookedSlots(slots);
-  }, []);
-
-  useEffect(() => {
-    console.log("Resetting slots - room or date changed");
-    resetSlots();
-    setStartTime(undefined);
-    setEndTime(undefined);
-  }, [selectedRoomId, dateString, setEndTime, setStartTime, resetSlots]);
-
   useEffect(() => {
     let isCancelled = false;
 
     const fetchAvailability = async () => {
+      setStartTime(undefined);
+      setEndTime(undefined);
+
+      setBookedSlots(new Set());
+
       if (!date || !selectedRoom) return;
 
       setIsCheckingAvailability(true);
@@ -110,11 +99,11 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
         const booked = await getUnavailableSlots(
           selectedRoom.id,
           date,
-          userTimezone
+          userTimezone,
         );
 
         if (!isCancelled) {
-          updateBookedSlots(booked);
+          setBookedSlots(booked);
         }
       } catch (error) {
         if (!isCancelled) {
@@ -135,7 +124,14 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
     return () => {
       isCancelled = true;
     };
-  }, [selectedRoom, date, selectedRoomId, dateString, updateBookedSlots]);
+  }, [
+    selectedRoom,
+    date,
+    selectedRoomId,
+    dateString,
+    setStartTime,
+    setEndTime,
+  ]);
 
   const getNextTimeSlot = (currentTime: string): null | string => {
     const currentIndex = timeSlots.indexOf(currentTime);
@@ -313,7 +309,7 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
                   className={cn(
                     "h-10 px-2 text-xs",
                     isSelected && "bg-primary text-primary-foreground",
-                    !isAvailable && "opacity-50 cursor-not-allowed"
+                    !isAvailable && "opacity-50 cursor-not-allowed",
                   )}
                   disabled={!isAvailable}
                   key={time}

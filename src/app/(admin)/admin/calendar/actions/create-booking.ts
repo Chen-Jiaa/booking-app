@@ -30,10 +30,6 @@ export async function createAdminBooking(input: CreateBookingInput) {
       .where(eq(rooms.id, validated.roomId))
       .limit(1);
 
-    if (!room) {
-      throw new Error("Room not found");
-    }
-
     const [insertedBooking] = await tx
       .insert(bookings)
       .values({
@@ -48,10 +44,6 @@ export async function createAdminBooking(input: CreateBookingInput) {
         status: validated.status,
       })
       .returning();
-
-    if (!insertedBooking) {
-      throw new Error("Failed to create booking");
-    }
 
     const eventId = await createCalendarEvent(insertedBooking);
 

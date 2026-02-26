@@ -2,22 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 
-interface SupabaseBooking {
-  created_at: string;
-  email: string;
-  end_time: string;
-  event_id: null | string;
-  id: number;
-  name: string;
-  phone: string;
-  purpose: string;
-  room_id: null | string;
-  room_name: string;
-  start_time: string;
-  status: string;
-  user_id: null | string;
-}
-
 export interface CalendarBooking {
   createdAt: Date;
   email: string;
@@ -32,6 +16,22 @@ export interface CalendarBooking {
   startTime: Date;
   status: string;
   userId: null | string;
+}
+
+interface SupabaseBooking {
+  created_at: string;
+  email: string;
+  end_time: string;
+  event_id: null | string;
+  id: number;
+  name: string;
+  phone: string;
+  purpose: string;
+  room_id: null | string;
+  room_name: string;
+  start_time: string;
+  status: string;
+  user_id: null | string;
 }
 
 export async function fetchWeekBookings(

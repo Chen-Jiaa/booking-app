@@ -6,7 +6,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { format } from "date-fns"
 import { CalendarIcon, Loader2 } from "lucide-react"
@@ -59,12 +58,12 @@ export function CreateBookingPopover({
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const defaultStartTime = prefilledHour !== undefined
-    ? `${prefilledHour.toString().padStart(2, "0")}:00`
-    : "08:00"
-  const defaultEndTime = prefilledHour !== undefined
-    ? `${(prefilledHour + 1).toString().padStart(2, "0")}:00`
-    : "09:00"
+  const defaultStartTime = prefilledHour === undefined
+    ? "08:00"
+    : `${prefilledHour.toString().padStart(2, "0")}:00`
+  const defaultEndTime = prefilledHour === undefined
+    ? "09:00"
+    : `${(prefilledHour + 1).toString().padStart(2, "0")}:00`
 
   const form = useForm<z.infer<typeof formSchema>>({
     defaultValues: {
@@ -125,7 +124,7 @@ export function CreateBookingPopover({
           </div>
 
           <Form {...form}>
-            <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)}>
+            <form className="space-y-3" onSubmit={(e) => void form.handleSubmit(onSubmit)(e)}>
               <div className="grid grid-cols-2 gap-2">
                 <FormField
                   control={form.control}
@@ -137,13 +136,10 @@ export function CreateBookingPopover({
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
+                              className="w-full pl-3 text-left font-normal"
                               variant="outline"
                             >
-                              {field.value ? format(field.value, "MMM d") : "Pick date"}
+                              {format(field.value, "MMM d")}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
@@ -195,13 +191,10 @@ export function CreateBookingPopover({
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
+                              className="w-full pl-3 text-left font-normal"
                               variant="outline"
                             >
-                              {field.value ? format(field.value, "MMM d") : "Pick date"}
+                              {format(field.value, "MMM d")}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>

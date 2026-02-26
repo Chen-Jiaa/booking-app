@@ -43,9 +43,11 @@ Update the file after completing each sub-task, not just after completing an ent
 ## Tasks
 
 - [x] 0.0 Create feature branch
+
   - [x] 0.1 Create and checkout a new branch for this feature (e.g., `git checkout -b fix/code-review-fixes`)
 
 - [x] 1.0 Fix critical API route security vulnerabilities (Issues #1, #2, #3, #4, #9)
+
   - [x] 1.1 **Approve/Reject routes → Server Actions:** Create a new file `src/app/(admin)/actions/approve-reject-booking.ts` with two Server Actions: `approveBooking(bookingId: number)` and `rejectBooking(bookingId: number)`. Each must: (a) call `getUserAndRole()` to verify the caller is an `admin`, (b) update the booking status in the database using Drizzle ORM (not Supabase client), (c) trigger the appropriate Google Calendar update, and (d) send the confirmation/rejection email.
   - [x] 1.2 **Update email links:** In `src/lib/sendBookingEmail.ts`, replace the approve/reject `<a href>` links (which currently call `GET /api/approve?id=...` and `GET /api/reject?id=...`) with links that navigate to an admin booking management page (e.g., `https://booking.collective.my/admin/bookings`) instead of performing mutations via URL. The actual approve/reject actions will be triggered from the admin UI using the new Server Actions.
   - [x] 1.3 **Delete old API routes:** Delete the directories `src/app/api/approve/` and `src/app/api/reject/` entirely, since their functionality is replaced by the Server Actions from step 1.1.
@@ -54,17 +56,20 @@ Update the file after completing each sub-task, not just after completing an ent
   - [x] 1.6 **Verify:** Run `pnpm build` to ensure no broken imports. Manually test the admin booking approval flow from the admin UI.
 
 - [x] 2.0 Fix broken signOut handler (Issue #15)
-  - [x] 2.1 In `src/app/(admin)/admin/components/nav-user.tsx`, on line 54, change `onClick={() => void signOut}` to `onClick={() => { void signOut() }}` — the current code references the function without calling it, so clicking "Log out" does nothing.
-  - [ ] 2.2 **Verify:** Run `pnpm dev`, navigate to the admin sidebar, and confirm clicking "Log out" actually signs the user out and refreshes the page.
 
-- [ ] 3.0 Consolidate layouts into a shared root layout (Issues #5, #6)
-  - [ ] 3.1 **Create root layout:** Create `src/app/layout.tsx` with the shared `<html>` and `<body>` tags, `<SupabaseProvider>`, `<SpeedInsights>`, and `<Analytics>`. This becomes the single source for the document shell.
-  - [ ] 3.2 **Refactor `(main)` layout:** In `src/app/(main)/layout.tsx`, remove the `<html>`, `<body>`, `<SupabaseProvider>`, `<SpeedInsights>`, and `<Analytics>` wrappers. Keep only the route-group-specific UI: `<NavBar>`, `{children}`, and `<Footer>`.
-  - [ ] 3.3 **Refactor `(admin)` layout:** In `src/app/(admin)/layout.tsx`, remove the `<html>`, `<body>`, `<SupabaseProvider>`, `<SpeedInsights>`, and `<Analytics>` wrappers. Keep only the route-group-specific UI: `<SidebarProvider>`, `<AppSidebar>`, `<SidebarInset>`, header, `{children}`, and `<Footer>`.
-  - [ ] 3.4 **Move `globals.css` import:** Ensure `globals.css` is imported only in the new root `src/app/layout.tsx`, and remove duplicate imports from `(main)/layout.tsx` and `(admin)/layout.tsx`.
-  - [ ] 3.5 **Verify:** Run `pnpm dev`. Navigate between main pages (`/`, `/bookings`) and admin pages (`/admin/bookings`, `/admin/rooms`) to confirm: (a) no full-page reloads between route groups, (b) styles load correctly, (c) Supabase auth context is preserved across route groups.
+  - [x] 2.1 In `src/app/(admin)/admin/components/nav-user.tsx`, on line 54, change `onClick={() => void signOut}` to `onClick={() => { void signOut() }}` — the current code references the function without calling it, so clicking "Log out" does nothing.
+  - [x] 2.2 **Verify:** Run `pnpm dev`, navigate to the admin sidebar, and confirm clicking "Log out" actually signs the user out and refreshes the page.
+
+- [x] 3.0 Consolidate layouts into a shared root layout (Issues #5, #6)
+
+  - [x] 3.1 **Create root layout:** Create `src/app/layout.tsx` with the shared `<html>` and `<body>` tags, `<SupabaseProvider>`, `<SpeedInsights>`, and `<Analytics>`. This becomes the single source for the document shell.
+  - [x] 3.2 **Refactor `(main)` layout:** In `src/app/(main)/layout.tsx`, remove the `<html>`, `<body>`, `<SupabaseProvider>`, `<SpeedInsights>`, and `<Analytics>` wrappers. Keep only the route-group-specific UI: `<NavBar>`, `{children}`, and `<Footer>`.
+  - [x] 3.3 **Refactor `(admin)` layout:** In `src/app/(admin)/layout.tsx`, remove the `<html>`, `<body>`, `<SupabaseProvider>`, `<SpeedInsights>`, and `<Analytics>` wrappers. Keep only the route-group-specific UI: `<SidebarProvider>`, `<AppSidebar>`, `<SidebarInset>`, header, `{children}`, and `<Footer>`.
+  - [x] 3.4 **Move `globals.css` import:** Ensure `globals.css` is imported only in the new root `src/app/layout.tsx`, and remove duplicate imports from `(main)/layout.tsx` and `(admin)/layout.tsx`.
+  - [x] 3.5 **Verify:** Run `pnpm dev`. Navigate between main pages (`/`, `/bookings`) and admin pages (`/admin/bookings`, `/admin/rooms`) to confirm: (a) no full-page reloads between route groups, (b) styles load correctly, (c) Supabase auth context is preserved across route groups.
 
 - [ ] 4.0 Move client-side mutations to authenticated Server Actions (Issues #10, #11)
+
   - [ ] 4.1 **Create user role Server Action:** Create `src/app/(admin)/admin/users/actions.ts` with a `updateUserRole(userId: string, newRole: 'admin' | 'event_manager' | 'user')` Server Action. It must: (a) call `getUserAndRole()` to verify the caller is an `admin`, (b) use Drizzle ORM to update the `profiles` table (`db.update(profiles).set({ role: newRole }).where(eq(profiles.id, userId))`), (c) call `revalidatePath('/admin/users')`.
   - [ ] 4.2 **Update UserTable.tsx:** Refactor `src/app/(admin)/admin/users/components/UserTable.tsx` to call the new `updateUserRole` Server Action instead of directly mutating via the client-side Supabase SDK (`supabase.from("profiles").update(...)`). Update the role type to include `'event_manager'`. Add an "Event Manager" option to the dropdown menu alongside "Admin" and "User".
   - [ ] 4.3 **Create room Server Action:** In `src/app/(admin)/admin/rooms/actions.ts` (existing file), add an `addRoom` Server Action. It must: (a) call `getUserAndRole()` to verify the caller is an `admin`, (b) validate input with the same Zod schema, (c) use Drizzle ORM to insert into the `rooms` table, (d) call `revalidatePath('/admin/rooms')`.
@@ -72,12 +77,14 @@ Update the file after completing each sub-task, not just after completing an ent
   - [ ] 4.5 **Verify:** Run `pnpm build`. Test adding a room from the admin UI and changing a user's role from the admin Users Table. Confirm the mutations work and the pages revalidate.
 
 - [ ] 5.0 Optimize async operations — transaction scope and non-blocking emails (Issues #7, #8, #13)
+
   - [ ] 5.1 **Move `createCalendarEvent` outside transaction:** In `src/app/(main)/actions/submitBooking.ts`, refactor so the DB transaction only handles the database insert and returns the inserted booking. After the transaction completes, call `createCalendarEvent()` and then update the booking's `eventId` in a separate query. This prevents holding a DB connection open during the external Google Calendar API call (which can take 200ms–2s).
   - [ ] 5.2 **Move email sending to `after()`:** In `src/app/(main)/actions/submitBooking.ts`, use `import { after } from 'next/server'` to schedule the email sending (`sendBookingEmail` / `sendBookingConfirmationEmail`) to run after the response is sent. This avoids blocking the user's response while waiting for Resend API calls. Note: `after()` runs outside the request context, so gather all needed data (booking details, approver emails, recipient email) before calling `after()`.
   - [ ] 5.3 **Move email sending to `after()` in booking-status-change:** In `src/app/(admin)/actions/booking-status-change.ts`, wrap the `sendBookingConfirmationEmail` and `sendBookingRejectionEmail` calls in `after()` so the admin UI responds immediately without waiting for email delivery.
   - [ ] 5.4 **Verify:** Run `pnpm build`. Test creating a new booking and approving/rejecting a booking. Confirm: (a) the response returns quickly, (b) the Google Calendar event is created, (c) emails are received (may take a few seconds since they're now non-blocking).
 
 - [ ] 6.0 Standardize data access layer — consolidate on Drizzle ORM (Issue #14)
+
   - [ ] 6.1 **Refactor `booking-status-change.ts` to use Drizzle:** In `src/app/(admin)/actions/booking-status-change.ts`, replace the Supabase client calls (`supabase.from("bookings").update(...)`) with Drizzle ORM queries (`db.update(bookings).set(...).where(eq(bookings.id, bookingId)).returning()`). This eliminates the need for the `SupabaseBooking` snake_case interface and the manual camelCase mapping, since Drizzle returns camelCase fields matching the schema.
   - [ ] 6.2 **Remove unused interfaces:** After refactoring to Drizzle, remove the `SupabaseBooking` interface and the `CalendarEventBooking` interface from `booking-status-change.ts`. Use the `Bookings` type exported from `@/db/schema` instead. Also remove the locally-defined `Bookings` interface (lines 9–23) since `@/db/schema` already exports this type.
   - [ ] 6.3 **Remove Supabase server import:** Remove `import { createClient } from "@/lib/supabase/server"` from `booking-status-change.ts` if no longer used.

@@ -16,14 +16,6 @@ interface BookingPopoverProps {
 
 const TIMEZONE = "Asia/Kuala_Lumpur"
 
-function formatTime(date: Date) {
-  return format(toZonedTime(date, TIMEZONE), "h:mm a")
-}
-
-function formatDate(date: Date) {
-  return format(toZonedTime(date, TIMEZONE), "EEE, MMM d")
-}
-
 export function BookingPopover({ booking, children }: BookingPopoverProps) {
   const statusStyles = {
     confirmed: "bg-green-100 text-green-800",
@@ -68,4 +60,12 @@ export function BookingPopover({ booking, children }: BookingPopoverProps) {
       </PopoverContent>
     </Popover>
   )
+}
+
+function formatDate(date: Date) {
+  return format(toZonedTime(date, TIMEZONE), "EEE, MMM d")
+}
+
+function formatTime(date: Date) {
+  return format(toZonedTime(date, TIMEZONE), "h:mm a")
 }
