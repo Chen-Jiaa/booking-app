@@ -1,5 +1,5 @@
 import { type Bookings } from '@/db/schema';
-import { auth as googleAuth, calendar_v3 } from '@googleapis/calendar';
+import { calendar_v3, auth as googleAuth } from '@googleapis/calendar';
 
 // Helper to ensure env variables are set
 function requireEnv(varName: string): string {
