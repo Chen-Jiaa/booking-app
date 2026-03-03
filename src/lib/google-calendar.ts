@@ -1,5 +1,5 @@
 import { type Bookings } from '@/db/schema';
-import { google } from 'googleapis';
+import { auth as googleAuth, calendar_v3 } from '@googleapis/calendar';
 
 // Helper to ensure env variables are set
 function requireEnv(varName: string): string {
@@ -13,12 +13,12 @@ function requireEnv(varName: string): string {
 // --- Google Auth Setup (Do this once at the top) ---
 const calendarId = requireEnv("GOOGLE_CALENDAR_ID");
 const privateKey = requireEnv("GOOGLE_PRIVATE_KEY").replaceAll(String.raw`\n`, '\n');
-const auth = new google.auth.JWT({
+const jwtAuth = new googleAuth.JWT({
   email: requireEnv("GOOGLE_CLIENT_EMAIL"),
   key: privateKey,
   scopes: ['https://www.googleapis.com/auth/calendar'],
 });
-const calendar = google.calendar({ auth, version: 'v3' });
+const calendar = new calendar_v3.Calendar({ auth: jwtAuth });
 
 // --- Function 1: CREATE a new event ---
 export async function createCalendarEvent(booking: Bookings) {

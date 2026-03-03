@@ -17,7 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from "@/lib/supabase/client";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -32,43 +31,24 @@ import {
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown } from "lucide-react";
 import * as React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { updateUserRole } from "../actions";
 
 interface User {
+    email: null | string,
     id: string,
-    role: 'admin' | 'event_manager' | 'user'
+    role: null | string,
 }
 
-export default function UserTable() {
+export default function UserTable({ users: initialUsers }: { users: User[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
-  const [users, setUsers] = useState<User[]>([])
-  const [fetchError, setFetchError] = useState<null | string>(null)
+  const [users, setUsers] = useState<User[]>(initialUsers)
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase.from("profiles").select().order("created_at", {ascending: false})
-
-      if (error) {
-        setFetchError("Error loading users")
-        setUsers([])
-        console.log(error)
-      }
-      
-      if (data) {
-        setUsers(data)
-        setFetchError(null)
-      }
-    }
-    
-    void fetchUser()
-  }, [])
-
-  const handleRoleChange = useCallback( async (id: string, newRole: User['role']) => {
+  const handleRoleChange = useCallback( async (id: string, newRole: 'admin' | 'event_manager' | 'user') => {
     const result = await updateUserRole(id, newRole)
 
     if (!result.success) {
@@ -274,7 +254,6 @@ export default function UserTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {fetchError ? <p>{fetchError}</p> : ""}
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow

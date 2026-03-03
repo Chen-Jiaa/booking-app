@@ -73,7 +73,7 @@ export async function updateRoomAvailabilityTo(roomId: string, value: 'superUser
   }
 }
 
-export async function updateRoomBoolean(roomId: string, field: 'approval_required' | 'availability', value: boolean) {
+export async function updateRoomBoolean(roomId: string, field: 'approvalRequired' | 'availability', value: boolean) {
   try {
     await db.update(rooms).set({ [field]: value }).where(eq(rooms.id, roomId));
     revalidatePath('/admin/rooms'); // Revalidate the page to show fresh data
