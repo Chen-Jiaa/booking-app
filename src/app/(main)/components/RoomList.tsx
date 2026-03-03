@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type Rooms } from "@/db/schema";
+import { canCreateMultiDayBooking } from "@/lib/roles";
 import { Circle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +21,7 @@ import BookingSummary from "./BookingSummary";
 import DateTimeSelector from "./DateTimeSelector";
 
 export function RoomList({ roomData }: { roomData: Rooms[] }) {
-  const { user } = useSupabase();
+  const { role, user } = useSupabase();
   const [selectedRoom, setSelectedRoom] = useState<null | Rooms>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [step, setStep] = useState("1");
@@ -28,6 +29,9 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
   const [endTime, setEndTime] = useState<string | undefined>();
   const router = useRouter();
   const [date, setDate] = useState<Date | undefined>(() => createTodayDate());
+  const [bookingMode, setBookingMode] = useState<"multi_day" | "standard">("standard");
+
+  const showMultiDayOption = canCreateMultiDayBooking(role);
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsDialogOpen(open);
@@ -35,6 +39,7 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
       setStep("1");
       setStartTime(undefined);
       setEndTime(undefined);
+      setBookingMode("standard");
     }
   };
 
@@ -97,6 +102,29 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                 )}
                 <DialogContent className="max-h-[90vh] overflow-y-scroll">
                   <DialogTitle>Availability</DialogTitle>
+                  {showMultiDayOption && (
+                    <div className="flex gap-2 mb-2">
+                      <Button
+                        onClick={() => { setBookingMode("standard"); }}
+                        size="sm"
+                        variant={bookingMode === "standard" ? "default" : "outline"}
+                      >
+                        Standard Booking
+                      </Button>
+                      <Button
+                        onClick={() => { setBookingMode("multi_day"); }}
+                        size="sm"
+                        variant={bookingMode === "multi_day" ? "default" : "outline"}
+                      >
+                        Multi-Day Booking
+                      </Button>
+                    </div>
+                  )}
+                  {bookingMode === "multi_day" ? (
+                    <div className="py-8 text-center text-muted-foreground">
+                      <p>Multi-day booking form coming soon.</p>
+                    </div>
+                  ) : (
                   <Tabs className="" onValueChange={setStep} value={step}>
                     <TabsList>
                       <TabsTrigger value="1">1. Select Date & Time</TabsTrigger>
@@ -142,6 +170,7 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                       </div>
                     </TabsContent>
                   </Tabs>
+                  )}
                 </DialogContent>
               </Dialog>
             </CardContent>

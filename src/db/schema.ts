@@ -6,11 +6,16 @@ export const authUsers = pgTable('auth.users', {
 });
 
 export const bookings = pgTable('bookings', {
+  bookingType: text('booking_type').default('standard'),
+  clientName: text('client_name'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   email: text('email').notNull(),
   endTime: timestamp('end_time', { withTimezone: true }).notNull(),
   eventId: text('event_id'),
+  eventName: text('event_name'),
+  expectedAttendance: integer('expected_attendance'),
   id: bigserial('id', { mode: 'number' }).primaryKey(),
+  isMultiDay: boolean('is_multi_day').default(false),
   name: text('name').notNull(),
   phone: text('phone').notNull(),
   purpose: text('purpose').notNull(),
@@ -30,6 +35,7 @@ export const profiles = pgTable('profiles', {
   fullName: text('full_name'),
   id: uuid('id').primaryKey().notNull()
     .references(() => authUsers.id), 
+  phone: text('phone'),
   role: text('role').default('user'),
   updatedAt: timestamp('updated_at', { withTimezone: true }),
   username: text('username').unique(),
@@ -43,6 +49,7 @@ export const rooms = pgTable('rooms', {
   availableTo: text('available_to'),
   capacity: integer('capacity').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  dependencyGroup: text('dependency_group'),
   description: text('description'),
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   image: text('image'),
@@ -60,5 +67,20 @@ export const unavailablePeriods = pgTable('unavailable_periods', {
   startTime: timestamp('start_time', { withTimezone: true }).notNull(),
 })
 
+export const bookingDays = pgTable('booking_days', {
+  bookingId: bigserial('booking_id', { mode: 'number' }).references(() => bookings.id, {
+    onDelete: 'cascade',
+  }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  date: timestamp('date', { withTimezone: true }).notNull(),
+  dayType: text('day_type').notNull(),
+  endTime: timestamp('end_time', { withTimezone: true }),
+  eventId: text('event_id'),
+  id: uuid('id').primaryKey().defaultRandom(),
+  isAllDay: boolean('is_all_day').default(false),
+  startTime: timestamp('start_time', { withTimezone: true }),
+})
+
+export type BookingDays = InferSelectModel<typeof bookingDays>;
 export type Bookings = InferSelectModel<typeof bookings>;
 export type Rooms = InferSelectModel<typeof rooms>;

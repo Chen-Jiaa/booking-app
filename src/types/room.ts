@@ -4,6 +4,7 @@ export interface Rooms {
     availability: boolean,
     available_to: string,
     capacity: number;
+    dependency_group: null | string;
     id: string;
     name: string;
   }

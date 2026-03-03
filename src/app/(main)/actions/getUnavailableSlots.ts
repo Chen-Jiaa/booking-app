@@ -1,5 +1,6 @@
 'use server'
 
+import { getDependencyBlockedSlots } from "@/lib/room-dependencies";
 import { createClient } from "@/lib/supabase/server";
 import { addMinutes, format, parseISO } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
@@ -25,6 +26,7 @@ export async function getUnavailableSlots(
 
         const supabase = await createClient()
 
+        // Fetch direct bookings for this room
         const { data: existingBookings } = await supabase
           .from("bookings")
           .select<string, BookingType>("start_time, end_time")
@@ -47,8 +49,13 @@ export async function getUnavailableSlots(
             }
         }
 
-        console.log('Booked slots:', [...booked]);
+        // Check dependency-based conflicts (Main Hall ↔ Lobby)
+        const dependencyBlocked = await getDependencyBlockedSlots(roomId, selectedDate, timezone)
+        for (const slot of dependencyBlocked) {
+            booked.add(slot)
+        }
 
+        console.log('Booked slots:', [...booked]);
 
         return booked;
 

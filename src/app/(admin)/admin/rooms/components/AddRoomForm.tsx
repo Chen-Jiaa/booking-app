@@ -32,6 +32,7 @@ const RoomSchema = z.object({
 
 const userOptions = [
     { label: "User", value: "user" },
+    { label: "Event Manager", value: "event_manager" },
     { label: "Super User", value: "superUser" },
     { label: "Admin", value: "admin" },
 ]
