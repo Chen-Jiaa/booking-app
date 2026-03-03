@@ -49,7 +49,7 @@ export default function RoomTable({adminEmails, initialData} : RoomTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [rooms, setRooms] = useState<Rooms[]>(initialData)
 
-  const handleToggle = useCallback(async (id: string, field: 'approval_required' | 'availability', value: boolean) => {
+  const handleToggle = useCallback(async (id: string, field: 'approvalRequired' | 'availability', value: boolean) => {
     setRooms(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
 
     const result = await updateRoomBoolean(id, field, value);
@@ -201,7 +201,7 @@ export default function RoomTable({adminEmails, initialData} : RoomTableProps) {
         return (
           <Checkbox
             checked={rooms.approvalRequired === true}
-            onClick={() => void handleToggle(rooms.id, 'approval_required', !rooms.approvalRequired)}
+            onClick={() => void handleToggle(rooms.id, 'approvalRequired', !rooms.approvalRequired)}
           />
         );
       },

@@ -51,7 +51,7 @@ export function NavUser() {
                 side={isMobile ? "bottom" : "top"}
                 sideOffset={4}
                 >
-                <DropdownMenuItem onClick={() => void signOut}>
+                <DropdownMenuItem onClick={() => { void signOut() }}>
                     <LogOut/>
                     Log out
                 </DropdownMenuItem>

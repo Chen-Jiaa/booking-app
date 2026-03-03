@@ -72,6 +72,15 @@ const config = [
   //
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
+  {
+    settings: {
+      "import-x/resolver": {
+        typescript: {
+          project: "./tsconfig.json",
+        },
+      },
+    },
+  },
   //
   perfectionist.configs["recommended-natural"],
   //

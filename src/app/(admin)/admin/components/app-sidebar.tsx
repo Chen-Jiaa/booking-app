@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
-import { ListChecks, Settings, Undo2, Users } from "lucide-react"
+import { CalendarDays, ListChecks, Settings, Undo2, Users } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -23,6 +23,11 @@ const data = {
     icon: ListChecks,
     title: "Recent Bookings",
     url: "/admin",
+  },
+  {
+    icon: CalendarDays,
+    title: "Calendar",
+    url: "/admin/calendar",
   },
   {
     icon: Settings,

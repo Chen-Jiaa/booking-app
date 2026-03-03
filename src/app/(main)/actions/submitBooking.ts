@@ -5,6 +5,7 @@ import { bookings, rooms } from "@/db/schema";
 import { createCalendarEvent } from "@/lib/google-calendar";
 import { sendBookingConfirmationEmail, sendBookingEmail } from "@/lib/sendBookingEmail";
 import { eq } from "drizzle-orm";
+import { after } from "next/server";
 import { z } from "zod";
 
 const formSchema = z.object({
@@ -20,21 +21,22 @@ const formSchema = z.object({
   })
   
 export async function submitBooking(values: z.infer<typeof formSchema>) {
-  const bookingWithEventId = await db.transaction(async (tx) => {
-    formSchema.parse(values)
-    
-    const {
-        email,
-        fullEndTime,
-        fullStartTime,
-        name,
-        phone,
-        purpose,
-        selectedRoomId,
-        selectedRoomName,
-        userId,
-      } = values
+  formSchema.parse(values)
 
+  const {
+      email,
+      fullEndTime,
+      fullStartTime,
+      name,
+      phone,
+      purpose,
+      selectedRoomId,
+      selectedRoomName,
+      userId,
+    } = values
+
+  // Transaction handles only DB operations — no external API calls
+  const { approvalRequired, approvers, insertedBooking } = await db.transaction(async (tx) => {
       const selectedRoom = await tx
         .select({
           approvalRequired: rooms.approvalRequired,
@@ -76,30 +78,34 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
         throw new Error("Failed to create booking in the database.");
       }
 
-      const eventId = await createCalendarEvent(insertedBooking);
-
-      const [finalBooking] = await tx
-        .update(bookings)
-        .set({eventId: eventId})
-        .where(eq(bookings.id, insertedBooking.id))
-        .returning()
-      
-      
-        await (approvalRequired && approvers.length > 0 ? Promise.all(
-              approvers.map((approverEmail) =>
-                sendBookingEmail({
-                  ...insertedBooking,
-                  to: approverEmail,
-                })
-              )
-            ) : sendBookingConfirmationEmail({
-              ...insertedBooking,
-              to: email
-          }));
-      
-      
-      return finalBooking;
+      return { approvalRequired, approvers, insertedBooking };
   });
 
-  return bookingWithEventId
+  // Google Calendar API call runs outside the transaction to avoid holding a DB connection
+  const eventId = await createCalendarEvent(insertedBooking);
+
+  const [finalBooking] = await db
+    .update(bookings)
+    .set({ eventId })
+    .where(eq(bookings.id, insertedBooking.id))
+    .returning()
+
+  // Schedule email sending after the response is sent — non-blocking
+  after(async () => {
+    await (approvalRequired && approvers.length > 0
+      ? Promise.all(
+          approvers.map((approverEmail) =>
+            sendBookingEmail({
+              ...insertedBooking,
+              to: approverEmail,
+            })
+          )
+        )
+      : sendBookingConfirmationEmail({
+          ...insertedBooking,
+          to: email,
+        }));
+  });
+
+  return finalBooking;
 }
