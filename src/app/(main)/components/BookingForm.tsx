@@ -9,10 +9,11 @@ import { combineDateAndTime } from "@/lib/date-utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
+import { getUserProfile } from "../actions/getUserProfile"
 import { submitBooking } from "../actions/submitBooking"
 
 interface BookingFormProps {
@@ -56,6 +57,27 @@ export default function BookingForm2(props: BookingFormProps) {
     const [isLoading, setIsLoading] = useState(false)
     const { user } = useSupabase()
     const router = useRouter()
+
+    useEffect(() => {
+        async function loadProfile() {
+            try {
+                const profile = await getUserProfile()
+                if (profile) {
+                    form.reset({
+                        email: profile.email ?? "",
+                        name: profile.fullName ?? "",
+                        phone: profile.phone ?? "",
+                        purpose: "",
+                    })
+                }
+            } catch (error) {
+                console.error("Failed to load profile:", error)
+            }
+        }
+        if (user) {
+            void loadProfile()
+        }
+    }, [user, form])
 
     async function onSubmit (values: z.infer<typeof formSchema>) {
         setIsLoading(true)

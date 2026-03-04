@@ -60,7 +60,7 @@ export default function RoomTable({adminEmails, initialData} : RoomTableProps) {
     }
 }, [])
 
-  const handleAvailabilityTo = useCallback(async (id: string, value: 'superUser' | 'user') => {
+  const handleAvailabilityTo = useCallback(async (id: string, value: 'event_manager' | 'superUser' | 'user') => {
     const originalValue = rooms.find(r => r.id === id)?.availableTo;
     setRooms(prev => prev.map(r => r.id === id ? { ...r, availableTo: value } : r));
 

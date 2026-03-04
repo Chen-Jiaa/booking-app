@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from "@/db";
-import { bookings, rooms } from "@/db/schema";
+import { bookings, profiles, rooms } from "@/db/schema";
 import { createCalendarEvent } from "@/lib/google-calendar";
 import { sendBookingConfirmationEmail, sendBookingEmail } from "@/lib/sendBookingEmail";
 import { eq } from "drizzle-orm";
@@ -90,8 +90,28 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
     .where(eq(bookings.id, insertedBooking.id))
     .returning()
 
-  // Schedule email sending after the response is sent — non-blocking
+  // Schedule email sending and phone save-back after the response is sent — non-blocking
   after(async () => {
+    // Save phone number back to profile if missing (FR-27)
+    if (userId && phone) {
+      try {
+        const result = await db
+          .select({ phone: profiles.phone })
+          .from(profiles)
+          .where(eq(profiles.id, userId))
+          .limit(1)
+
+        if (result[0] && !result[0].phone) {
+          await db
+            .update(profiles)
+            .set({ phone, updatedAt: new Date() })
+            .where(eq(profiles.id, userId))
+        }
+      } catch (error) {
+        console.error('Failed to save phone to profile:', error)
+      }
+    }
+
     await (approvalRequired && approvers.length > 0
       ? Promise.all(
           approvers.map((approverEmail) =>

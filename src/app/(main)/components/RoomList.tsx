@@ -19,6 +19,7 @@ import { useState } from "react";
 import BookingForm2 from "./BookingForm";
 import BookingSummary from "./BookingSummary";
 import DateTimeSelector from "./DateTimeSelector";
+import MultiDayBookingForm from "./MultiDayBookingForm";
 
 export function RoomList({ roomData }: { roomData: Rooms[] }) {
   const { role, user } = useSupabase();
@@ -120,10 +121,11 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                       </Button>
                     </div>
                   )}
-                  {bookingMode === "multi_day" ? (
-                    <div className="py-8 text-center text-muted-foreground">
-                      <p>Multi-day booking form coming soon.</p>
-                    </div>
+                  {bookingMode === "multi_day" && selectedRoom ? (
+                    <MultiDayBookingForm
+                      rooms={roomData}
+                      selectedRoom={selectedRoom}
+                    />
                   ) : (
                   <Tabs className="" onValueChange={setStep} value={step}>
                     <TabsList>

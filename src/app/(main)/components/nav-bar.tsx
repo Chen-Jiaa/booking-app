@@ -10,6 +10,7 @@ export default async function NavBar() {
   const navigation = [
     { href: "/", name: "Book a Room" },
     { href: "/bookings", name: "My Bookings" },
+    { href: "/settings", name: "Settings" },
     ...(role === "admin" ? [{ href: "/admin", name: "Admin Panel" }] : []),
   ];
 

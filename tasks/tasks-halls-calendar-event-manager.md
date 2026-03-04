@@ -104,6 +104,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [x] 1.5 Update `src/types/booking.ts` to add the new fields (`booking_type`, `client_name`, `event_name`, `expected_attendance`, `is_multi_day`) and create a `BookingDay` interface matching the `bookingDays` table.
   - [x] 1.6 Run `pnpm drizzle-kit generate` to generate the migration SQL file in `supabase/migrations/`.
   - [x] 1.7 Review the generated migration SQL to verify it matches the intended schema changes. Apply the migration to the database using `pnpm drizzle-kit push` or the Supabase CLI.
+  - [ ] 1.8 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [x] 2.0 Add new halls & room dependency logic
 
@@ -113,6 +114,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [x] 2.4 In `src/lib/room-dependencies.ts`, implement the specific rules: (a) Main Hall booked as "Main Event Day" → Lobby is blocked for that date/time. (b) Main Hall booked as "Rehearsal / Setup" → Lobby remains available. (c) Lobby booked independently → Main Hall remains available. (d) Lobby booked as "Main Event" → Main Hall cannot be booked as "Main Event Day" for that time (but can still be "Rehearsal / Setup").
   - [x] 2.5 Update `src/app/(main)/actions/getUnavailableSlots.ts` to also check for dependency-based conflicts: when checking availability for the Lobby, also check Main Hall bookings that are "Main Event Day"; when checking Main Hall, also check Lobby "Main Event" bookings. Use the functions from `room-dependencies.ts`.
   - [x] 2.6 Run the migration to add the `dependency_group` column and verify the new rooms appear in the app's room list.
+  - [ ] 2.7 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [x] 3.0 Event Manager role & permissions
 
@@ -121,25 +123,28 @@ Update the file after completing each sub-task, not just after completing an ent
   - [x] 3.3 In `src/components/providers/supabase-providers.tsx` (or wherever the `useSupabase` hook is defined), ensure the `role` value can be `'event_manager'` and that it's properly typed.
   - [x] 3.4 Create a helper function `isEventManager(role: string | null): boolean` in `src/lib/supabase/server.ts` (or a new `src/lib/roles.ts`) that checks if a user has the `event_manager` role. Also create `canCreateMultiDayBooking(role)` that returns `true` for `event_manager` and `admin`.
   - [x] 3.5 In the booking page (`src/app/(main)/page.tsx` or wherever the booking flow starts), use the user's role to decide whether to show the standard booking form or the enhanced Event Manager form.
+  - [ ] 3.6 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
-- [ ] 4.0 User profile phone number & autofill
+- [x] 4.0 User profile phone number & autofill
 
-  - [ ] 4.1 Check if a user settings/profile page already exists. If not, create `src/app/(main)/settings/page.tsx` with a form for editing profile fields (full name, email, phone number). Use the existing `profiles` table and Drizzle ORM.
-  - [ ] 4.2 Add a phone number input field to the settings page form. On submission, update the `profiles` table with the new phone number via a server action.
-  - [ ] 4.3 Create a server action `src/app/(main)/actions/getUserProfile.ts` (or add to existing actions) that fetches the current user's profile (name, email, phone) from the `profiles` table.
-  - [ ] 4.4 In `src/app/(main)/components/BookingForm.tsx`, call `getUserProfile` on mount and use the returned data to prefill the `name`, `email`, and `phone` fields via `form.reset()` or `defaultValues`.
-  - [ ] 4.5 In the `submitBooking` server action (`src/app/(main)/actions/submitBooking.ts`), after a successful booking insert, check if the user's profile has a phone number. If not, update the `profiles` table with the phone number from the booking form (FR-27).
-  - [ ] 4.6 Add a link to the settings/profile page in the navigation bar (`src/app/(main)/components/nav-bar.tsx`) or user menu.
+  - [x] 4.1 Check if a user settings/profile page already exists. If not, create `src/app/(main)/settings/page.tsx` with a form for editing profile fields (full name, email, phone number). Use the existing `profiles` table and Drizzle ORM.
+  - [x] 4.2 Add a phone number input field to the settings page form. On submission, update the `profiles` table with the new phone number via a server action.
+  - [x] 4.3 Create a server action `src/app/(main)/actions/getUserProfile.ts` (or add to existing actions) that fetches the current user's profile (name, email, phone) from the `profiles` table.
+  - [x] 4.4 In `src/app/(main)/components/BookingForm.tsx`, call `getUserProfile` on mount and use the returned data to prefill the `name`, `email`, and `phone` fields via `form.reset()` or `defaultValues`.
+  - [x] 4.5 In the `submitBooking` server action (`src/app/(main)/actions/submitBooking.ts`), after a successful booking insert, check if the user's profile has a phone number. If not, update the `profiles` table with the phone number from the booking form (FR-27).
+  - [x] 4.6 Add a link to the settings/profile page in the navigation bar (`src/app/(main)/components/nav-bar.tsx`) or user menu.
+  - [ ] 4.7 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
-- [ ] 5.0 Event Manager multi-day booking form
+- [x] 5.0 Event Manager multi-day booking form
 
-  - [ ] 5.1 Install FullCalendar packages: `pnpm add @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/interaction @fullcalendar/list`.
-  - [ ] 5.2 Create `src/app/(main)/components/MultiDayBookingForm.tsx` — the enhanced booking form shown to Event Managers. It should include: Event Name, Client Name, Event Manager Name (autofilled, read-only), Event Manager Phone (autofilled, read-only), Expected Attendance, date range picker (start date → end date), and a "Continue" button to proceed to per-day configuration.
-  - [ ] 5.3 Create `src/app/(main)/components/MultiDayDateConfig.tsx` — a tabular/step-by-step layout where each row represents a day in the selected range. Each row has: date (read-only), start time picker, end time picker, "All Day" checkbox (disables time pickers when checked), and a day type dropdown (`"Rehearsal / Setup"` or `"Main Event Day"`).
-  - [ ] 5.4 In `MultiDayDateConfig.tsx`, when the user changes any day's configuration, fetch and display existing bookings/conflicts inline for that room on that date (re-use or adapt `getUnavailableSlots`). Disable occupied time slots.
-  - [ ] 5.5 In `MultiDayBookingForm.tsx`, when the selected room is "Main Hall", display a prompt: _"Will the client also need the Lobby for setup/event?"_ with Yes/No options. If "Yes", the Lobby should be included in the booking and blocked for the same dates/times.
-  - [ ] 5.6 Add a booking summary section at the bottom of the form showing all days, their times, and day types before submission.
-  - [ ] 5.7 In the booking page, conditionally render `MultiDayBookingForm` when the user role is `event_manager` (or `admin`), and the standard `DateTimeSelector` + `BookingForm` for regular members.
+  - [x] 5.1 Install FullCalendar packages: `pnpm add @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/interaction @fullcalendar/list`.
+  - [x] 5.2 Create `src/app/(main)/components/MultiDayBookingForm.tsx` — the enhanced booking form shown to Event Managers. It should include: Event Name, Client Name, Event Manager Name (autofilled, read-only), Event Manager Phone (autofilled, read-only), Expected Attendance, date range picker (start date → end date), and a "Continue" button to proceed to per-day configuration.
+  - [x] 5.3 Create `src/app/(main)/components/MultiDayDateConfig.tsx` — a tabular/step-by-step layout where each row represents a day in the selected range. Each row has: date (read-only), start time picker, end time picker, "All Day" checkbox (disables time pickers when checked), and a day type dropdown (`"Rehearsal / Setup"` or `"Main Event Day"`).
+  - [x] 5.4 In `MultiDayDateConfig.tsx`, when the user changes any day's configuration, fetch and display existing bookings/conflicts inline for that room on that date (re-use or adapt `getUnavailableSlots`). Disable occupied time slots.
+  - [x] 5.5 In `MultiDayBookingForm.tsx`, when the selected room is "Main Hall", display a prompt: _"Will the client also need the Lobby for setup/event?"_ with Yes/No options. If "Yes", the Lobby should be included in the booking and blocked for the same dates/times.
+  - [x] 5.6 Add a booking summary section at the bottom of the form showing all days, their times, and day types before submission.
+  - [x] 5.7 In the booking page, conditionally render `MultiDayBookingForm` when the user role is `event_manager` (or `admin`), and the standard `DateTimeSelector` + `BookingForm` for regular members.
+  - [x] 5.8 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [ ] 6.0 Multi-day booking submission & conflict logic
 
@@ -151,6 +156,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [ ] 6.6 Send email notifications to the room's approvers (same pattern as existing `submitBooking.ts`) with details of the multi-day booking.
   - [ ] 6.7 Update `src/app/(admin)/actions/booking-status-change.ts` to handle multi-day bookings: when approving/rejecting, update the parent `bookings` row status AND update all associated `booking_days` Google Calendar events (patch titles to `[CONFIRMED]` or delete on rejection).
   - [ ] 6.8 Update `src/app/(main)/bookings/actions.ts` (`cancelUserBooking`) to also delete all `booking_days` Google Calendar events when a multi-day booking is cancelled.
+  - [ ] 6.9 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [ ] 7.0 Booking edit flow
 
@@ -160,6 +166,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [ ] 7.4 In `editBooking.ts`, if date(s) or time(s) have changed (FR-29): (a) delete the old Google Calendar event(s), (b) reset the booking status to `pending` (re-enter approval flow), (c) create new Google Calendar event(s) with `[PENDING]` status, (d) send email notifications to approvers and the booking owner.
   - [ ] 7.5 In `editBooking.ts`, if only non-date fields changed (event name, client name, expected attendance — FR-31): update the booking in place without changing status, and patch the Google Calendar event(s) with updated details.
   - [ ] 7.6 Ensure multi-day bookings are approved/rejected as a whole (FR-32) — the edit flow should not allow editing individual days' approval status.
+  - [ ] 7.7 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [ ] 8.0 Public event calendar page
 
@@ -171,6 +178,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [ ] 8.6 Create `src/app/(main)/calendar/components/BookingDetailPopover.tsx` — a popover or dialog that opens when a calendar event is clicked. For logged-in users, show: Event Name, Client Name, Event Manager Name & Phone, Room, Date & Time, Expected Attendance, Day Type, Booking Status. For guests, show a message like "Log in to view booking details."
   - [ ] 8.7 Add a "Calendar" link to the main navigation bar (`src/app/(main)/components/nav-bar.tsx`).
   - [ ] 8.8 In `src/lib/config.ts` (or a new config file), add a `CALENDAR_ACCESS` flag (default: `'public'`) that can be changed to `'restricted'` to limit the calendar page to `admin` and `event_manager` roles in the future (FR-17). Implement a middleware check or server-side redirect based on this flag.
+  - [ ] 8.9 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [ ] 9.0 Google Calendar sync updates for multi-day bookings
 
@@ -179,6 +187,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [ ] 9.3 In `src/lib/google-calendar.ts`, create `deleteCalendarEvent(eventId)` as a standalone helper (extract from the existing `updateCalendarEvent` switch case) for use when editing bookings with date changes.
   - [ ] 9.4 Update the existing `createCalendarEvent` and `updateCalendarEvent` functions to include day type in the event title/description when the booking has a `booking_type` of `'multi_day'`.
   - [ ] 9.5 Update `src/lib/sendBookingEmail.ts` to include multi-day booking details in email templates: list each day with its date, time, and day type. Update the `renderBookingDetailsHtml` function to handle the new fields.
+  - [ ] 9.6 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [ ] 10.0 Integration testing & polish
   - [ ] 10.1 Manually test the full standard booking flow (single-day, regular member) to ensure no regressions.
