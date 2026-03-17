@@ -28,12 +28,14 @@ export interface DayConfig {
 
 interface MultiDayDateConfigProps {
   dayConfigs: DayConfig[]
+  excludeBookingId?: number
   onChange: (configs: DayConfig[]) => void
   roomId: string
 }
 
 export default function MultiDayDateConfig({
   dayConfigs,
+  excludeBookingId,
   onChange,
   roomId,
 }: MultiDayDateConfigProps) {
@@ -57,7 +59,7 @@ export default function MultiDayDateConfig({
         dayConfigs.map(async (day) => {
           const key = day.date.toISOString()
           try {
-            const slots = await getUnavailableSlots(roomId, day.date, timezone)
+            const slots = await getUnavailableSlots(roomId, day.date, timezone, excludeBookingId)
             return { key, slots }
           } catch {
             return { key, slots: new Set<string>() }
@@ -83,7 +85,7 @@ export default function MultiDayDateConfig({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-fetch only when day count or room changes
-  }, [dayConfigs.length, roomId])
+  }, [dayConfigs.length, roomId, excludeBookingId])
 
   const updateDay = (index: number, updates: Partial<DayConfig>) => {
     const newConfigs = [...dayConfigs]

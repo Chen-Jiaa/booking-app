@@ -8,11 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { type Rooms } from "@/db/schema"
 import { eachDayOfInterval, format } from "date-fns"
+import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { type DateRange } from "react-day-picker"
 import { toast } from "sonner"
 
 import { getUserProfile } from "../actions/getUserProfile"
+import { submitMultiDayBooking } from "../actions/submitMultiDayBooking"
 import MultiDayDateConfig, { type DayConfig } from "./MultiDayDateConfig"
 
 interface MultiDayBookingFormProps {
@@ -25,6 +28,7 @@ export default function MultiDayBookingForm({
   selectedRoom,
 }: MultiDayBookingFormProps) {
   const { user } = useSupabase()
+  const router = useRouter()
 
   // Event info
   const [eventName, setEventName] = useState("")
@@ -43,7 +47,8 @@ export default function MultiDayBookingForm({
   const [showDayConfig, setShowDayConfig] = useState(false)
   const [dayConfigs, setDayConfigs] = useState<DayConfig[]>([])
 
-  // Submission — loading state will be added in Task 6 with actual server action
+  // Submission
+  const [submitting, setSubmitting] = useState(false)
 
   // Autofill manager info from profile
   useEffect(() => {
@@ -96,6 +101,44 @@ export default function MultiDayBookingForm({
   )
 
   const lobbyRoom = rooms.find((r) => r.name === "Lobby to Main Hall")
+
+  const handleSubmit = async () => {
+    if (!user) return
+    setSubmitting(true)
+    try {
+      const result = await submitMultiDayBooking({
+        clientName,
+        days: dayConfigs.map((day) => ({
+          date: day.date.toISOString(),
+          dayType: day.dayType,
+          endTime: day.endTime,
+          isAllDay: day.isAllDay,
+          startTime: day.startTime,
+        })),
+        email: user.email ?? '',
+        eventName,
+        expectedAttendance: expectedAttendance ? Number.parseInt(expectedAttendance) : null,
+        managerName,
+        managerPhone,
+        needsLobby: needsLobby ?? false,
+        roomId: selectedRoom.id,
+        roomName: selectedRoom.name,
+        userId: user.id,
+      })
+
+      if (result.success) {
+        toast.success('Multi-day booking submitted successfully! Awaiting approval.')
+        router.push(`/booking-confirmation/${result.booking.id.toString()}`)
+      } else {
+        toast.error(`Booking conflicts detected:\n${result.conflicts.join('\n')}`)
+      }
+    } catch (error) {
+      console.error('Multi-day booking error:', error)
+      toast.error('Failed to submit booking. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -301,12 +344,18 @@ export default function MultiDayBookingForm({
                 </div>
                 <Button
                   className="w-full mt-4"
-                  disabled={!allDaysConfigured}
-                  onClick={() => {
-                    toast.info("Multi-day booking submission will be available soon.")
-                  }}
+                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime state
+                  disabled={!allDaysConfigured || submitting || !user}
+                  onClick={() => { void handleSubmit() }}
                 >
-                  Submit Multi-Day Booking
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Multi-Day Booking'
+                  )}
                 </Button>
               </CardContent>
             </Card>

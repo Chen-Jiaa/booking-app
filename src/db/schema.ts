@@ -17,6 +17,7 @@ export const bookings = pgTable('bookings', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   isMultiDay: boolean('is_multi_day').default(false),
   name: text('name').notNull(),
+  parentBookingId: integer('parent_booking_id'),
   phone: text('phone').notNull(),
   purpose: text('purpose').notNull(),
   roomId: uuid('room_id').references(() => rooms.id), 
@@ -68,7 +69,7 @@ export const unavailablePeriods = pgTable('unavailable_periods', {
 })
 
 export const bookingDays = pgTable('booking_days', {
-  bookingId: bigserial('booking_id', { mode: 'number' }).references(() => bookings.id, {
+  bookingId: integer('booking_id').references(() => bookings.id, {
     onDelete: 'cascade',
   }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

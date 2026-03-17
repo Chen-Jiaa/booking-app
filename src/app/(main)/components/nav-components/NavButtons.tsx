@@ -28,7 +28,7 @@ export async function handleSignOut() {
 export function SignOutButton() {
   return (
     <Button onClick={() => void handleSignOut()} variant="outline">
-      Sign Out
+      Log Out
     </Button>
   );
 }

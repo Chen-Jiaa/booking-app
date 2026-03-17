@@ -56,7 +56,8 @@ export function getBlockedRoomIds(
 export async function getDependencyBlockedSlots(
   roomId: string,
   selectedDate: Date,
-  timezone: string
+  timezone: string,
+  excludeBookingId?: number
 ): Promise<Set<string>> {
   const { addMinutes, format, parseISO } = await import('date-fns')
   const { toZonedTime } = await import('date-fns-tz')
@@ -91,64 +92,129 @@ export async function getDependencyBlockedSlots(
   const dayStartISO = startOfDayLocal.toISOString()
   const dayEndISO = endOfDayLocal.toISOString()
 
-  // Fetch bookings for related rooms on this date
-  const { data: relatedBookings } = await supabase
+  const isMainHall = room.name === 'Main Hall'
+  const isLobby = room.name === 'Lobby to Main Hall'
+
+  // 1. Standard (non-multi-day) bookings for related rooms overlapping this day
+  let stdQuery = supabase
     .from('bookings')
     .select('id, room_id, start_time, end_time, booking_type')
     .in('room_id', relatedRoomIds)
     .in('status', ['pending', 'confirmed'])
-    .gte('start_time', dayStartISO)
+    .or('is_multi_day.is.null,is_multi_day.eq.false')
     .lt('start_time', dayEndISO)
+    .gt('end_time', dayStartISO)
 
-  if (!relatedBookings || relatedBookings.length === 0) return blocked
+  if (excludeBookingId != null) {
+    stdQuery = stdQuery
+      .neq('id', excludeBookingId)
+      .or(`parent_booking_id.is.null,parent_booking_id.neq.${excludeBookingId.toString()}`)
+  }
 
-  // Get booking_days for these bookings to check day types
-  const { data: bookingDays } = await supabase
-    .from('booking_days')
-    .select('booking_id, day_type')
-    .in('booking_id', relatedBookings.map((b: { id: number }) => b.id))
+  const { data: standardBookings } = await stdQuery
 
-  const dayTypeMap = new Map<number, string>()
-  if (bookingDays) {
-    for (const day of bookingDays) {
-      dayTypeMap.set(Number(day.booking_id), String(day.day_type))
+  if (standardBookings && standardBookings.length > 0) {
+    // Get booking_days for these bookings to check day types
+    const { data: stdBookingDays } = await supabase
+      .from('booking_days')
+      .select('booking_id, day_type')
+      .in('booking_id', standardBookings.map((b: { id: number }) => b.id))
+
+    const dayTypeMap = new Map<number, string>()
+    if (stdBookingDays) {
+      for (const day of stdBookingDays) {
+        dayTypeMap.set(Number(day.booking_id), String(day.day_type))
+      }
+    }
+
+    for (const booking of standardBookings) {
+      const relatedRoom = relatedRooms.find((r: RoomInfo) => r.id === booking.room_id)
+      if (!relatedRoom) continue
+
+      const existingDayType = dayTypeMap.get(Number(booking.id)) ?? null
+      let shouldBlock = false
+
+      if (isLobby && relatedRoom.name === 'Main Hall' && existingDayType === 'main_event') {
+        shouldBlock = true
+      }
+      if (isMainHall && relatedRoom.name === 'Lobby to Main Hall' && existingDayType === 'main_event') {
+        shouldBlock = true
+      }
+
+      if (shouldBlock) {
+        let currentSlot = toZonedTime(parseISO(String(booking.start_time)), timezone)
+        const endTimeLocal = toZonedTime(parseISO(String(booking.end_time)), timezone)
+
+        while (currentSlot < endTimeLocal) {
+          blocked.add(format(currentSlot, "HH:mm"))
+          currentSlot = addMinutes(currentSlot, 30)
+        }
+      }
     }
   }
 
-  const isMainHall = room.name === 'Main Hall'
-  const isLobby = room.name === 'Lobby to Main Hall'
+  // 2. Multi-day bookings for related rooms: check booking_days on this date
+  let mdQuery = supabase
+    .from('bookings')
+    .select('id, room_id')
+    .in('room_id', relatedRoomIds)
+    .in('status', ['pending', 'confirmed'])
+    .eq('is_multi_day', true)
 
-  for (const booking of relatedBookings) {
-    const relatedRoom = relatedRooms.find((r: RoomInfo) => r.id === booking.room_id)
-    if (!relatedRoom) continue
+  if (excludeBookingId != null) {
+    mdQuery = mdQuery
+      .neq('id', excludeBookingId)
+      .or(`parent_booking_id.is.null,parent_booking_id.neq.${excludeBookingId.toString()}`)
+  }
 
-    const existingDayType = dayTypeMap.get(Number(booking.id)) ?? null
+  const { data: multiDayBookings } = await mdQuery
 
-    let shouldBlock = false
+  if (multiDayBookings && multiDayBookings.length > 0) {
+    const bookingIds = multiDayBookings.map((b: { id: number }) => b.id)
+    const { data: mdDays } = await supabase
+      .from('booking_days')
+      .select('booking_id, day_type, start_time, end_time, is_all_day')
+      .in('booking_id', bookingIds)
+      .gte('date', dayStartISO)
+      .lt('date', dayEndISO)
 
-    // If we're checking Lobby availability and Main Hall has a main_event booking
-    if (isLobby && relatedRoom.name === 'Main Hall' && existingDayType === 'main_event') {
-      shouldBlock = true
-    }
+    if (mdDays && mdDays.length > 0) {
+      for (const day of mdDays) {
+        const booking = multiDayBookings.find((b: { id: number }) => b.id === Number(day.booking_id))
+        if (!booking) continue
+        const relatedRoom = relatedRooms.find((r: RoomInfo) => r.id === booking.room_id)
+        if (!relatedRoom) continue
 
-    // If we're checking Main Hall availability and Lobby has a main_event booking,
-    // we DON'T fully block — Main Hall can still be used for rehearsal_setup.
-    // This case is handled in isBookingAllowed, not here (slots aren't fully blocked).
-    // However for standard bookings (no day type), we should block the slots.
-    if (isMainHall && relatedRoom.name === 'Lobby to Main Hall' && existingDayType === 'main_event') {
-      // For the slot-based UI (standard bookings), we block these slots since
-      // standard bookings don't have a day type and default behavior should prevent conflicts
-      shouldBlock = true
-    }
+        const existingDayType = String(day.day_type)
+        let shouldBlock = false
 
-    if (shouldBlock) {
-      let currentSlot = toZonedTime(parseISO(String(booking.start_time)), timezone)
-      const endTimeLocal = toZonedTime(parseISO(String(booking.end_time)), timezone)
+        if (isLobby && relatedRoom.name === 'Main Hall' && existingDayType === 'main_event') {
+          shouldBlock = true
+        }
+        if (isMainHall && relatedRoom.name === 'Lobby to Main Hall' && existingDayType === 'main_event') {
+          shouldBlock = true
+        }
 
-      while (currentSlot < endTimeLocal) {
-        const timeStr = format(currentSlot, "HH:mm")
-        blocked.add(timeStr)
-        currentSlot = addMinutes(currentSlot, 30)
+        if (shouldBlock) {
+          if (day.is_all_day) {
+            const allDayStart = toZonedTime(selectedDate, timezone)
+            allDayStart.setHours(8, 0, 0, 0)
+            const allDayEnd = toZonedTime(selectedDate, timezone)
+            allDayEnd.setHours(23, 30, 0, 0)
+            let currentSlot = new Date(allDayStart)
+            while (currentSlot < allDayEnd) {
+              blocked.add(format(currentSlot, "HH:mm"))
+              currentSlot = addMinutes(currentSlot, 30)
+            }
+          } else if (day.start_time && day.end_time) {
+            let currentSlot = toZonedTime(parseISO(String(day.start_time)), timezone)
+            const endTimeLocal = toZonedTime(parseISO(String(day.end_time)), timezone)
+            while (currentSlot < endTimeLocal) {
+              blocked.add(format(currentSlot, "HH:mm"))
+              currentSlot = addMinutes(currentSlot, 30)
+            }
+          }
+        }
       }
     }
   }
@@ -192,7 +258,7 @@ export async function isBookingAllowed(
   // Query existing bookings for related rooms that overlap with the proposed time
   const { data: conflictingBookings } = await supabase
     .from('bookings')
-    .select('room_id, start_time, end_time, booking_type')
+    .select('id, room_id, start_time, end_time, booking_type')
     .in('room_id', relatedRoomIds)
     .in('status', ['pending', 'confirmed'])
     .lt('start_time', endTime)
@@ -203,9 +269,11 @@ export async function isBookingAllowed(
   }
 
   // Also check booking_days for multi-day bookings with day types
+  const conflictingBookingIds = conflictingBookings.map((b: { id: number }) => b.id)
   const { data: conflictingDays } = await supabase
     .from('booking_days')
     .select('booking_id, day_type, start_time, end_time, is_all_day')
+    .in('booking_id', conflictingBookingIds)
     .gte('date', date)
     .lte('date', date)
 
@@ -221,33 +289,24 @@ export async function isBookingAllowed(
   const isLobby = room.name === 'Lobby to Main Hall'
 
   for (const booking of conflictingBookings) {
-    const existingDayType = dayTypeMap.get(Number(booking.room_id)) ?? null
+    const existingDayType = dayTypeMap.get(Number(booking.id)) ?? null
     const relatedRoom = relatedRooms.find((r: RoomInfo) => r.id === booking.room_id)
 
     if (!relatedRoom) continue
 
     // Rule: Main Hall has a "main_event" booking → Lobby is blocked entirely
-    if (isLobby && relatedRoom.name === 'Main Hall') {
-      const mainHallDayType = existingDayType ?? (booking.booking_type === 'multi_day' ? null : null)
-
-      // Check if the Main Hall booking is a main_event via booking_days
-      if (mainHallDayType === 'main_event') {
-        return {
-          allowed: false,
-          reason: 'The Main Hall has a Main Event booking during this time. The Lobby is unavailable.',
-        }
+    if (isLobby && relatedRoom.name === 'Main Hall' && existingDayType === 'main_event') {
+      return {
+        allowed: false,
+        reason: 'The Main Hall has a Main Event booking during this time. The Lobby is unavailable.',
       }
     }
 
     // Rule: Lobby has a "main_event" booking → Main Hall cannot be "main_event"
-    if (isMainHall && relatedRoom.name === 'Lobby to Main Hall') {
-      const lobbyDayType = existingDayType
-
-      if (lobbyDayType === 'main_event' && dayType === 'main_event') {
-        return {
-          allowed: false,
-          reason: 'The Lobby has a Main Event booking during this time. The Main Hall cannot be booked as a Main Event Day, but can be booked for Rehearsal / Setup.',
-        }
+    if (isMainHall && relatedRoom.name === 'Lobby to Main Hall' && existingDayType === 'main_event' && dayType === 'main_event') {
+      return {
+        allowed: false,
+        reason: 'The Lobby has a Main Event booking during this time. The Main Hall cannot be booked as a Main Event Day, but can be booked for Rehearsal / Setup.',
       }
     }
   }

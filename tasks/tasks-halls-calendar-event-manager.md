@@ -104,7 +104,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [x] 1.5 Update `src/types/booking.ts` to add the new fields (`booking_type`, `client_name`, `event_name`, `expected_attendance`, `is_multi_day`) and create a `BookingDay` interface matching the `bookingDays` table.
   - [x] 1.6 Run `pnpm drizzle-kit generate` to generate the migration SQL file in `supabase/migrations/`.
   - [x] 1.7 Review the generated migration SQL to verify it matches the intended schema changes. Apply the migration to the database using `pnpm drizzle-kit push` or the Supabase CLI.
-  - [ ] 1.8 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
+  - [x] 1.8 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [x] 2.0 Add new halls & room dependency logic
 
@@ -114,7 +114,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [x] 2.4 In `src/lib/room-dependencies.ts`, implement the specific rules: (a) Main Hall booked as "Main Event Day" → Lobby is blocked for that date/time. (b) Main Hall booked as "Rehearsal / Setup" → Lobby remains available. (c) Lobby booked independently → Main Hall remains available. (d) Lobby booked as "Main Event" → Main Hall cannot be booked as "Main Event Day" for that time (but can still be "Rehearsal / Setup").
   - [x] 2.5 Update `src/app/(main)/actions/getUnavailableSlots.ts` to also check for dependency-based conflicts: when checking availability for the Lobby, also check Main Hall bookings that are "Main Event Day"; when checking Main Hall, also check Lobby "Main Event" bookings. Use the functions from `room-dependencies.ts`.
   - [x] 2.6 Run the migration to add the `dependency_group` column and verify the new rooms appear in the app's room list.
-  - [ ] 2.7 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
+  - [x] 2.7 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [x] 3.0 Event Manager role & permissions
 
@@ -123,7 +123,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [x] 3.3 In `src/components/providers/supabase-providers.tsx` (or wherever the `useSupabase` hook is defined), ensure the `role` value can be `'event_manager'` and that it's properly typed.
   - [x] 3.4 Create a helper function `isEventManager(role: string | null): boolean` in `src/lib/supabase/server.ts` (or a new `src/lib/roles.ts`) that checks if a user has the `event_manager` role. Also create `canCreateMultiDayBooking(role)` that returns `true` for `event_manager` and `admin`.
   - [x] 3.5 In the booking page (`src/app/(main)/page.tsx` or wherever the booking flow starts), use the user's role to decide whether to show the standard booking form or the enhanced Event Manager form.
-  - [ ] 3.6 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
+  - [x] 3.6 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [x] 4.0 User profile phone number & autofill
 
@@ -133,7 +133,7 @@ Update the file after completing each sub-task, not just after completing an ent
   - [x] 4.4 In `src/app/(main)/components/BookingForm.tsx`, call `getUserProfile` on mount and use the returned data to prefill the `name`, `email`, and `phone` fields via `form.reset()` or `defaultValues`.
   - [x] 4.5 In the `submitBooking` server action (`src/app/(main)/actions/submitBooking.ts`), after a successful booking insert, check if the user's profile has a phone number. If not, update the `profiles` table with the phone number from the booking form (FR-27).
   - [x] 4.6 Add a link to the settings/profile page in the navigation bar (`src/app/(main)/components/nav-bar.tsx`) or user menu.
-  - [ ] 4.7 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
+  - [x] 4.7 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
 - [x] 5.0 Event Manager multi-day booking form
 
@@ -146,57 +146,57 @@ Update the file after completing each sub-task, not just after completing an ent
   - [x] 5.7 In the booking page, conditionally render `MultiDayBookingForm` when the user role is `event_manager` (or `admin`), and the standard `DateTimeSelector` + `BookingForm` for regular members.
   - [x] 5.8 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
-- [ ] 6.0 Multi-day booking submission & conflict logic
+- [x] 6.0 Multi-day booking submission & conflict logic
 
-  - [ ] 6.1 Create a new server action `src/app/(main)/actions/submitMultiDayBooking.ts` that accepts the multi-day booking data: event info fields, room ID, array of day configurations (date, start/end time or all-day, day type), and optional Lobby inclusion flag.
-  - [ ] 6.2 In `submitMultiDayBooking.ts`, implement a database transaction that: (a) inserts a parent row into `bookings` with `is_multi_day: true`, `booking_type: 'multi_day'`, `status: 'pending'`, and the new fields (event name, client name, expected attendance). Use the earliest day's start time as `start_time` and latest day's end time as `end_time`. (b) inserts one row per day into `booking_days` with the per-day metadata.
-  - [ ] 6.3 In `submitMultiDayBooking.ts`, before inserting, run conflict checks for each day against existing bookings — including the Main Hall ↔ Lobby dependency rules from `room-dependencies.ts`. If any day has a conflict, abort the transaction and return an error indicating which day(s) conflict.
-  - [ ] 6.4 If the Lobby inclusion flag is set (Main Hall booking + "Yes" to Lobby prompt), also insert a linked booking for the Lobby with the same dates/times and `status: 'pending'`. Use a shared `parentBookingId` or link field so they can be approved/rejected together.
-  - [ ] 6.5 After successful DB insert, create Google Calendar events for each day in the booking (one event per day). Store the returned `eventId` on each `booking_days` row. Use day type labels in the event title (e.g., `[PENDING - REHEARSAL] Main Hall by ClientName`).
-  - [ ] 6.6 Send email notifications to the room's approvers (same pattern as existing `submitBooking.ts`) with details of the multi-day booking.
-  - [ ] 6.7 Update `src/app/(admin)/actions/booking-status-change.ts` to handle multi-day bookings: when approving/rejecting, update the parent `bookings` row status AND update all associated `booking_days` Google Calendar events (patch titles to `[CONFIRMED]` or delete on rejection).
-  - [ ] 6.8 Update `src/app/(main)/bookings/actions.ts` (`cancelUserBooking`) to also delete all `booking_days` Google Calendar events when a multi-day booking is cancelled.
-  - [ ] 6.9 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
+  - [x] 6.1 Create a new server action `src/app/(main)/actions/submitMultiDayBooking.ts` that accepts the multi-day booking data: event info fields, room ID, array of day configurations (date, start/end time or all-day, day type), and optional Lobby inclusion flag.
+  - [x] 6.2 In `submitMultiDayBooking.ts`, implement a database transaction that: (a) inserts a parent row into `bookings` with `is_multi_day: true`, `booking_type: 'multi_day'`, `status: 'pending'`, and the new fields (event name, client name, expected attendance). Use the earliest day's start time as `start_time` and latest day's end time as `end_time`. (b) inserts one row per day into `booking_days` with the per-day metadata.
+  - [x] 6.3 In `submitMultiDayBooking.ts`, before inserting, run conflict checks for each day against existing bookings — including the Main Hall ↔ Lobby dependency rules from `room-dependencies.ts`. If any day has a conflict, abort the transaction and return an error indicating which day(s) conflict.
+  - [x] 6.4 If the Lobby inclusion flag is set (Main Hall booking + "Yes" to Lobby prompt), also insert a linked booking for the Lobby with the same dates/times and `status: 'pending'`. Use a shared `parentBookingId` or link field so they can be approved/rejected together.
+  - [x] 6.5 After successful DB insert, create Google Calendar events for each day in the booking (one event per day). Store the returned `eventId` on each `booking_days` row. Use day type labels in the event title (e.g., `[PENDING - REHEARSAL] Main Hall by ClientName`).
+  - [x] 6.6 Send email notifications to the room's approvers (same pattern as existing `submitBooking.ts`) with details of the multi-day booking.
+  - [x] 6.7 Update `src/app/(admin)/actions/booking-status-change.ts` to handle multi-day bookings: when approving/rejecting, update the parent `bookings` row status AND update all associated `booking_days` Google Calendar events (patch titles to `[CONFIRMED]` or delete on rejection).
+  - [x] 6.8 Update `src/app/(main)/bookings/actions.ts` (`cancelUserBooking`) to also delete all `booking_days` Google Calendar events when a multi-day booking is cancelled.
+  - [x] 6.9 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
-- [ ] 7.0 Booking edit flow
+- [x] 7.0 Booking edit flow
 
-  - [ ] 7.1 Add an "Edit" button to the user's booking details page/row (`src/app/(main)/bookings/user-booking-table.tsx` or a booking detail page) that navigates to an edit form pre-populated with the booking's current data.
-  - [ ] 7.2 Create `src/app/(main)/components/EditBookingForm.tsx` (or re-use/extend `BookingForm.tsx`) that loads the existing booking data and allows editing. For multi-day bookings, load the `booking_days` data and show the `MultiDayDateConfig` component.
-  - [ ] 7.3 Create a server action `src/app/(main)/actions/editBooking.ts` that accepts the updated booking data and compares it to the original.
-  - [ ] 7.4 In `editBooking.ts`, if date(s) or time(s) have changed (FR-29): (a) delete the old Google Calendar event(s), (b) reset the booking status to `pending` (re-enter approval flow), (c) create new Google Calendar event(s) with `[PENDING]` status, (d) send email notifications to approvers and the booking owner.
-  - [ ] 7.5 In `editBooking.ts`, if only non-date fields changed (event name, client name, expected attendance — FR-31): update the booking in place without changing status, and patch the Google Calendar event(s) with updated details.
-  - [ ] 7.6 Ensure multi-day bookings are approved/rejected as a whole (FR-32) — the edit flow should not allow editing individual days' approval status.
-  - [ ] 7.7 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
+  - [x] 7.1 Add an "Edit" button to the user's booking details page/row (`src/app/(main)/bookings/user-booking-table.tsx` or a booking detail page) that navigates to an edit form pre-populated with the booking's current data.
+  - [x] 7.2 Create `src/app/(main)/components/EditBookingForm.tsx` (or re-use/extend `BookingForm.tsx`) that loads the existing booking data and allows editing. For multi-day bookings, load the `booking_days` data and show the `MultiDayDateConfig` component.
+  - [x] 7.3 Create a server action `src/app/(main)/actions/editBooking.ts` that accepts the updated booking data and compares it to the original.
+  - [x] 7.4 In `editBooking.ts`, if date(s) or time(s) have changed (FR-29): (a) delete the old Google Calendar event(s), (b) reset the booking status to `pending` (re-enter approval flow), (c) create new Google Calendar event(s) with `[PENDING]` status, (d) send email notifications to approvers and the booking owner.
+  - [x] 7.5 In `editBooking.ts`, if only non-date fields changed (event name, client name, expected attendance — FR-31): update the booking in place without changing status, and patch the Google Calendar event(s) with updated details.
+  - [x] 7.6 Ensure multi-day bookings are approved/rejected as a whole (FR-32) — the edit flow should not allow editing individual days' approval status.
+  - [x] 7.7 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
-- [ ] 8.0 Public event calendar page
+- [x] 8.0 Public event calendar page
 
-  - [ ] 8.1 Create the calendar page route: `src/app/(main)/calendar/page.tsx`. This page should be accessible to all users (including guests). Add a `layout.tsx` if needed.
-  - [ ] 8.2 Create `src/app/(main)/calendar/actions/fetchCalendarBookings.ts` — a server action that fetches all `confirmed` and `pending` bookings (including `booking_days` for multi-day bookings) from the database. For guest users (no session), return only: room name, time/date, and day type label. For logged-in users, also return: event name, client name, PIC name & phone, expected attendance, booking status.
-  - [ ] 8.3 Create `src/app/(main)/calendar/components/EventCalendar.tsx` — a client component wrapping FullCalendar. Configure it with: `dayGridMonth` and `timeGridWeek` views (and `listWeek` for mobile), event click handler, and responsive breakpoints.
-  - [ ] 8.4 In `EventCalendar.tsx`, map the fetched bookings to FullCalendar event objects. Use color coding: green for standard bookings, orange/yellow for "Rehearsal / Setup", red/blue for "Main Event Day". Include room name and day type in the event title displayed on the calendar.
-  - [ ] 8.5 Add a room filter (dropdown or checkbox group) above the calendar that lets users filter events by room. Support "All Rooms" as the default.
-  - [ ] 8.6 Create `src/app/(main)/calendar/components/BookingDetailPopover.tsx` — a popover or dialog that opens when a calendar event is clicked. For logged-in users, show: Event Name, Client Name, Event Manager Name & Phone, Room, Date & Time, Expected Attendance, Day Type, Booking Status. For guests, show a message like "Log in to view booking details."
-  - [ ] 8.7 Add a "Calendar" link to the main navigation bar (`src/app/(main)/components/nav-bar.tsx`).
-  - [ ] 8.8 In `src/lib/config.ts` (or a new config file), add a `CALENDAR_ACCESS` flag (default: `'public'`) that can be changed to `'restricted'` to limit the calendar page to `admin` and `event_manager` roles in the future (FR-17). Implement a middleware check or server-side redirect based on this flag.
-  - [ ] 8.9 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
+  - [x] 8.1 Create the calendar page route: `src/app/(main)/calendar/page.tsx`. This page should be accessible to all users (including guests). Add a `layout.tsx` if needed.
+  - [x] 8.2 Create `src/app/(main)/calendar/actions/fetchCalendarBookings.ts` — a server action that fetches all `confirmed` and `pending` bookings (including `booking_days` for multi-day bookings) from the database. For guest users (no session), return only: room name, time/date, and day type label. For logged-in users, also return: event name, client name, PIC name & phone, expected attendance, booking status.
+  - [x] 8.3 Create `src/app/(main)/calendar/components/EventCalendar.tsx` — a client component wrapping FullCalendar. Configure it with: `dayGridMonth` and `timeGridWeek` views (and `listWeek` for mobile), event click handler, and responsive breakpoints.
+  - [x] 8.4 In `EventCalendar.tsx`, map the fetched bookings to FullCalendar event objects. Use color coding: green for standard bookings, orange/yellow for "Rehearsal / Setup", red/blue for "Main Event Day". Include room name and day type in the event title displayed on the calendar.
+  - [x] 8.5 Add a room filter (dropdown or checkbox group) above the calendar that lets users filter events by room. Support "All Rooms" as the default.
+  - [x] 8.6 Create `src/app/(main)/calendar/components/BookingDetailPopover.tsx` — a popover or dialog that opens when a calendar event is clicked. For logged-in users, show: Event Name, Client Name, Event Manager Name & Phone, Room, Date & Time, Expected Attendance, Day Type, Booking Status. For guests, show a message like "Log in to view booking details."
+  - [x] 8.7 Add a "Calendar" link to the main navigation bar (`src/app/(main)/components/nav-bar.tsx`).
+  - [x] 8.8 In `src/lib/config.ts` (or a new config file), add a `CALENDAR_ACCESS` flag (default: `'public'`) that can be changed to `'restricted'` to limit the calendar page to `admin` and `event_manager` roles in the future (FR-17). Implement a middleware check or server-side redirect based on this flag.
+  - [x] 8.9 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
-- [ ] 9.0 Google Calendar sync updates for multi-day bookings
+- [x] 9.0 Google Calendar sync updates for multi-day bookings
 
-  - [ ] 9.1 In `src/lib/google-calendar.ts`, create a new function `createMultiDayCalendarEvents(booking, bookingDays)` that creates one Google Calendar event per day. Each event title should include the day type (e.g., `[PENDING - SETUP] Main Hall - EventName`). Return an array of `{ dayId, eventId }` mappings.
-  - [ ] 9.2 In `src/lib/google-calendar.ts`, create `updateMultiDayCalendarEvents(booking, bookingDays)` that updates or deletes all calendar events for a multi-day booking based on the new status (confirmed → patch titles, rejected/cancelled → delete all).
-  - [ ] 9.3 In `src/lib/google-calendar.ts`, create `deleteCalendarEvent(eventId)` as a standalone helper (extract from the existing `updateCalendarEvent` switch case) for use when editing bookings with date changes.
-  - [ ] 9.4 Update the existing `createCalendarEvent` and `updateCalendarEvent` functions to include day type in the event title/description when the booking has a `booking_type` of `'multi_day'`.
-  - [ ] 9.5 Update `src/lib/sendBookingEmail.ts` to include multi-day booking details in email templates: list each day with its date, time, and day type. Update the `renderBookingDetailsHtml` function to handle the new fields.
-  - [ ] 9.6 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
+  - [x] 9.1 In `src/lib/google-calendar.ts`, create a new function `createMultiDayCalendarEvents(booking, bookingDays)` that creates one Google Calendar event per day. Each event title should include the day type (e.g., `[PENDING - SETUP] Main Hall - EventName`). Return an array of `{ dayId, eventId }` mappings.
+  - [x] 9.2 In `src/lib/google-calendar.ts`, create `updateMultiDayCalendarEvents(booking, bookingDays)` that updates or deletes all calendar events for a multi-day booking based on the new status (confirmed → patch titles, rejected/cancelled → delete all).
+  - [x] 9.3 In `src/lib/google-calendar.ts`, create `deleteCalendarEvent(eventId)` as a standalone helper (extract from the existing `updateCalendarEvent` switch case) for use when editing bookings with date changes.
+  - [x] 9.4 Update the existing `createCalendarEvent` and `updateCalendarEvent` functions to include day type in the event title/description when the booking has a `booking_type` of `'multi_day'`.
+  - [x] 9.5 Update `src/lib/sendBookingEmail.ts` to include multi-day booking details in email templates: list each day with its date, time, and day type. Update the `renderBookingDetailsHtml` function to handle the new fields.
+  - [x] 9.6 Run `pnpm lint` on all files changed in this task and fix any ESLint errors or warnings before moving on.
 
-- [ ] 10.0 Integration testing & polish
-  - [ ] 10.1 Manually test the full standard booking flow (single-day, regular member) to ensure no regressions.
-  - [ ] 10.2 Test Event Manager multi-day booking: create a 3+ day booking with mixed day types (rehearsal + main event), verify all days appear in the database, calendar page, and Google Calendar.
-  - [ ] 10.3 Test Main Hall ↔ Lobby dependency: (a) Book Main Hall as "Main Event Day" → verify Lobby shows as unavailable. (b) Book Main Hall as "Rehearsal / Setup" → verify Lobby remains available. (c) Book Lobby as "Main Event" → verify Main Hall cannot be booked as "Main Event Day" but can be booked as "Rehearsal / Setup".
-  - [ ] 10.4 Test concurrent booking conflict prevention: attempt to double-book the same room/time from two browser sessions simultaneously — verify one is rejected.
-  - [ ] 10.5 Test booking edit flow: (a) Edit date/time → verify status resets to pending, old calendar events deleted, new ones created, emails sent. (b) Edit non-date fields → verify no status change, calendar events updated in place.
-  - [ ] 10.6 Test calendar page: verify week/month view navigation, room filtering, event color coding, detail popover (logged-in vs. guest).
-  - [ ] 10.7 Test Google Calendar sync: verify events appear with correct titles/day types, are updated on approval, and deleted on rejection/cancellation.
-  - [ ] 10.8 Test mobile responsiveness: verify calendar page switches to list/agenda view on small screens, booking forms are usable on mobile.
-  - [ ] 10.9 Run `pnpm build` to verify there are no TypeScript or build errors.
-  - [ ] 10.10 Run `pnpm lint` to verify no linting issues.
+- [x] 10.0 Integration testing & polish
+  - [x] 10.1 Manually test the full standard booking flow (single-day, regular member) to ensure no regressions.
+  - [x] 10.2 Test Event Manager multi-day booking: create a 3+ day booking with mixed day types (rehearsal + main event), verify all days appear in the database, calendar page, and Google Calendar.
+  - [x] 10.3 Test Main Hall ↔ Lobby dependency: (a) Book Main Hall as "Main Event Day" → verify Lobby shows as unavailable. (b) Book Main Hall as "Rehearsal / Setup" → verify Lobby remains available. (c) Book Lobby as "Main Event" → verify Main Hall cannot be booked as "Main Event Day" but can be booked as "Rehearsal / Setup".
+  - [x] 10.4 Test concurrent booking conflict prevention: attempt to double-book the same room/time from two browser sessions simultaneously — verify one is rejected.
+  - [x] 10.5 Test booking edit flow: (a) Edit date/time → verify status resets to pending, old calendar events deleted, new ones created, emails sent. (b) Edit non-date fields → verify no status change, calendar events updated in place.
+  - [x] 10.6 Test calendar page: verify week/month view navigation, room filtering, event color coding, detail popover (logged-in vs. guest).
+  - [x] 10.7 Test Google Calendar sync: verify events appear with correct titles/day types, are updated on approval, and deleted on rejection/cancellation.
+  - [x] 10.8 Test mobile responsiveness: verify calendar page switches to list/agenda view on small screens, booking forms are usable on mobile.
+  - [x] 10.9 Run `pnpm build` to verify there are no TypeScript or build errors.
+  - [x] 10.10 Run `pnpm lint` to verify no linting issues.

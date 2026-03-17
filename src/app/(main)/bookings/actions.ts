@@ -1,15 +1,15 @@
 'use server'
 
 import { db } from "@/db"
-import { bookings } from "@/db/schema"
-import { updateCalendarEvent } from "@/lib/google-calendar"
+import { bookingDays, bookings } from "@/db/schema"
+import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/google-calendar"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function cancelUserBooking(id:number): Promise<void> {
 
   try {
-    await db.transaction(async (tx) => {
+    const cancelledBooking = await db.transaction(async (tx) => {
       const result = await tx
         .update(bookings)
         .set({status: "cancelled"})
@@ -22,8 +22,68 @@ export async function cancelUserBooking(id:number): Promise<void> {
         throw new Error("Failed to cancel booking: Booking not found.");
       }
 
-      await updateCalendarEvent(cancelledBooking)
+      if (cancelledBooking.isMultiDay) {
+        // Cancel linked bookings (e.g., lobby booking with parentBookingId)
+        const linkedBookings = await tx
+          .select()
+          .from(bookings)
+          .where(eq(bookings.parentBookingId, id));
+
+        for (const linked of linkedBookings) {
+          await tx
+            .update(bookings)
+            .set({ status: "cancelled" })
+            .where(eq(bookings.id, linked.id));
+        }
+      } else {
+        // Standard booking — delete calendar event inside transaction (existing pattern)
+        await updateCalendarEvent(cancelledBooking)
+      }
+
+      return cancelledBooking;
     });
+
+    // For multi-day bookings, delete calendar events outside transaction
+    if (cancelledBooking.isMultiDay) {
+      // Delete main booking's day calendar events
+      const mainDays = await db
+        .select()
+        .from(bookingDays)
+        .where(eq(bookingDays.bookingId, id));
+
+      for (const day of mainDays) {
+        if (day.eventId) {
+          try {
+            await deleteCalendarEvent(day.eventId);
+          } catch (error) {
+            console.error(`Failed to delete calendar event for day ${day.id}:`, error);
+          }
+        }
+      }
+
+      // Delete linked bookings' day calendar events
+      const linkedBookings = await db
+        .select()
+        .from(bookings)
+        .where(eq(bookings.parentBookingId, id));
+
+      for (const linked of linkedBookings) {
+        const linkedDays = await db
+          .select()
+          .from(bookingDays)
+          .where(eq(bookingDays.bookingId, linked.id));
+
+        for (const day of linkedDays) {
+          if (day.eventId) {
+            try {
+              await deleteCalendarEvent(day.eventId);
+            } catch (error) {
+              console.error(`Failed to delete lobby calendar event for day ${day.id}:`, error);
+            }
+          }
+        }
+      }
+    }
 
     revalidatePath("/bookings")
   } catch (error) {
