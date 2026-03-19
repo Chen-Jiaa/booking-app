@@ -67,7 +67,7 @@ export default function SignupPage() {
           />
 
           {!form.formState.errors.email && serverError ? (
-            <p className="text-sm text-red-500">{serverError}</p>
+            <p className="text-sm text-destructive">{serverError}</p>
           ): null}
 
           <Button disabled={form.formState.isSubmitting} type="submit">

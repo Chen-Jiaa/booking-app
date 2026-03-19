@@ -181,12 +181,12 @@ export default function AddRooms({adminEmails} : {adminEmails: string[]}) {
                 )}
                 
                 {formError && (
-                    <p className="text-sm text-red-500">
+                    <p className="text-sm text-destructive">
                         {formError}
                     </p>
                 )}
                 {!formError && form.formState.isSubmitSuccessful && (
-                    <p className="text-sm text-green-600">
+                    <p className="text-sm text-success">
                         Room successfully added!
                     </p>
                 )}

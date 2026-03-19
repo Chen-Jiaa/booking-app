@@ -11,19 +11,8 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { type CalendarEvent, type CalendarRoom, fetchCalendarBookings } from "../actions/fetchCalendarBookings"
+import { DAY_TYPE_COLORS, DAY_TYPE_LABELS } from "../constants"
 import { BookingDetailPopover } from "./BookingDetailPopover"
-
-const DAY_TYPE_COLORS: Record<string, { backgroundColor: string; borderColor: string }> = {
-  main_event: { backgroundColor: '#3b82f6', borderColor: '#2563eb' },
-  rehearsal_setup: { backgroundColor: '#f59e0b', borderColor: '#d97706' },
-  standard: { backgroundColor: '#22c55e', borderColor: '#16a34a' },
-}
-
-const DAY_TYPE_LABELS: Record<string, string> = {
-  main_event: 'Main Event',
-  rehearsal_setup: 'Rehearsal / Setup',
-  standard: 'Booking',
-}
 
 interface EventCalendarProps {
   isLoggedIn: boolean
@@ -69,7 +58,7 @@ export function EventCalendar({ isLoggedIn, rooms }: EventCalendarProps) {
       extendedProps: event,
       id: event.id,
       start: event.start,
-      textColor: '#ffffff',
+      textColor: colors.textColor,
       title,
     }
   })
@@ -102,15 +91,15 @@ export function EventCalendar({ isLoggedIn, rooms }: EventCalendarProps) {
 
         <div className="ml-auto hidden items-center gap-3 sm:flex">
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#22c55e' }} />
+            <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: DAY_TYPE_COLORS.standard.backgroundColor }} />
             <span className="text-xs text-muted-foreground">Standard</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#f59e0b' }} />
+            <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: DAY_TYPE_COLORS.rehearsal_setup.backgroundColor }} />
             <span className="text-xs text-muted-foreground">Rehearsal / Setup</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#3b82f6' }} />
+            <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: DAY_TYPE_COLORS.main_event.backgroundColor }} />
             <span className="text-xs text-muted-foreground">Main Event</span>
           </div>
         </div>

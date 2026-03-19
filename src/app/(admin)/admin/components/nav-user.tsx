@@ -1,5 +1,6 @@
 "use client"
 
+import { signOut } from "@/app/actions/signOut"
 import { useSupabase } from "@/components/providers/supabase-providers"
 import {
   DropdownMenu,
@@ -13,7 +14,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { supabase } from "@/lib/supabase/client"
 import {
   ChevronsUpDown,
   LogOut,
@@ -25,9 +25,9 @@ export function NavUser() {
     const { isMobile } = useSidebar() 
     const router = useRouter()
 
-    async function signOut() {
-        await supabase.auth.signOut()
-        router.refresh()
+    async function handleSignOut() {
+        await signOut()
+        router.push("/")
     }
 
     return (
@@ -51,7 +51,7 @@ export function NavUser() {
                 side={isMobile ? "bottom" : "top"}
                 sideOffset={4}
                 >
-                <DropdownMenuItem onClick={() => { void signOut() }}>
+                <DropdownMenuItem onClick={() => { void handleSignOut() }}>
                     <LogOut/>
                     Log out
                 </DropdownMenuItem>

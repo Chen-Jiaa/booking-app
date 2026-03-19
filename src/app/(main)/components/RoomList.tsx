@@ -64,9 +64,9 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                     {room.capacity}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 bg-green-50 rounded-[20px] px-3">
-                  <Circle className="fill-green-700 w-[10px]" />
-                  <span className="text-sm font-normal text-green-700">
+                <div className="flex items-center gap-1 bg-success-bg rounded-[20px] px-3">
+                  <Circle className="fill-success w-[10px]" />
+                  <span className="text-sm font-normal text-success">
                     {room.availability ? "Available" : "Unavailable"}
                   </span>
                 </div>
@@ -80,7 +80,7 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                 {user ? (
                   <DialogTrigger asChild>
                     <Button
-                      className="w-full text-black"
+                      className="w-full"
                       onClick={() => {
                         setSelectedRoom(room);
                         setIsDialogOpen(true);
@@ -92,7 +92,7 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                   </DialogTrigger>
                 ) : (
                   <Button
-                    className="w-full text-black"
+                    className="w-full"
                     onClick={() => {
                       router.push("/login");
                     }}

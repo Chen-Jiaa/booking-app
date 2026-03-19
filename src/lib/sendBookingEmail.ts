@@ -50,12 +50,12 @@ export async function sendBookingEmail(props: SendEmailProps) {
       <p>You have a new booking request for:</p>
       ${renderBookingDetailsHtml(bookingDetails)}
       <a href="https://booking.collective.my/admin/bookings/approve/${bookingDetails.id.toString()}"
-        style="display: inline-block; padding: 10px 20px; margin-right: 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
+        style="display: inline-block; padding: 10px 20px; margin-right: 10px; background-color: #4DC98E; color: white; text-decoration: none; border-radius: 5px;">
         ✅ Approve
       </a>
 
       <a href="https://booking.collective.my/admin/bookings/reject/${bookingDetails.id.toString()}"
-        style="display: inline-block; padding: 10px 20px; background-color: #f44336; color: white; text-decoration: none; border-radius: 5px;">
+        style="display: inline-block; padding: 10px 20px; background-color: #D94148; color: white; text-decoration: none; border-radius: 5px;">
         ❌ Reject
       </a>
     `,
@@ -120,11 +120,11 @@ export async function sendMultiDayBookingEmail(props: MultiDayEmailProps) {
       </table>
       <br/>
       <a href="https://booking.collective.my/admin/bookings/approve/${bookingIdStr}"
-        style="display: inline-block; padding: 10px 20px; margin-right: 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
+        style="display: inline-block; padding: 10px 20px; margin-right: 10px; background-color: #4DC98E; color: white; text-decoration: none; border-radius: 5px;">
         ✅ Approve
       </a>
       <a href="https://booking.collective.my/admin/bookings/reject/${bookingIdStr}"
-        style="display: inline-block; padding: 10px 20px; background-color: #f44336; color: white; text-decoration: none; border-radius: 5px;">
+        style="display: inline-block; padding: 10px 20px; background-color: #D94148; color: white; text-decoration: none; border-radius: 5px;">
         ❌ Reject
       </a>
     `,

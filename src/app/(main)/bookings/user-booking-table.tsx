@@ -46,7 +46,7 @@ export function BookingsList({ bookings: initialBookings }: BookingListProps) {
             You haven’t made any bookings yet.
           </p>
           <Button asChild>
-            <Link className="text-white" href="/">
+            <Link className="text-primary-foreground" href="/">
               Make a Booking
             </Link>
           </Button>
@@ -70,8 +70,8 @@ export function BookingsList({ bookings: initialBookings }: BookingListProps) {
                       </p>
                       <div
                         className={`text-xs md:text-sm capitalize rounded-[20px] px-3 text-muted-foreground border-[1px] flex items-center gap-1
-                                            ${booking.status === "confirmed" ? " text-green-700 bg-green-50 border-0" : ""}
-                                            ${booking.status === "rejected" ? "text-red-700 bg-red-50 border-0" : ""}
+                                            ${booking.status === "confirmed" ? " text-success bg-success-bg border-0" : ""}
+                                            ${booking.status === "rejected" ? "text-error bg-error-bg border-0" : ""}
                                             `}
                       >
                         <Circle className="w-[10px] fill-current" />
@@ -101,7 +101,7 @@ export function BookingsList({ bookings: initialBookings }: BookingListProps) {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
-                            className="text-red-700 gap-1"
+                            className="text-destructive gap-1"
                             variant="outline"
                           >
                             <X />
@@ -119,7 +119,7 @@ export function BookingsList({ bookings: initialBookings }: BookingListProps) {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              className="bg-red-600"
+                              className="bg-destructive"
                               onClick={() => void cancelBooking(booking.id)}
                             >
                               Continue

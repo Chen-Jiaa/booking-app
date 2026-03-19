@@ -75,11 +75,11 @@ export function Table2({
                         className={cn(
                           "flex ml-auto px-2 py-1 rounded-sm text-sm capitalize",
                           status === "pending" &&
-                            "bg-orange-100 text-orange-800 hover:bg-orange-200",
+                            "bg-warning-bg text-warning hover:bg-warning/25",
                           status === "confirmed" &&
-                            "bg-green-100 text-green-800 hover:bg-green-200",
+                            "bg-success-bg text-success hover:bg-success/25",
                           status === "rejected" &&
-                            "bg-red-100 text-red-800 hover:bg-red-200",
+                            "bg-error-bg text-error hover:bg-error/25",
                         )}
                         variant="ghost"
                       >
@@ -97,7 +97,7 @@ export function Table2({
                         Approve
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        className="text-red-500"
+                        className="text-destructive"
                         onClick={() => {
                           void updateBookingStatus(id, "rejected");
                         }}

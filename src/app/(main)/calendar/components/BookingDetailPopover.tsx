@@ -7,24 +7,13 @@ import { format, parseISO } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 
 import { type CalendarEvent } from "../actions/fetchCalendarBookings"
+import { DAY_TYPE_COLORS, DAY_TYPE_LABELS } from "../constants"
 
 const TIMEZONE = "Asia/Kuala_Lumpur"
 
-const DAY_TYPE_COLORS: Record<string, { backgroundColor: string; borderColor: string }> = {
-  main_event: { backgroundColor: '#3b82f6', borderColor: '#2563eb' },
-  rehearsal_setup: { backgroundColor: '#f59e0b', borderColor: '#d97706' },
-  standard: { backgroundColor: '#22c55e', borderColor: '#16a34a' },
-}
-
-const DAY_TYPE_LABELS: Record<string, string> = {
-  main_event: 'Main Event',
-  rehearsal_setup: 'Rehearsal / Setup',
-  standard: 'Booking',
-}
-
 const STATUS_STYLES: Record<string, string> = {
-  confirmed: "bg-green-100 text-green-800",
-  pending: "bg-orange-100 text-orange-800",
+  confirmed: "bg-success-bg text-success",
+  pending: "bg-warning-bg text-warning",
 }
 
 interface BookingDetailPopoverProps {
@@ -60,8 +49,10 @@ function EventDetail({ event, isLoggedIn }: { event: CalendarEvent; isLoggedIn: 
           {event.status}
         </Badge>
         <Badge
-          className="text-white"
-          style={{ backgroundColor: (DAY_TYPE_COLORS[event.dayType] ?? DAY_TYPE_COLORS.standard).backgroundColor }}
+          style={{
+            backgroundColor: (DAY_TYPE_COLORS[event.dayType] ?? DAY_TYPE_COLORS.standard).backgroundColor,
+            color: (DAY_TYPE_COLORS[event.dayType] ?? DAY_TYPE_COLORS.standard).textColor,
+          }}
         >
           {DAY_TYPE_LABELS[event.dayType] ?? 'Booking'}
         </Badge>

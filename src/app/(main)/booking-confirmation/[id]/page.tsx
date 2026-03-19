@@ -41,7 +41,7 @@ export default async function BookingConfirmation({ params }: PageProps) {
           <div className="text-center my-6">
             {booking.status === "pending" 
               ? <Hourglass className="justify-self-center p-2 m-2" size={48}/> 
-              : <CircleCheckBig className="justify-self-center p-2 m-2 text-green-500" size={48}/>}
+              : <CircleCheckBig className="justify-self-center p-2 m-2 text-success" size={48}/>}
             <h2 className="text-2xl font-bold mb-2">Booking Submitted!</h2>
             <p className="text-muted-foreground">
               {booking.status === "pending" 

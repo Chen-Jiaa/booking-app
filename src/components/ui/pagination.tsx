@@ -68,7 +68,7 @@ function PaginationButton(props: PaginationButtonProps): ReactElement {
   const router = useRouter();
   return (
     <Button
-      className="h-8 w-8 rounded-xl border dark:border-gray-800/80 disabled:dark:text-gray-700"
+      className="h-8 w-8 rounded-xl border border-border disabled:text-muted-foreground"
       disabled={disabled}
       onClick={() => {
         const query = new URLSearchParams([["page", String(pageNumber)]]);

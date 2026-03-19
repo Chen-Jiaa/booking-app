@@ -251,9 +251,9 @@ export default function AdminTable() {
                 asChild
                 className={`
                   "px-1 py-1 rounded text-sm",
-                  ${row.getValue("status") === "pending" ? "bg-[#f9ddc7] rounded-sm p-1 text-center" : ""}
-                  ${row.getValue("status") === "confirmed" ? "text-green-700 bg-green-50" : ""}
-                  ${row.getValue("status") === "rejected" ? "text-red-700 bg-red-50" : ""}
+                  ${row.getValue("status") === "pending" ? "bg-warning-bg text-warning rounded-sm p-1 text-center" : ""}
+                  ${row.getValue("status") === "confirmed" ? "text-success bg-success-bg" : ""}
+                  ${row.getValue("status") === "rejected" ? "text-error bg-error-bg" : ""}
                   `}
                 >
                 <Button className="flex" variant="ghost">
@@ -263,7 +263,7 @@ export default function AdminTable() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => {void handleStatusChange(booking.id, 'confirmed')}}>Approve</DropdownMenuItem>
-                <DropdownMenuItem className="text-red-500" onClick={() => {void handleStatusChange(booking.id, 'rejected')}}>Reject</DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={() => {void handleStatusChange(booking.id, 'rejected')}}>Reject</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

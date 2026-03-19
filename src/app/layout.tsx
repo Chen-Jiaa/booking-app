@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html className="dark" lang="en" style={{ colorScheme: 'dark' }}>
       <body className="min-h-dvh">
         <SupabaseProvider>
           {children}
