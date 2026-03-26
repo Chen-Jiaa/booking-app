@@ -1,18 +1,21 @@
-import { CALENDAR_ACCESS } from "@/lib/config"
-import { getUserAndRole } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { CALENDAR_ACCESS } from "@/lib/config";
+import { getUserAndRole } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-import { fetchCalendarRooms } from "./actions/fetchCalendarBookings"
-import { EventCalendar } from "./components/EventCalendar"
+import { fetchCalendarRooms } from "./actions/fetchCalendarBookings";
+import { EventCalendarLoader } from "./components/EventCalendarLoader";
 
 export default async function CalendarPage() {
   const [rooms, { role, user }] = await Promise.all([
     fetchCalendarRooms(),
     getUserAndRole(),
-  ])
+  ]);
 
-  if (CALENDAR_ACCESS === 'restricted' && (!user || (role !== 'admin' && role !== 'event_manager'))) {
-    redirect('/')
+  if (
+    CALENDAR_ACCESS === "restricted" &&
+    (!user || (role !== "admin" && role !== "event_manager"))
+  ) {
+    redirect("/");
   }
 
   return (
@@ -23,7 +26,7 @@ export default async function CalendarPage() {
           View all room bookings and availability
         </p>
       </div>
-      <EventCalendar isLoggedIn={!!user} rooms={rooms} />
+      <EventCalendarLoader isLoggedIn={!!user} rooms={rooms} />
     </main>
-  )
+  );
 }
