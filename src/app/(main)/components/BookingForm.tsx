@@ -9,16 +9,16 @@ import { combineDateAndTime } from "@/lib/date-utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { getUserProfile } from "../actions/getUserProfile"
 import { submitBooking } from "../actions/submitBooking"
 
 interface BookingFormProps {
     date: Date
     endTime: string
+    initialProfile: null | { email: null | string; fullName: null | string; phone: null | string }
     selectedRoom: {id: string; name: string}
     startTime: string
 }
@@ -41,15 +41,15 @@ const purposeOptions = [
 ]
     
 export default function BookingForm2(props: BookingFormProps) {
-    const { date, endTime, selectedRoom, startTime } = props
+    const { date, endTime, initialProfile, selectedRoom, startTime } = props
     
     const [selectedPurpose, setSelectedPurpose] = useState("")
     
     const form = useForm<z.infer<typeof formSchema>>({
         defaultValues: {
-          email: "",
-          name: "",
-          phone: "",
+          email: initialProfile?.email ?? "",
+          name: initialProfile?.fullName ?? "",
+          phone: initialProfile?.phone ?? "",
           purpose: "",
         },
         resolver: zodResolver(formSchema),
@@ -57,27 +57,6 @@ export default function BookingForm2(props: BookingFormProps) {
     const [isLoading, setIsLoading] = useState(false)
     const { user } = useSupabase()
     const router = useRouter()
-
-    useEffect(() => {
-        async function loadProfile() {
-            try {
-                const profile = await getUserProfile()
-                if (profile) {
-                    form.reset({
-                        email: profile.email ?? "",
-                        name: profile.fullName ?? "",
-                        phone: profile.phone ?? "",
-                        purpose: "",
-                    })
-                }
-            } catch (error) {
-                console.error("Failed to load profile:", error)
-            }
-        }
-        if (user) {
-            void loadProfile()
-        }
-    }, [user, form])
 
     async function onSubmit (values: z.infer<typeof formSchema>) {
         setIsLoading(true)

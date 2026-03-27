@@ -2,13 +2,22 @@ import { CALENDAR_ACCESS } from "@/lib/config";
 import { getUserAndRole } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-import { fetchCalendarRooms } from "./actions/fetchCalendarBookings";
+import {
+  fetchCalendarBookings,
+  fetchCalendarRooms,
+} from "./actions/fetchCalendarBookings";
 import { EventCalendarLoader } from "./components/EventCalendarLoader";
 
 export default async function CalendarPage() {
-  const [rooms, { role, user }] = await Promise.all([
+  const now = new Date();
+  // Prefetch current month ±1 so adjacent months are instant
+  const rangeStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+  const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 1).toISOString();
+
+  const [rooms, { role, user }, { events: initialEvents }] = await Promise.all([
     fetchCalendarRooms(),
     getUserAndRole(),
+    fetchCalendarBookings(rangeStart, rangeEnd),
   ]);
 
   if (
@@ -26,7 +35,11 @@ export default async function CalendarPage() {
           View all room bookings and availability
         </p>
       </div>
-      <EventCalendarLoader isLoggedIn={!!user} rooms={rooms} />
+      <EventCalendarLoader
+        initialEvents={initialEvents}
+        isLoggedIn={!!user}
+        rooms={rooms}
+      />
     </main>
   );
 }

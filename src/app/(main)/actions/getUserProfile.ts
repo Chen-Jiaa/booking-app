@@ -2,12 +2,11 @@
 
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
 import { eq } from "drizzle-orm";
 
 export async function getUserProfile() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   if (!user) {
     return null

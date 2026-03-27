@@ -3,7 +3,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from "next/dynamic";
 
-import type { CalendarRoom } from "../actions/fetchCalendarBookings";
+import type { CalendarEvent, CalendarRoom } from "../actions/fetchCalendarBookings";
 
 const EventCalendar = dynamic(
   () =>
@@ -26,11 +26,19 @@ const EventCalendar = dynamic(
 );
 
 export function EventCalendarLoader({
+  initialEvents,
   isLoggedIn,
   rooms,
 }: {
+  initialEvents: CalendarEvent[];
   isLoggedIn: boolean;
   rooms: CalendarRoom[];
 }) {
-  return <EventCalendar isLoggedIn={isLoggedIn} rooms={rooms} />;
+  return (
+    <EventCalendar
+      initialEvents={initialEvents}
+      isLoggedIn={isLoggedIn}
+      rooms={rooms}
+    />
+  );
 }

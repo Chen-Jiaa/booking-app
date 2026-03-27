@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { cache } from 'react'
 
 interface Profile {
   role: string
@@ -34,22 +35,25 @@ export async function createClient() {
   })
 }
 
-export async function getUserAndRole() {
+export const getAuthUser = cache(async () => {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user ?? null
+})
 
-  const {
-    data: { user },
-    error: userError
-  } = await supabase.auth.getUser()
+export async function getUserAndRole() {
+  const user = await getAuthUser()
 
-  if (userError || !user) {
+  if (!user) {
     return { role: null, user: null };
-  }  
+  }
+
+  const supabase = await createClient()
 
   let role: null | string = null
 
   const { data, error } = await supabase
-    .from("profiles") // or your user/role table
+    .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single<Profile>()

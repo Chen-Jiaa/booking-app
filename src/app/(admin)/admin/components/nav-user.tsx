@@ -1,6 +1,5 @@
 "use client"
 
-import { signOut } from "@/app/actions/signOut"
 import { useSupabase } from "@/components/providers/supabase-providers"
 import {
   DropdownMenu,
@@ -14,6 +13,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { supabase } from "@/lib/supabase/client"
 import {
   ChevronsUpDown,
   LogOut,
@@ -26,8 +26,9 @@ export function NavUser() {
     const router = useRouter()
 
     async function handleSignOut() {
-        await signOut()
+        await supabase.auth.signOut()
         router.push("/")
+        router.refresh()
     }
 
     return (

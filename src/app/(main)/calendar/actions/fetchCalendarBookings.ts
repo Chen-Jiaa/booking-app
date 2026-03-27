@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from "@/lib/supabase/server"
+import { createClient, getAuthUser } from "@/lib/supabase/server"
 
 export interface CalendarEvent {
   allDay: boolean
@@ -55,20 +55,21 @@ export async function fetchCalendarBookings(
 ): Promise<{ events: CalendarEvent[]; isLoggedIn: boolean }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // Run auth check and standard bookings query in parallel
+  const [user, { data: standardData }] = await Promise.all([
+    getAuthUser(),
+    supabase
+      .from("bookings")
+      .select("id, room_id, room_name, start_time, end_time, status, name, phone, purpose, event_name, client_name, expected_attendance")
+      .in("status", ["pending", "confirmed"])
+      .or("is_multi_day.is.null,is_multi_day.eq.false")
+      .lt("start_time", rangeEnd)
+      .gt("end_time", rangeStart)
+      .order("start_time", { ascending: true }),
+  ])
   const isLoggedIn = !!user
 
   const events: CalendarEvent[] = []
-
-  // 1. Standard (non-multi-day) bookings overlapping the range
-  const { data: standardData } = await supabase
-    .from("bookings")
-    .select("id, room_id, room_name, start_time, end_time, status, name, phone, purpose, event_name, client_name, expected_attendance")
-    .in("status", ["pending", "confirmed"])
-    .or("is_multi_day.is.null,is_multi_day.eq.false")
-    .lt("start_time", rangeEnd)
-    .gt("end_time", rangeStart)
-    .order("start_time", { ascending: true })
 
   if (standardData) {
     for (const row of standardData as BookingRow[]) {

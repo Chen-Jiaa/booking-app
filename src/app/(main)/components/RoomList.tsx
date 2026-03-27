@@ -21,7 +21,12 @@ import BookingSummary from "./BookingSummary";
 import DateTimeSelector from "./DateTimeSelector";
 import MultiDayBookingForm from "./MultiDayBookingForm";
 
-export function RoomList({ roomData }: { roomData: Rooms[] }) {
+interface RoomListProps {
+  initialProfile: null | { email: null | string; fullName: null | string; phone: null | string };
+  roomData: Rooms[];
+}
+
+export function RoomList({ initialProfile, roomData }: RoomListProps) {
   const { role, user } = useSupabase();
   const [selectedRoom, setSelectedRoom] = useState<null | Rooms>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -165,6 +170,7 @@ export function RoomList({ roomData }: { roomData: Rooms[] }) {
                           <BookingForm2
                             date={date}
                             endTime={endTime}
+                            initialProfile={initialProfile}
                             selectedRoom={selectedRoom}
                             startTime={startTime}
                           />
