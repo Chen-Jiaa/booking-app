@@ -73,7 +73,7 @@ function VerifyForm() {
           </InputOTPGroup>
         </InputOTP>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {error && <p className="text-destructive text-sm">{error}</p>}
 
         <Button disabled={isPending} type="submit">
           {isPending ? <Loader2 className="animate-spin"/> : "Verify"}

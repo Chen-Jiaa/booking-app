@@ -62,7 +62,7 @@ export async function updateRoomApprovers(roomId: string, newApprovers: string[]
   }
 }
 
-export async function updateRoomAvailabilityTo(roomId: string, value: 'superUser' | 'user') {
+export async function updateRoomAvailabilityTo(roomId: string, value: 'event_manager' | 'superUser' | 'user') {
   try {
     await db.update(rooms).set({ availableTo: value }).where(eq(rooms.id, roomId));
     revalidatePath('/admin/rooms');

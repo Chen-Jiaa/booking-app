@@ -25,8 +25,9 @@ export function NavUser() {
     const { isMobile } = useSidebar() 
     const router = useRouter()
 
-    async function signOut() {
+    async function handleSignOut() {
         await supabase.auth.signOut()
+        router.push("/")
         router.refresh()
     }
 
@@ -51,7 +52,7 @@ export function NavUser() {
                 side={isMobile ? "bottom" : "top"}
                 sideOffset={4}
                 >
-                <DropdownMenuItem onClick={() => { void signOut() }}>
+                <DropdownMenuItem onClick={() => { void handleSignOut() }}>
                     <LogOut/>
                     Log out
                 </DropdownMenuItem>

@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Bookings } from "@/db/schema";
 import { formatBookingDate, formatBookingTime } from "@/lib/date-utils";
 import { format } from "date-fns";
-import { Circle, X } from "lucide-react";
+import { Circle, Pencil, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -46,7 +46,7 @@ export function BookingsList({ bookings: initialBookings }: BookingListProps) {
             You haven’t made any bookings yet.
           </p>
           <Button asChild>
-            <Link className="text-white" href="/">
+            <Link className="text-primary-foreground" href="/">
               Make a Booking
             </Link>
           </Button>
@@ -70,8 +70,8 @@ export function BookingsList({ bookings: initialBookings }: BookingListProps) {
                       </p>
                       <div
                         className={`text-xs md:text-sm capitalize rounded-[20px] px-3 text-muted-foreground border-[1px] flex items-center gap-1
-                                            ${booking.status === "confirmed" ? " text-green-700 bg-green-50 border-0" : ""}
-                                            ${booking.status === "rejected" ? "text-red-700 bg-red-50 border-0" : ""}
+                                            ${booking.status === "confirmed" ? " text-success bg-success-bg border-0" : ""}
+                                            ${booking.status === "rejected" ? "text-error bg-error-bg border-0" : ""}
                                             `}
                       >
                         <Circle className="w-[10px] fill-current" />
@@ -88,35 +88,46 @@ export function BookingsList({ bookings: initialBookings }: BookingListProps) {
                       </p>
                     </div>
 
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          className="text-red-700 gap-1 mt-2"
-                          variant="outline"
-                        >
-                          <X />
-                          Cancel booking
+                    <div className="flex gap-2 mt-2">
+                      {(booking.status === "pending" ||
+                        booking.status === "confirmed") && (
+                        <Button asChild className="gap-1" variant="outline">
+                          <Link href={`/bookings/${booking.id.toString()}/edit`}>
+                            <Pencil className="h-4 w-4" />
+                            Edit booking
+                          </Link>
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="w-[80%] rounded-md">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will cancel your
-                            current booking.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-red-600"
-                            onClick={() => void cancelBooking(booking.id)}
+                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            className="text-destructive gap-1"
+                            variant="outline"
                           >
-                            Continue
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            <X />
+                            Cancel booking
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="w-[80%] rounded-md">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will cancel your
+                              current booking.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive"
+                              onClick={() => void cancelBooking(booking.id)}
+                            >
+                              Continue
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </CardContent>
                 </Card>
               );

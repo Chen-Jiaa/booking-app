@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function AuthButton() {
   return (
@@ -20,15 +21,18 @@ export function AuthButton() {
   );
 }
 
-export async function handleSignOut() {
-  await supabase.auth.signOut();
-  globalThis.location.href = "/";
-}
-
 export function SignOutButton() {
+  const router = useRouter();
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
+
   return (
     <Button onClick={() => void handleSignOut()} variant="outline">
-      Sign Out
+      Log Out
     </Button>
   );
 }

@@ -60,7 +60,7 @@ export default function RoomTable({adminEmails, initialData} : RoomTableProps) {
     }
 }, [])
 
-  const handleAvailabilityTo = useCallback(async (id: string, value: 'superUser' | 'user') => {
+  const handleAvailabilityTo = useCallback(async (id: string, value: 'event_manager' | 'superUser' | 'user') => {
     const originalValue = rooms.find(r => r.id === id)?.availableTo;
     setRooms(prev => prev.map(r => r.id === id ? { ...r, availableTo: value } : r));
 
@@ -168,12 +168,13 @@ export default function RoomTable({adminEmails, initialData} : RoomTableProps) {
                 className="px-1 py-1 rounded text-sm"
                 >
                 <Button className="flex capitalize" variant="ghost">
-                  {rooms.availableTo === "superUser" ? "super user" : "user"} <ChevronDown />
+                  {rooms.availableTo === "superUser" ? "super user" : rooms.availableTo === "event_manager" ? "event manager" : "user"} <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Make Available To</DropdownMenuLabel>
                 <DropdownMenuItem disabled={rooms.availableTo === 'user'} onClick={() => {void handleAvailabilityTo(rooms.id, 'user')}}>User</DropdownMenuItem>
+                <DropdownMenuItem disabled={rooms.availableTo === 'event_manager'} onClick={() => {void handleAvailabilityTo(rooms.id, 'event_manager')}}>Event Manager</DropdownMenuItem>
                 <DropdownMenuItem disabled={rooms.availableTo === 'superUser'} onClick={() => {void handleAvailabilityTo(rooms.id, 'superUser')}}>Super User</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

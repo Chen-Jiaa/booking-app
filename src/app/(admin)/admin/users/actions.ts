@@ -6,7 +6,7 @@ import { getUserAndRole } from "@/lib/supabase/server";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function updateUserRole(userId: string, newRole: 'admin' | 'event_manager' | 'user') {
+export async function updateUserRole(userId: string, newRole: 'admin' | 'event_manager' | 'superUser' | 'user') {
   const { role } = await getUserAndRole()
 
   if (role !== 'admin') {

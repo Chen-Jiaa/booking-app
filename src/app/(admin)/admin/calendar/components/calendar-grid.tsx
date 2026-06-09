@@ -106,8 +106,8 @@ export function CalendarGrid({
                         >
                           <button
                             className={cn(
-                              "w-full h-10 rounded border border-gray-200 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors",
-                              isToday && "border-blue-200 bg-blue-50/50",
+                              "w-full h-10 rounded border border-border bg-muted/50 hover:bg-muted cursor-pointer transition-colors",
+                              isToday && "border-info/30 bg-info/10",
                             )}
                             type="button"
                           />
@@ -147,16 +147,16 @@ function getBookingForCell(
 function getStatusColor(status: string) {
   switch (status) {
     case "confirmed": {
-      return "bg-green-100 hover:bg-green-200 border-green-300";
+      return "bg-success/15 hover:bg-success/25 border-success/40";
     }
     case "pending": {
-      return "bg-orange-100 hover:bg-orange-200 border-orange-300";
+      return "bg-warning/15 hover:bg-warning/25 border-warning/40";
     }
     case "rejected": {
-      return "bg-red-100 hover:bg-red-200 border-red-300";
+      return "bg-error/15 hover:bg-error/25 border-error/40";
     }
     default: {
-      return "bg-gray-100";
+      return "bg-muted";
     }
   }
 }

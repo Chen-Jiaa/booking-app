@@ -60,7 +60,7 @@ The booking app currently supports simple room bookings on an hourly basis for i
 | FR-3b | If the Main Hall is booked for **Rehearsal / Setup only**, the Lobby remains available for other bookings. |
 | FR-3c | If only the Lobby is booked, the Main Hall remains available (the hall has a backdoor for access). |
 | FR-3d | When an Event Manager books the Main Hall, the booking form must display a prompt: _"Will the client also need the Lobby for setup?"_ — if "Yes", the Lobby is also blocked for the same date/time. |
-| FR-4 | The Lobby can be booked independently for its own events without affecting Main Hall availability (except: the Main Hall cannot host a **Main Event Day** if the Lobby is booked by someone else at that time, since the lobby would be occupied). |
+| FR-4 | The Lobby can be booked independently for its own events without affecting Main Hall availability. However, if the Lobby is booked for a **Main Event**, the Main Hall **cannot** be used as a Main Event Day at that time — it can only be booked for Rehearsal / Setup (since the hall has a backdoor). |
 
 ### 4.2 — Event Manager Role
 
@@ -73,6 +73,7 @@ The booking app currently supports simple room bookings on an hourly basis for i
 | FR-9 | For each day in the range, the Event Manager must mark the day type as one of: **"Rehearsal / Setup"** or **"Main Event Day"**. |
 | FR-10 | Multi-day bookings must respect the same conflict-prevention logic — occupied slots/days are disabled in the picker. |
 | FR-11 | Event Managers can also make standard single-day/hourly bookings (they have all the capabilities of a regular member plus multi-day). |
+| FR-11a | Multi-day bookings by Event Managers still require **admin approval** before being confirmed. |
 
 ### 4.3 — Event Calendar Page
 
@@ -80,8 +81,8 @@ The booking app currently supports simple room bookings on an hourly basis for i
 |---|-------------|
 | FR-12 | Add a new page (e.g., `/calendar`) accessible to **all users** (including guests). |
 | FR-13 | The calendar displays bookings across **all rooms** in a weekly or monthly view, styled similarly to Google Calendar. |
-| FR-14 | Each booking entry on the calendar must show: room name, event name/description, and the day type label ("Rehearsal / Setup" or "Main Event Day" or standard booking). |
-| FR-15 | Clicking a booking entry opens a detail view / popover showing: event name, room, date & time, PIC (person in charge) name & contact, day type, and booking status. |
+| FR-14 | Each booking entry on the calendar must show: room name, event name/description, and the day type label ("Rehearsal / Setup" or "Main Event Day" or standard booking). **Guests** can see that a slot is booked (room name, time, day type) but **cannot** see detailed info (event name, PIC, contact). |
+| FR-15 | Clicking a booking entry opens a detail view / popover showing: Event Name, Client Name, Event Manager Name & Phone, room, date & time, expected attendance, day type, and booking status. **This detail view is only visible to logged-in users.** |
 | FR-16 | The calendar must support switching between rooms (filter by room) and navigating between weeks/months. |
 | FR-17 | Build the access control so it can be easily restricted to `admin` and `event_manager` roles in the future (e.g., a config flag or middleware check), but default to public for now. |
 
@@ -100,6 +101,26 @@ The booking app currently supports simple room bookings on an hourly basis for i
 | FR-21 | Event Managers see an enhanced booking form that supports: date range selection, per-day time or "All Day", day type marking, and the Lobby prompt (when booking Main Hall). |
 | FR-22 | The booking form must show existing bookings/conflicts inline so the Event Manager can avoid clashes while filling out the form. |
 
+### 4.6 — Booking Edit Flow
+
+| # | Requirement |
+|---|-------------|
+| FR-28 | All users (members and Event Managers) can **edit** their own bookings via an edit button on their booking details. |
+| FR-29 | If an edit **changes the date(s) or time(s)**, the edited booking is treated as a **new booking** — it re-enters the approval flow (status resets to `pending` for rooms requiring approval). |
+| FR-30 | When a date/time edit is submitted: **(a)** the previous Google Calendar event(s) are deleted, **(b)** new Google Calendar event(s) are created, and **(c)** email notifications are sent to the relevant approvers and the booking owner. |
+| FR-31 | Edits to non-date fields (e.g., Event Name, Client Name, Expected Attendance) do **not** require re-approval — they update in place and sync to Google Calendar. |
+| FR-32 | Multi-day bookings are approved or rejected **as a whole** (not per-day). |
+
+### 4.7 — Booking Form Fields & User Profile Autofill
+
+| # | Requirement |
+|---|-------------|
+| FR-23 | The Event Manager booking form must collect: **Event Name**, **Client Name**, **Event Manager Name**, **Event Manager Phone**, and **Expected Attendance**. |
+| FR-24 | **Event Manager Name** and **Event Manager Phone** must be **autofilled** from the logged-in user's profile data. |
+| FR-25 | Add a **phone number** field to the user profile / user settings page. |
+| FR-26 | For **all logged-in users** (not just Event Managers), the booking form should prefill available fields (name, email, phone) from their profile. |
+| FR-27 | If a user submits a booking and their profile does not yet have a phone number, the phone number entered in the form must be **saved back to their profile** automatically. |
+
 ---
 
 ## 5. Non-Goals (Out of Scope)
@@ -115,7 +136,7 @@ The booking app currently supports simple room bookings on an hourly basis for i
 
 ## 6. Design Considerations
 
-- **Calendar UI:** Use a Google Calendar–inspired layout. On desktop, show a weekly grid with rooms as columns or color-coded entries. On mobile, switch to a list/agenda view.
+- **Calendar UI:** Use [FullCalendar](https://fullcalendar.io/) (`@fullcalendar/react`) for the calendar page — it provides week/month/day views, event click handlers, and responsive support out of the box, matching the Google Calendar–style UX. On mobile, switch to a list/agenda view.
 - **Day type labels:** Use visual badges or color coding to distinguish "Rehearsal / Setup" (e.g., orange/yellow) from "Main Event Day" (e.g., red/blue) and standard bookings (e.g., green).
 - **Lobby prompt:** When the Event Manager selects "Main Hall" in the booking form, show an inline prompt or modal: _"Will the client also need the Lobby for setup/event?"_ with Yes/No options. If Yes, automatically add the Lobby to the booking.
 - **Multi-day form UX:** Consider a step-by-step or tabular layout where each row is a day in the range, with columns for: date, start time, end time, "All Day" checkbox, and day type dropdown.
@@ -144,12 +165,18 @@ The booking app currently supports simple room bookings on an hourly basis for i
 
 ---
 
-## 9. Open Questions
+## 9. Resolved Questions
 
-| # | Question |
-|---|----------|
-| OQ-1 | Should the calendar page show booking details (PIC contact info) to guests, or only to logged-in users? |
-| OQ-2 | If the Lobby is booked by someone else and an Event Manager tries to book Main Hall as "Main Event Day" — should the system block it, or warn and allow override? |
-| OQ-3 | Should multi-day bookings require admin approval, or are Event Manager bookings auto-confirmed? |
-| OQ-4 | What specific fields should the Event Manager fill in for each booking? (e.g., Event Name, Client Name, PIC Name, PIC Phone, Expected Attendance, etc.) |
-| OQ-5 | Should there be a limit on how far in advance an Event Manager can book (e.g., max 6 months ahead)? |
+| # | Question | Decision |
+|---|----------|----------|
+| RQ-1 | Should the calendar page show booking details to guests? | **No.** Guests can see that a slot is booked (room, time, day type) but details (event name, PIC, contact) are visible to logged-in users only. |
+| RQ-2 | If the Lobby is booked and an Event Manager books Main Hall — should the system block it? | **Partially.** If the Lobby has a Main Event booking, the Main Hall cannot be booked as a Main Event Day at that time — but it can still be booked for Rehearsal / Setup. |
+| RQ-3 | Should multi-day bookings require admin approval? | **Yes.** Event Manager bookings still require admin approval. |
+| RQ-4 | What fields should the Event Manager fill in? | Event Name, Client Name, Event Manager Name (autofilled), Event Manager Phone (autofilled), Expected Attendance. |
+| RQ-5 | Should there be a max advance booking limit? | **No limit.** |
+| RQ-6 | What calendar library to use? | **FullCalendar** (`@fullcalendar/react`) — mature, MIT-licensed, Google Calendar–style out of the box. |
+| RQ-7 | Multi-day approval: whole booking or per-day? | **Whole booking.** Approve/reject the entire multi-day booking at once. |
+
+## 10. Open Questions
+
+_No open questions remaining — all decisions have been resolved._

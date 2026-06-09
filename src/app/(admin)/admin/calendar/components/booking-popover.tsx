@@ -18,9 +18,9 @@ const TIMEZONE = "Asia/Kuala_Lumpur"
 
 export function BookingPopover({ booking, children }: BookingPopoverProps) {
   const statusStyles = {
-    confirmed: "bg-green-100 text-green-800",
-    pending: "bg-orange-100 text-orange-800",
-    rejected: "bg-red-100 text-red-800",
+    confirmed: "bg-success-bg text-success",
+    pending: "bg-warning-bg text-warning",
+    rejected: "bg-error-bg text-error",
   }
 
   return (

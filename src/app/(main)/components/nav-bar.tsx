@@ -9,7 +9,9 @@ export default async function NavBar() {
 
   const navigation = [
     { href: "/", name: "Book a Room" },
+    { href: "/calendar", name: "Calendar" },
     { href: "/bookings", name: "My Bookings" },
+    { href: "/settings", name: "Settings" },
     ...(role === "admin" ? [{ href: "/admin", name: "Admin Panel" }] : []),
   ];
 
@@ -22,7 +24,7 @@ export default async function NavBar() {
               COLLECTIVE
             </Link>
               <div className="hidden md:flex items-center gap-4">
-                <NavLinks navItems={user ? navigation : [navigation[0]]} />
+                <NavLinks navItems={user ? navigation : [navigation[0], navigation[1]]} />
               </div>
           </div>
           <div className="flex gap-4">
@@ -39,7 +41,7 @@ export default async function NavBar() {
           </div>
         </div>
             <div className="md:hidden flex items-center gap-2">
-              <NavLinks navItems={user ? navigation : [navigation[0]]} />
+              <NavLinks navItems={user ? navigation : [navigation[0], navigation[1]]} />
             </div>        
       </div>
     </nav>

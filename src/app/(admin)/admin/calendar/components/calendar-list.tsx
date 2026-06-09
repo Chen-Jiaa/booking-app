@@ -40,7 +40,7 @@ export function CalendarList({ bookings, weekStart }: CalendarListProps) {
             <h3
               className={cn(
                 "text-lg font-semibold mb-3 pb-2 border-b",
-                isToday && "text-blue-600"
+                isToday && "text-info"
               )}
             >
               {format(day, "EEEE, MMM d")}
@@ -91,16 +91,16 @@ function formatTime(date: Date) {
 function getStatusStyles(status: string) {
   switch (status) {
     case "confirmed": {
-      return "bg-green-100 text-green-800"
+      return "bg-success-bg text-success"
     }
     case "pending": {
-      return "bg-orange-100 text-orange-800"
+      return "bg-warning-bg text-warning"
     }
     case "rejected": {
-      return "bg-red-100 text-red-800"
+      return "bg-error-bg text-error"
     }
     default: {
-      return "bg-gray-100 text-gray-800"
+      return "bg-muted text-muted-foreground"
     }
   }
 }

@@ -50,6 +50,22 @@ export default {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
+  			info: {
+  				DEFAULT: 'hsl(var(--info))',
+  				bg: 'hsl(var(--info-bg))'
+  			},
+  			success: {
+  				DEFAULT: 'hsl(var(--success))',
+  				bg: 'hsl(var(--success-bg))'
+  			},
+  			warning: {
+  				DEFAULT: 'hsl(var(--warning))',
+  				bg: 'hsl(var(--warning-bg))'
+  			},
+  			error: {
+  				DEFAULT: 'hsl(var(--error))',
+  				bg: 'hsl(var(--error-bg))'
+  			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',

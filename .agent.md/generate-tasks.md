@@ -50,6 +50,8 @@ Example:
 
 Update the file after completing each sub-task, not just after completing an entire parent task.
 
+**Before marking any task as complete**, run `npx eslint .` (or the relevant file path) and fix all linting errors. Do not check off a task until ESLint passes cleanly.
+
 ## Tasks
 
 - [ ] 0.0 Create feature branch
