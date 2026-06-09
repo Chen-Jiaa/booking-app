@@ -29,6 +29,14 @@ const formSchema = z.object({
     name: z.string().min(2, "Name is required"),
     phone: z.string().min(7, "Enter a valid phone number"),
     purpose: z.string().min(1, "Please select a purpose"),
+}).superRefine((data, ctx) => {
+    if (data.purpose === "others" && !data.customPurpose?.trim()) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Please specify your purpose",
+            path: ["customPurpose"],
+        })
+    }
 })
 
 const purposeOptions = [
@@ -37,7 +45,7 @@ const purposeOptions = [
     { label: "Bible Study", value: "Bible Study" },
     { label: "Prayer Meeting", value: "Prayer Meeting" },
     { label: "Zone Meeting", value: "Zone Meeting" },
-    // { label: "Others", value: "others" },
+    { label: "Others", value: "others" },
 ]
     
 export default function BookingForm2(props: BookingFormProps) {
@@ -164,7 +172,7 @@ export default function BookingForm2(props: BookingFormProps) {
                     )}
                 />
 
-                {/* {selectedPurpose === "others" && (
+                {selectedPurpose === "others" && (
                     <FormField
                         control={form.control}
                         name="customPurpose"
@@ -178,7 +186,7 @@ export default function BookingForm2(props: BookingFormProps) {
                         </FormItem>
                         )}
                     />
-                )} */}
+                )}
                 
 
                 <Button disabled={isLoading} type="submit">

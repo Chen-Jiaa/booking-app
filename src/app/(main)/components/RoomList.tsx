@@ -70,7 +70,7 @@ export function RoomList({ initialProfile, roomData }: RoomListProps) {
                   </span>
                 </div>
                 <div className="flex items-center gap-1 bg-success-bg rounded-[20px] px-3">
-                  <Circle className="fill-success w-[10px]" />
+                  <Circle className="fill-success stroke-none w-[10px]" />
                   <span className="text-sm font-normal text-success">
                     {room.availability ? "Available" : "Unavailable"}
                   </span>
