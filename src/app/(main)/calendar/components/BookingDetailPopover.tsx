@@ -30,7 +30,7 @@ export function BookingDetailPopover({ event, isLoggedIn, onOpenChange, open }: 
         <DialogHeader>
           <DialogTitle>{event?.roomName}</DialogTitle>
           <DialogDescription>
-            {event ? DAY_TYPE_LABELS[event.dayType] ?? 'Booking' : ''}
+            {event ? DAY_TYPE_LABELS[event.dayType] : ''}
           </DialogDescription>
         </DialogHeader>
         {event && (
@@ -50,11 +50,11 @@ function EventDetail({ event, isLoggedIn }: { event: CalendarEvent; isLoggedIn: 
         </Badge>
         <Badge
           style={{
-            backgroundColor: (DAY_TYPE_COLORS[event.dayType] ?? DAY_TYPE_COLORS.standard).backgroundColor,
-            color: (DAY_TYPE_COLORS[event.dayType] ?? DAY_TYPE_COLORS.standard).textColor,
+            backgroundColor: DAY_TYPE_COLORS[event.dayType].backgroundColor,
+            color: DAY_TYPE_COLORS[event.dayType].textColor,
           }}
         >
-          {DAY_TYPE_LABELS[event.dayType] ?? 'Booking'}
+          {DAY_TYPE_LABELS[event.dayType]}
         </Badge>
       </div>
 
