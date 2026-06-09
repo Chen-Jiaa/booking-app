@@ -48,7 +48,7 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
   const [rowSelection, setRowSelection] = useState({})
   const [users, setUsers] = useState<User[]>(initialUsers)
 
-  const handleRoleChange = useCallback( async (id: string, newRole: 'admin' | 'event_manager' | 'user') => {
+  const handleRoleChange = useCallback( async (id: string, newRole: 'admin' | 'event_manager' | 'superUser' | 'user') => {
     const result = await updateUserRole(id, newRole)
 
     if (!result.success) {
@@ -152,6 +152,7 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Make User</DropdownMenuLabel>
                 <DropdownMenuItem disabled={user.role === 'admin'} onClick={() => {void handleRoleChange(user.id, 'admin')}}>Admin</DropdownMenuItem>
+                <DropdownMenuItem disabled={user.role === 'superUser'} onClick={() => {void handleRoleChange(user.id, 'superUser')}}>Super User</DropdownMenuItem>
                 <DropdownMenuItem disabled={user.role === 'event_manager'} onClick={() => {void handleRoleChange(user.id, 'event_manager')}}>Event Manager</DropdownMenuItem>
                 <DropdownMenuItem disabled={user.role === 'user'} onClick={() => {void handleRoleChange(user.id, 'user')}}>User</DropdownMenuItem>
               </DropdownMenuContent>
