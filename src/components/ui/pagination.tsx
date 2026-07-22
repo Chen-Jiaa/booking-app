@@ -11,8 +11,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { createElement, type ReactElement } from "react";
 import { Button } from "./button";
 
-
-
 interface PaginationButtonProps {
   disabled: boolean;
   icon: LucideIcon;
@@ -37,21 +35,9 @@ export function Pagination(props: PaginationProps): null | ReactElement {
         Page {page} of {pageCount}
       </span>
       <div className="flex items-center gap-x-2">
-        <PaginationButton
-          disabled={page === 1}
-          icon={ChevronsLeft}
-          pageNumber={1}
-        />
-        <PaginationButton
-          disabled={page === 1}
-          icon={ChevronLeft}
-          pageNumber={page - 1}
-        />
-        <PaginationButton
-          disabled={page === pageCount}
-          icon={ChevronRight}
-          pageNumber={page + 1}
-        />
+        <PaginationButton disabled={page === 1} icon={ChevronsLeft} pageNumber={1} />
+        <PaginationButton disabled={page === 1} icon={ChevronLeft} pageNumber={page - 1} />
+        <PaginationButton disabled={page === pageCount} icon={ChevronRight} pageNumber={page + 1} />
         <PaginationButton
           disabled={page === pageCount}
           icon={ChevronsRight}

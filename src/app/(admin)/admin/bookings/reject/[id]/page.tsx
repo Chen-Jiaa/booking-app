@@ -3,11 +3,7 @@ import { formatBookingDate, formatBookingTime } from "@/lib/date-utils";
 import { getPurposeLabel } from "@/lib/getPurposeLabel";
 import Link from "next/link";
 
-export default async function RejectBookingPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function RejectBookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const bookingId = Number(id);
 
@@ -31,16 +27,13 @@ export default async function RejectBookingPage({
         <h1 className="mb-2 text-xl font-semibold">Booking Rejected ❌</h1>
         <div className="mt-4 space-y-1 text-left text-sm text-muted-foreground">
           <p>
-            <span className="font-medium text-foreground">Room:</span>{" "}
-            {booking.roomName}
+            <span className="font-medium text-foreground">Room:</span> {booking.roomName}
           </p>
           <p>
-            <span className="font-medium text-foreground">Name:</span>{" "}
-            {booking.name}
+            <span className="font-medium text-foreground">Name:</span> {booking.name}
           </p>
           <p>
-            <span className="font-medium text-foreground">Email:</span>{" "}
-            {booking.email}
+            <span className="font-medium text-foreground">Email:</span> {booking.email}
           </p>
           <p>
             <span className="font-medium text-foreground">Date:</span>{" "}
@@ -55,10 +48,7 @@ export default async function RejectBookingPage({
             {getPurposeLabel(booking.purpose)}
           </p>
         </div>
-        <Link
-          className="mt-6 inline-block text-sm text-primary underline"
-          href="/admin"
-        >
+        <Link className="mt-6 inline-block text-sm text-primary underline" href="/admin">
           ← Back to Dashboard
         </Link>
       </div>

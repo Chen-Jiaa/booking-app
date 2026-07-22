@@ -17,24 +17,24 @@ The system supports two booking types:
 
 ## 2. Tech Stack
 
-| Category | Technology | Notes |
-|---|---|---|
-| Framework | **Next.js 15** (App Router) | Server-first rendering, server actions for mutations |
-| Language | **TypeScript 5** | Strict mode enabled |
-| UI | **React 18**, **Tailwind CSS 3**, **shadcn/ui** (Radix primitives) | Component library in `src/components/ui/` |
-| Auth | **Supabase Auth** (`@supabase/ssr`) | Session-based, cookie-managed |
-| Database | **PostgreSQL** via Supabase | Accessed through both Supabase client and Drizzle ORM |
-| ORM | **Drizzle ORM** (`drizzle-orm` + `postgres`) | Schema in `src/db/schema.ts`, migrations in `supabase/migrations/` |
-| Calendar | **FullCalendar** (`@fullcalendar/react`) | Public calendar page with day/week/month views |
-| Google Calendar | **@googleapis/calendar** | Outbound sync — app creates/updates/deletes events on a shared Google Calendar |
-| Email | **Resend** | Transactional emails (approval requests, confirmations, rejections) |
-| Forms | **react-hook-form** + **Zod** | Validation with `@hookform/resolvers` |
-| Tables | **TanStack Table** (`@tanstack/react-table`) | Admin booking tables, user tables |
-| URL State | **nuqs** | URL query string state management |
-| Date/Time | **date-fns** + **date-fns-tz** | Timezone: `Asia/Kuala_Lumpur` / `Asia/Singapore` |
-| Analytics | **Vercel Analytics** + **Speed Insights** | Injected in root layout |
-| Package Manager | **pnpm** (v10.2.0) | Lockfile: `pnpm-lock.yaml` |
-| Linting | **ESLint** (flat config) + **Prettier** | Config: `eslint.config.mjs` |
+| Category        | Technology                                                         | Notes                                                                          |
+| --------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Framework       | **Next.js 15** (App Router)                                        | Server-first rendering, server actions for mutations                           |
+| Language        | **TypeScript 5**                                                   | Strict mode enabled                                                            |
+| UI              | **React 18**, **Tailwind CSS 3**, **shadcn/ui** (Radix primitives) | Component library in `src/components/ui/`                                      |
+| Auth            | **Supabase Auth** (`@supabase/ssr`)                                | Session-based, cookie-managed                                                  |
+| Database        | **PostgreSQL** via Supabase                                        | Accessed through both Supabase client and Drizzle ORM                          |
+| ORM             | **Drizzle ORM** (`drizzle-orm` + `postgres`)                       | Schema in `src/db/schema.ts`, migrations in `supabase/migrations/`             |
+| Calendar        | **FullCalendar** (`@fullcalendar/react`)                           | Public calendar page with day/week/month views                                 |
+| Google Calendar | **@googleapis/calendar**                                           | Outbound sync — app creates/updates/deletes events on a shared Google Calendar |
+| Email           | **Resend**                                                         | Transactional emails (approval requests, confirmations, rejections)            |
+| Forms           | **react-hook-form** + **Zod**                                      | Validation with `@hookform/resolvers`                                          |
+| Tables          | **TanStack Table** (`@tanstack/react-table`)                       | Admin booking tables, user tables                                              |
+| URL State       | **nuqs**                                                           | URL query string state management                                              |
+| Date/Time       | **date-fns** + **date-fns-tz**                                     | Timezone: `Asia/Kuala_Lumpur` / `Asia/Singapore`                               |
+| Analytics       | **Vercel Analytics** + **Speed Insights**                          | Injected in root layout                                                        |
+| Package Manager | **pnpm** (v10.2.0)                                                 | Lockfile: `pnpm-lock.yaml`                                                     |
+| Linting         | **ESLint** (flat config) + **Prettier**                            | Config: `eslint.config.mjs`                                                    |
 
 ---
 
@@ -75,23 +75,23 @@ src/app/
 
 This codebase uses a **hybrid data access pattern** — both Supabase client queries and Drizzle ORM direct PostgreSQL queries coexist:
 
-| Method | Used For | Location |
-|---|---|---|
-| **Supabase client** (server) | Auth operations, simple reads in server components (e.g., room list on homepage), reads in middleware | `src/lib/supabase/server.ts` → `createClient()` |
-| **Supabase client** (browser) | Auth state management, real-time session tracking | `src/lib/supabase/client.ts` → `supabase` singleton |
-| **Drizzle ORM** | All server action mutations (inserts, updates, deletes), complex queries, transactions | `src/db/index.ts` → `db` instance, schema in `src/db/schema.ts` |
+| Method                        | Used For                                                                                              | Location                                                        |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **Supabase client** (server)  | Auth operations, simple reads in server components (e.g., room list on homepage), reads in middleware | `src/lib/supabase/server.ts` → `createClient()`                 |
+| **Supabase client** (browser) | Auth state management, real-time session tracking                                                     | `src/lib/supabase/client.ts` → `supabase` singleton             |
+| **Drizzle ORM**               | All server action mutations (inserts, updates, deletes), complex queries, transactions                | `src/db/index.ts` → `db` instance, schema in `src/db/schema.ts` |
 
 > **Important:** When writing new server actions, follow the existing pattern — use Drizzle for transactional writes and Supabase client for auth checks within the same action.
 
 ### 3.3 — Server vs Client Responsibilities
 
-| Concern | Server | Client |
-|---|---|---|
-| Auth checks | `getUserAndRole()`, middleware | `useSupabase()` hook for role/user state |
-| Data fetching | Server components with Supabase client, server actions | Fetches via server actions |
-| Mutations | All via `'use server'` actions | Triggers via form submissions, button clicks |
-| Google Calendar sync | Inside server actions (outside DB transactions) | N/A |
-| Email sending | Via `after()` callback in server actions (non-blocking) | N/A |
+| Concern              | Server                                                  | Client                                       |
+| -------------------- | ------------------------------------------------------- | -------------------------------------------- |
+| Auth checks          | `getUserAndRole()`, middleware                          | `useSupabase()` hook for role/user state     |
+| Data fetching        | Server components with Supabase client, server actions  | Fetches via server actions                   |
+| Mutations            | All via `'use server'` actions                          | Triggers via form submissions, button clicks |
+| Google Calendar sync | Inside server actions (outside DB transactions)         | N/A                                          |
+| Email sending        | Via `after()` callback in server actions (non-blocking) | N/A                                          |
 
 ### 3.4 — Middleware
 
@@ -100,6 +100,7 @@ This codebase uses a **hybrid data access pattern** — both Supabase client que
 **Matcher:** `/admin/:path*`, `/bookings/:path*`
 
 **Behavior:**
+
 1. Refreshes Supabase session cookies on every matched request.
 2. Redirects unauthenticated users to `/login`.
 3. For `/admin/*` routes — additionally checks `profiles.role === 'admin'`; redirects non-admins to `/`.
@@ -112,34 +113,34 @@ This codebase uses a **hybrid data access pattern** — both Supabase client que
 
 ### Public Routes (no auth required)
 
-| Route | Description |
-|---|---|
-| `/` | Homepage — browse available rooms |
-| `/login` | Login page |
-| `/signup` | Sign-up page |
-| `/verify` | Email verification prompt |
-| `/email-confirmation` | Post-verification confirmation |
-| `/calendar` | Public event calendar (access controlled by `CALENDAR_ACCESS` config flag) |
+| Route                 | Description                                                                |
+| --------------------- | -------------------------------------------------------------------------- |
+| `/`                   | Homepage — browse available rooms                                          |
+| `/login`              | Login page                                                                 |
+| `/signup`             | Sign-up page                                                               |
+| `/verify`             | Email verification prompt                                                  |
+| `/email-confirmation` | Post-verification confirmation                                             |
+| `/calendar`           | Public event calendar (access controlled by `CALENDAR_ACCESS` config flag) |
 
 ### Authenticated Routes (member+)
 
-| Route | Description |
-|---|---|
-| `/bookings` | User's booking list with statuses |
-| `/bookings/[id]/edit` | Edit an existing booking |
-| `/settings` | User profile editor (name, email, phone) |
-| `/booking-confirmation` | Post-booking confirmation page |
+| Route                   | Description                              |
+| ----------------------- | ---------------------------------------- |
+| `/bookings`             | User's booking list with statuses        |
+| `/bookings/[id]/edit`   | Edit an existing booking                 |
+| `/settings`             | User profile editor (name, email, phone) |
+| `/booking-confirmation` | Post-booking confirmation page           |
 
 ### Admin Routes (admin role only)
 
-| Route | Description |
-|---|---|
-| `/admin` | Admin dashboard — recent bookings table |
-| `/admin/bookings/approve/[id]` | One-click approve from email link |
-| `/admin/bookings/reject/[id]` | One-click reject from email link |
-| `/admin/calendar` | Admin weekly room calendar |
-| `/admin/rooms` | Room CRUD management |
-| `/admin/users` | User list + role management |
+| Route                          | Description                             |
+| ------------------------------ | --------------------------------------- |
+| `/admin`                       | Admin dashboard — recent bookings table |
+| `/admin/bookings/approve/[id]` | One-click approve from email link       |
+| `/admin/bookings/reject/[id]`  | One-click reject from email link        |
+| `/admin/calendar`              | Admin weekly room calendar              |
+| `/admin/rooms`                 | Room CRUD management                    |
+| `/admin/users`                 | User list + role management             |
 
 ---
 
@@ -155,11 +156,11 @@ This codebase uses a **hybrid data access pattern** — both Supabase client que
 
 Source of truth: `profiles.role` column in the database.
 
-| Role | Value | Permissions |
-|---|---|---|
-| Regular Member | `user` (default) | Browse rooms, create standard bookings, view/cancel/edit own bookings |
-| Event Manager | `event_manager` | All member permissions + create multi-day bookings with per-day configuration |
-| Admin | `admin` | All permissions + approve/reject bookings, manage rooms, manage users, access admin panel |
+| Role           | Value            | Permissions                                                                               |
+| -------------- | ---------------- | ----------------------------------------------------------------------------------------- |
+| Regular Member | `user` (default) | Browse rooms, create standard bookings, view/cancel/edit own bookings                     |
+| Event Manager  | `event_manager`  | All member permissions + create multi-day bookings with per-day configuration             |
+| Admin          | `admin`          | All permissions + approve/reject bookings, manage rooms, manage users, access admin panel |
 
 ### Role Resolution
 
@@ -175,62 +176,62 @@ Source of truth: `profiles.role` column in the database.
 
 User metadata linked to Supabase Auth users.
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid (PK, FK → auth.users) | Supabase Auth user ID |
-| `full_name` | text | Display name |
-| `email` | varchar | User email |
-| `phone` | text | Phone number (optional, saved back from booking form) |
-| `role` | text | `'user'` \| `'admin'` \| `'event_manager'` (default: `'user'`) |
-| `username` | text (unique) | Optional username |
-| `avatar_url` | text | Optional avatar |
-| `website` | text | Optional website |
-| `created_at` | timestamptz | Auto-set |
-| `updated_at` | timestamptz | Set on profile updates |
+| Column       | Type                       | Notes                                                          |
+| ------------ | -------------------------- | -------------------------------------------------------------- |
+| `id`         | uuid (PK, FK → auth.users) | Supabase Auth user ID                                          |
+| `full_name`  | text                       | Display name                                                   |
+| `email`      | varchar                    | User email                                                     |
+| `phone`      | text                       | Phone number (optional, saved back from booking form)          |
+| `role`       | text                       | `'user'` \| `'admin'` \| `'event_manager'` (default: `'user'`) |
+| `username`   | text (unique)              | Optional username                                              |
+| `avatar_url` | text                       | Optional avatar                                                |
+| `website`    | text                       | Optional website                                               |
+| `created_at` | timestamptz                | Auto-set                                                       |
+| `updated_at` | timestamptz                | Set on profile updates                                         |
 
 ### 6.2 — `rooms`
 
 Room definitions and configuration.
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid (PK) | Auto-generated |
-| `name` | varchar(255) | Room name |
-| `description` | text | Room description |
-| `capacity` | integer | Seating capacity |
-| `availability` | boolean | `true` = visible and bookable; `false` = hidden |
-| `approval_required` | boolean | If `true`, bookings start as `pending`; if `false`, auto-confirmed |
-| `approvers` | text[] | Array of email addresses notified on new bookings |
-| `available_to` | text | Availability visibility scope |
-| `image` | text | Room image URL |
-| `dependency_group` | text | Rooms sharing the same group have inter-dependency logic (e.g., `'main_hall_lobby'`) |
-| `created_at` | timestamptz | Auto-set |
+| Column              | Type         | Notes                                                                                |
+| ------------------- | ------------ | ------------------------------------------------------------------------------------ |
+| `id`                | uuid (PK)    | Auto-generated                                                                       |
+| `name`              | varchar(255) | Room name                                                                            |
+| `description`       | text         | Room description                                                                     |
+| `capacity`          | integer      | Seating capacity                                                                     |
+| `availability`      | boolean      | `true` = visible and bookable; `false` = hidden                                      |
+| `approval_required` | boolean      | If `true`, bookings start as `pending`; if `false`, auto-confirmed                   |
+| `approvers`         | text[]       | Array of email addresses notified on new bookings                                    |
+| `available_to`      | text         | Availability visibility scope                                                        |
+| `image`             | text         | Room image URL                                                                       |
+| `dependency_group`  | text         | Rooms sharing the same group have inter-dependency logic (e.g., `'main_hall_lobby'`) |
+| `created_at`        | timestamptz  | Auto-set                                                                             |
 
 ### 6.3 — `bookings`
 
 Parent booking records (both standard and multi-day).
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | bigserial (PK) | Auto-increment |
-| `user_id` | uuid (FK → auth.users) | Booking creator (nullable, `onDelete: 'set null'`) |
-| `room_id` | uuid (FK → rooms) | Booked room |
-| `room_name` | text | Denormalized room name |
-| `name` | text | Booker's name |
-| `email` | text | Booker's email |
-| `phone` | text | Booker's phone |
-| `purpose` | text | Booking purpose (from predefined options or free text) |
-| `start_time` | timestamptz | Booking start (or overall start for multi-day) |
-| `end_time` | timestamptz | Booking end (or overall end for multi-day) |
-| `status` | text | `'pending'` \| `'confirmed'` \| `'rejected'` \| `'cancelled'` |
-| `event_id` | text | Google Calendar event ID (standard bookings) |
-| `booking_type` | text | `'standard'` (default) \| `'multi_day'` |
-| `is_multi_day` | boolean | `false` (default) — **must stay in sync** with `booking_type` |
-| `event_name` | text | Event name (multi-day / event manager bookings) |
-| `client_name` | text | Client name (multi-day bookings) |
-| `expected_attendance` | integer | Expected attendance count |
-| `parent_booking_id` | integer | Links a lobby booking to its parent Main Hall booking |
-| `created_at` | timestamptz | Auto-set |
+| Column                | Type                   | Notes                                                         |
+| --------------------- | ---------------------- | ------------------------------------------------------------- |
+| `id`                  | bigserial (PK)         | Auto-increment                                                |
+| `user_id`             | uuid (FK → auth.users) | Booking creator (nullable, `onDelete: 'set null'`)            |
+| `room_id`             | uuid (FK → rooms)      | Booked room                                                   |
+| `room_name`           | text                   | Denormalized room name                                        |
+| `name`                | text                   | Booker's name                                                 |
+| `email`               | text                   | Booker's email                                                |
+| `phone`               | text                   | Booker's phone                                                |
+| `purpose`             | text                   | Booking purpose (from predefined options or free text)        |
+| `start_time`          | timestamptz            | Booking start (or overall start for multi-day)                |
+| `end_time`            | timestamptz            | Booking end (or overall end for multi-day)                    |
+| `status`              | text                   | `'pending'` \| `'confirmed'` \| `'rejected'` \| `'cancelled'` |
+| `event_id`            | text                   | Google Calendar event ID (standard bookings)                  |
+| `booking_type`        | text                   | `'standard'` (default) \| `'multi_day'`                       |
+| `is_multi_day`        | boolean                | `false` (default) — **must stay in sync** with `booking_type` |
+| `event_name`          | text                   | Event name (multi-day / event manager bookings)               |
+| `client_name`         | text                   | Client name (multi-day bookings)                              |
+| `expected_attendance` | integer                | Expected attendance count                                     |
+| `parent_booking_id`   | integer                | Links a lobby booking to its parent Main Hall booking         |
+| `created_at`          | timestamptz            | Auto-set                                                      |
 
 > ⚠️ **Gotcha:** `booking_type` and `is_multi_day` are **redundant fields** that must always be kept in sync. `is_multi_day: true` ↔ `booking_type: 'multi_day'`. Both are checked in different parts of the code.
 
@@ -238,30 +239,30 @@ Parent booking records (both standard and multi-day).
 
 Per-day details for multi-day bookings. One row per day in a multi-day booking.
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid (PK) | Auto-generated |
-| `booking_id` | integer (FK → bookings, cascade delete) | Parent booking |
-| `date` | timestamptz | The specific day |
-| `start_time` | timestamptz (nullable) | `null` when `is_all_day` is true |
-| `end_time` | timestamptz (nullable) | `null` when `is_all_day` is true |
-| `is_all_day` | boolean | If true, blocks 08:00–23:30 |
-| `day_type` | text | `'rehearsal_setup'` \| `'main_event'` |
-| `event_id` | text | Google Calendar event ID for this specific day |
-| `created_at` | timestamptz | Auto-set |
+| Column       | Type                                    | Notes                                          |
+| ------------ | --------------------------------------- | ---------------------------------------------- |
+| `id`         | uuid (PK)                               | Auto-generated                                 |
+| `booking_id` | integer (FK → bookings, cascade delete) | Parent booking                                 |
+| `date`       | timestamptz                             | The specific day                               |
+| `start_time` | timestamptz (nullable)                  | `null` when `is_all_day` is true               |
+| `end_time`   | timestamptz (nullable)                  | `null` when `is_all_day` is true               |
+| `is_all_day` | boolean                                 | If true, blocks 08:00–23:30                    |
+| `day_type`   | text                                    | `'rehearsal_setup'` \| `'main_event'`          |
+| `event_id`   | text                                    | Google Calendar event ID for this specific day |
+| `created_at` | timestamptz                             | Auto-set                                       |
 
 ### 6.5 — `unavailable_periods`
 
 Admin-defined blackout windows for rooms.
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid (PK) | Auto-generated |
-| `room_id` | uuid (FK → rooms, cascade delete) | Affected room |
-| `start_time` | timestamptz | Block start |
-| `end_time` | timestamptz | Block end |
-| `reason` | text | Why the room is blocked |
-| `created_at` | timestamptz | Auto-set |
+| Column       | Type                              | Notes                   |
+| ------------ | --------------------------------- | ----------------------- |
+| `id`         | uuid (PK)                         | Auto-generated          |
+| `room_id`    | uuid (FK → rooms, cascade delete) | Affected room           |
+| `start_time` | timestamptz                       | Block start             |
+| `end_time`   | timestamptz                       | Block end               |
+| `reason`     | text                              | Why the room is blocked |
+| `created_at` | timestamptz                       | Auto-set                |
 
 ### 6.6 — Entity Relationships
 
@@ -326,10 +327,10 @@ bookings.parent_booking_id ──── bookings.id  (self-referential for linke
 
 Two functions: `editStandardBooking()` and `editMultiDayBooking()`.
 
-| Change Type | Effect |
-|---|---|
-| Date/time changed | Status resets to `'pending'`, old calendar events deleted, new ones created, approval emails sent |
-| Non-date fields only (name, purpose, etc.) | Updated in place, calendar events patched, no status change |
+| Change Type                                | Effect                                                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Date/time changed                          | Status resets to `'pending'`, old calendar events deleted, new ones created, approval emails sent |
+| Non-date fields only (name, purpose, etc.) | Updated in place, calendar events patched, no status change                                       |
 
 For multi-day edits, linked bookings (lobby) are also updated, and their calendar events are deleted/recreated.
 
@@ -359,7 +360,7 @@ For multi-day edits, linked bookings (lobby) are also updated, and their calenda
     submit (no approval) ──→ confirmed            │
                                                   │
     any active status ──→ cancelled ──────────────┘
-                                                  
+
     edit (date change) ──→ pending (re-enters approval flow)
 ```
 
@@ -369,12 +370,12 @@ For multi-day edits, linked bookings (lobby) are also updated, and their calenda
 
 The **Main Hall** and **Lobby to Main Hall** share `dependency_group: 'main_hall_lobby'`. Rules are **asymmetric and name-based**:
 
-| Scenario | Main Hall | Lobby |
-|---|---|---|
-| Main Hall booked as **Main Event Day** | — | **Blocked** for that time |
-| Main Hall booked as **Rehearsal / Setup** | — | Remains available |
-| Lobby booked independently | Remains available | — |
-| Lobby booked as **Main Event** | Cannot be **Main Event Day** (can still be Rehearsal / Setup) | — |
+| Scenario                                  | Main Hall                                                     | Lobby                     |
+| ----------------------------------------- | ------------------------------------------------------------- | ------------------------- |
+| Main Hall booked as **Main Event Day**    | —                                                             | **Blocked** for that time |
+| Main Hall booked as **Rehearsal / Setup** | —                                                             | Remains available         |
+| Lobby booked independently                | Remains available                                             | —                         |
+| Lobby booked as **Main Event**            | Cannot be **Main Event Day** (can still be Rehearsal / Setup) | —                         |
 
 **Stage 8** is fully independent — no dependency logic.
 
@@ -447,30 +448,30 @@ When a user submits a booking and their profile does not yet have a phone number
 
 ## 10. Side Effects Matrix
 
-| Action | DB Effect | Google Calendar | Email |
-|---|---|---|---|
-| Submit standard booking (no approval) | Insert booking (`confirmed`) | Create event `[CONFIRMED]` | Confirmation to booker |
-| Submit standard booking (approval required) | Insert booking (`pending`) | Create event `[PENDING]` | Notification to approvers |
-| Submit multi-day booking | Insert booking + booking_days (`pending`) | Create event per day `[PENDING - TYPE]` | Multi-day notification to approvers |
-| Admin approves | Status → `confirmed` | Patch titles to `[CONFIRMED]` | Confirmation to booker |
-| Admin rejects | Status → `rejected` | Delete all events | Rejection to booker |
-| Member cancels | Status → `cancelled` | Delete all events | — |
-| Edit (date change) | Update booking, delete/recreate booking_days | Delete old events, create new `[PENDING]` events | Re-notify approvers |
-| Edit (non-date change) | Update fields in place | Patch event titles | — |
+| Action                                      | DB Effect                                    | Google Calendar                                  | Email                               |
+| ------------------------------------------- | -------------------------------------------- | ------------------------------------------------ | ----------------------------------- |
+| Submit standard booking (no approval)       | Insert booking (`confirmed`)                 | Create event `[CONFIRMED]`                       | Confirmation to booker              |
+| Submit standard booking (approval required) | Insert booking (`pending`)                   | Create event `[PENDING]`                         | Notification to approvers           |
+| Submit multi-day booking                    | Insert booking + booking_days (`pending`)    | Create event per day `[PENDING - TYPE]`          | Multi-day notification to approvers |
+| Admin approves                              | Status → `confirmed`                         | Patch titles to `[CONFIRMED]`                    | Confirmation to booker              |
+| Admin rejects                               | Status → `rejected`                          | Delete all events                                | Rejection to booker                 |
+| Member cancels                              | Status → `cancelled`                         | Delete all events                                | —                                   |
+| Edit (date change)                          | Update booking, delete/recreate booking_days | Delete old events, create new `[PENDING]` events | Re-notify approvers                 |
+| Edit (non-date change)                      | Update fields in place                       | Patch event titles                               | —                                   |
 
 ---
 
 ## 11. Environment Variables
 
-| Variable | Purpose |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
-| `DATABASE_URL` | Direct PostgreSQL connection string (for Drizzle ORM) |
-| `GOOGLE_CLIENT_EMAIL` | Google service account email |
-| `GOOGLE_PRIVATE_KEY` | Google service account private key |
-| `GOOGLE_CALENDAR_ID` | Target Google Calendar ID |
-| `RESEND_API_KEY` | Resend API key for sending emails |
+| Variable                        | Purpose                                               |
+| ------------------------------- | ----------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL                                  |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous/public key                         |
+| `DATABASE_URL`                  | Direct PostgreSQL connection string (for Drizzle ORM) |
+| `GOOGLE_CLIENT_EMAIL`           | Google service account email                          |
+| `GOOGLE_PRIVATE_KEY`            | Google service account private key                    |
+| `GOOGLE_CALENDAR_ID`            | Target Google Calendar ID                             |
+| `RESEND_API_KEY`                | Resend API key for sending emails                     |
 
 All variables are loaded from `.env.local`. The `NEXT_PUBLIC_` prefix makes those variables available in both server and client code.
 
@@ -480,79 +481,79 @@ All variables are loaded from `.env.local`. The `NEXT_PUBLIC_` prefix makes thos
 
 ### Data Layer
 
-| File | Responsibility |
-|---|---|
-| `src/db/schema.ts` | Drizzle ORM schema — all table definitions and exported types |
-| `src/db/index.ts` | Drizzle client instance (`db`) — postgres connection |
-| `drizzle.config.ts` | Drizzle Kit config — migration output to `supabase/migrations/` |
+| File                   | Responsibility                                                      |
+| ---------------------- | ------------------------------------------------------------------- |
+| `src/db/schema.ts`     | Drizzle ORM schema — all table definitions and exported types       |
+| `src/db/index.ts`      | Drizzle client instance (`db`) — postgres connection                |
+| `drizzle.config.ts`    | Drizzle Kit config — migration output to `supabase/migrations/`     |
 | `src/types/booking.ts` | TypeScript interfaces for bookings (snake_case, matches DB columns) |
-| `src/types/room.ts` | TypeScript interface for rooms |
+| `src/types/room.ts`    | TypeScript interface for rooms                                      |
 
 ### Auth & Session
 
-| File | Responsibility |
-|---|---|
-| `src/lib/supabase/server.ts` | Server-side Supabase client factory + `getUserAndRole()` |
-| `src/lib/supabase/client.ts` | Browser-side Supabase client singleton |
-| `src/lib/supabase/middleware.ts` | Session refresh + route protection logic |
-| `src/middleware.ts` | Middleware entry point (matcher config) |
-| `src/components/providers/supabase-providers.tsx` | Client-side auth context (`useSupabase()` hook) |
-| `src/lib/roles.ts` | Role helper functions (`isEventManager`, `canCreateMultiDayBooking`) |
+| File                                              | Responsibility                                                       |
+| ------------------------------------------------- | -------------------------------------------------------------------- |
+| `src/lib/supabase/server.ts`                      | Server-side Supabase client factory + `getUserAndRole()`             |
+| `src/lib/supabase/client.ts`                      | Browser-side Supabase client singleton                               |
+| `src/lib/supabase/middleware.ts`                  | Session refresh + route protection logic                             |
+| `src/middleware.ts`                               | Middleware entry point (matcher config)                              |
+| `src/components/providers/supabase-providers.tsx` | Client-side auth context (`useSupabase()` hook)                      |
+| `src/lib/roles.ts`                                | Role helper functions (`isEventManager`, `canCreateMultiDayBooking`) |
 
 ### Booking Actions (Server)
 
-| File | Responsibility |
-|---|---|
-| `src/app/(main)/actions/submitBooking.ts` | Standard single-day booking creation |
-| `src/app/(main)/actions/submitMultiDayBooking.ts` | Multi-day booking creation with conflict checks |
-| `src/app/(main)/actions/editBooking.ts` | Edit booking (standard + multi-day) with re-approval logic |
-| `src/app/(main)/actions/getUnavailableSlots.ts` | Fetch occupied time slots for a room/date |
-| `src/app/(main)/actions/fetchRooms.ts` | Fetch available rooms |
-| `src/app/(main)/actions/getUserProfile.ts` | Fetch current user's profile |
-| `src/app/(main)/actions/updateProfile.ts` | Update user profile |
-| `src/app/(main)/bookings/actions.ts` | `cancelUserBooking()` — cancellation + calendar cleanup |
-| `src/app/(admin)/actions/approve-reject-booking.ts` | Admin approve/reject entry points |
-| `src/app/(admin)/actions/booking-status-change.ts` | Core status update + calendar sync + email |
-| `src/app/(admin)/admin/users/actions.ts` | `updateUserRole()` — role management |
-| `src/app/(admin)/admin/calendar/actions/create-booking.ts` | Admin calendar booking creation |
-| `src/app/(admin)/admin/calendar/actions/fetch-week-bookings.ts` | Admin weekly view data |
-| `src/app/(main)/calendar/actions/fetchCalendarBookings.ts` | Public calendar data (access-control-aware) |
+| File                                                            | Responsibility                                             |
+| --------------------------------------------------------------- | ---------------------------------------------------------- |
+| `src/app/(main)/actions/submitBooking.ts`                       | Standard single-day booking creation                       |
+| `src/app/(main)/actions/submitMultiDayBooking.ts`               | Multi-day booking creation with conflict checks            |
+| `src/app/(main)/actions/editBooking.ts`                         | Edit booking (standard + multi-day) with re-approval logic |
+| `src/app/(main)/actions/getUnavailableSlots.ts`                 | Fetch occupied time slots for a room/date                  |
+| `src/app/(main)/actions/fetchRooms.ts`                          | Fetch available rooms                                      |
+| `src/app/(main)/actions/getUserProfile.ts`                      | Fetch current user's profile                               |
+| `src/app/(main)/actions/updateProfile.ts`                       | Update user profile                                        |
+| `src/app/(main)/bookings/actions.ts`                            | `cancelUserBooking()` — cancellation + calendar cleanup    |
+| `src/app/(admin)/actions/approve-reject-booking.ts`             | Admin approve/reject entry points                          |
+| `src/app/(admin)/actions/booking-status-change.ts`              | Core status update + calendar sync + email                 |
+| `src/app/(admin)/admin/users/actions.ts`                        | `updateUserRole()` — role management                       |
+| `src/app/(admin)/admin/calendar/actions/create-booking.ts`      | Admin calendar booking creation                            |
+| `src/app/(admin)/admin/calendar/actions/fetch-week-bookings.ts` | Admin weekly view data                                     |
+| `src/app/(main)/calendar/actions/fetchCalendarBookings.ts`      | Public calendar data (access-control-aware)                |
 
 ### External Integrations
 
-| File | Responsibility |
-|---|---|
-| `src/lib/google-calendar.ts` | Google Calendar CRUD (create, patch, delete events) |
-| `src/lib/sendBookingEmail.ts` | Email templates and sending via Resend |
-| `src/lib/room-dependencies.ts` | Main Hall ↔ Lobby dependency logic |
+| File                           | Responsibility                                      |
+| ------------------------------ | --------------------------------------------------- |
+| `src/lib/google-calendar.ts`   | Google Calendar CRUD (create, patch, delete events) |
+| `src/lib/sendBookingEmail.ts`  | Email templates and sending via Resend              |
+| `src/lib/room-dependencies.ts` | Main Hall ↔ Lobby dependency logic                  |
 
 ### Components
 
-| File | Responsibility |
-|---|---|
-| `src/app/(main)/components/BookingForm.tsx` | Standard booking form with profile autofill |
-| `src/app/(main)/components/MultiDayBookingForm.tsx` | Event Manager multi-day booking form |
-| `src/app/(main)/components/MultiDayDateConfig.tsx` | Per-day configuration table (time, all-day, day type) |
-| `src/app/(main)/components/DateTimeSelector.tsx` | Room/date/time picker for standard bookings |
-| `src/app/(main)/components/BookingSummary.tsx` | Booking summary display |
-| `src/app/(main)/components/EditBookingForm.tsx` | Booking edit form |
-| `src/app/(main)/components/RoomList.tsx` | Room cards on homepage |
-| `src/app/(main)/components/nav-bar.tsx` | Main navigation bar |
-| `src/app/(main)/calendar/components/EventCalendar.tsx` | FullCalendar wrapper component |
-| `src/app/(main)/calendar/components/BookingDetailPopover.tsx` | Calendar event detail popover |
-| `src/app/(admin)/admin/components/app-sidebar.tsx` | Admin sidebar navigation |
-| `src/app/(main)/bookings/user-booking-table.tsx` | User's booking table |
+| File                                                          | Responsibility                                        |
+| ------------------------------------------------------------- | ----------------------------------------------------- |
+| `src/app/(main)/components/BookingForm.tsx`                   | Standard booking form with profile autofill           |
+| `src/app/(main)/components/MultiDayBookingForm.tsx`           | Event Manager multi-day booking form                  |
+| `src/app/(main)/components/MultiDayDateConfig.tsx`            | Per-day configuration table (time, all-day, day type) |
+| `src/app/(main)/components/DateTimeSelector.tsx`              | Room/date/time picker for standard bookings           |
+| `src/app/(main)/components/BookingSummary.tsx`                | Booking summary display                               |
+| `src/app/(main)/components/EditBookingForm.tsx`               | Booking edit form                                     |
+| `src/app/(main)/components/RoomList.tsx`                      | Room cards on homepage                                |
+| `src/app/(main)/components/nav-bar.tsx`                       | Main navigation bar                                   |
+| `src/app/(main)/calendar/components/EventCalendar.tsx`        | FullCalendar wrapper component                        |
+| `src/app/(main)/calendar/components/BookingDetailPopover.tsx` | Calendar event detail popover                         |
+| `src/app/(admin)/admin/components/app-sidebar.tsx`            | Admin sidebar navigation                              |
+| `src/app/(main)/bookings/user-booking-table.tsx`              | User's booking table                                  |
 
 ### Configuration & Utilities
 
-| File | Responsibility |
-|---|---|
-| `src/lib/config.ts` | Operating hours, slot interval, calendar access flag |
-| `src/lib/date-utils.ts` | Date/time helpers (combine, format, slot generation) |
-| `src/lib/getPurposeLabel.ts` | Purpose value → display label mapping |
-| `src/lib/utils.ts` | `cn()` (Tailwind class merge), `getErrorMessage()` |
-| `src/lib/composition.ts` | Ref/event handler composition utilities |
-| `src/hooks/use-mobile.tsx` | Mobile breakpoint detection hook |
+| File                         | Responsibility                                       |
+| ---------------------------- | ---------------------------------------------------- |
+| `src/lib/config.ts`          | Operating hours, slot interval, calendar access flag |
+| `src/lib/date-utils.ts`      | Date/time helpers (combine, format, slot generation) |
+| `src/lib/getPurposeLabel.ts` | Purpose value → display label mapping                |
+| `src/lib/utils.ts`           | `cn()` (Tailwind class merge), `getErrorMessage()`   |
+| `src/lib/composition.ts`     | Ref/event handler composition utilities              |
+| `src/hooks/use-mobile.tsx`   | Mobile breakpoint detection hook                     |
 
 ---
 
@@ -583,6 +584,7 @@ All variables are loaded from `.env.local`. The `NEXT_PUBLIC_` prefix makes thos
 ## 14. How to Change Common Things
 
 ### Add a new role
+
 1. Update the type/union in `updateUserRole()` in `src/app/(admin)/admin/users/actions.ts`.
 2. Add the role option to the UserTable dropdown in `src/app/(admin)/admin/users/components/UserTable.tsx`.
 3. Add role-check helpers in `src/lib/roles.ts`.
@@ -590,24 +592,29 @@ All variables are loaded from `.env.local`. The `NEXT_PUBLIC_` prefix makes thos
 5. Update middleware if the new role needs specific route protection.
 
 ### Add a new room
+
 1. Insert into the `rooms` table (via admin UI at `/admin/rooms` or direct DB insert).
 2. If it has dependencies, set `dependency_group` and update `src/lib/room-dependencies.ts`.
 
 ### Change booking approval logic
+
 1. Room-level approval is controlled by `rooms.approval_required` and `rooms.approvers`.
 2. The approval flow is in `src/app/(main)/actions/submitBooking.ts` (standard) and `submitMultiDayBooking.ts` (multi-day).
 3. Admin actions are in `src/app/(admin)/actions/`.
 
 ### Change calendar sync behavior
+
 1. All Google Calendar operations are in `src/lib/google-calendar.ts`.
 2. Calendar events are created in booking submission actions and updated in status change actions.
 
 ### Modify room dependency behavior
+
 1. Edit `src/lib/room-dependencies.ts` — both `getBlockedRoomIds()` and `getDependencyBlockedSlots()`.
 2. Update `isBookingAllowed()` for server-side conflict validation.
 3. Update `getUnavailableSlots()` if the UI conflict display needs changes.
 
 ### Add a new booking field
+
 1. Add the column in `src/db/schema.ts`.
 2. Update `src/types/booking.ts`.
 3. Run `pnpm drizzle-kit generate` then `pnpm drizzle-kit push`.
@@ -620,16 +627,16 @@ All variables are loaded from `.env.local`. The `NEXT_PUBLIC_` prefix makes thos
 
 ## 15. Glossary
 
-| Term | Definition |
-|---|---|
-| **Standard booking** | A single-day, hourly booking created by regular members |
-| **Multi-day booking** | A date-range booking spanning multiple days, with per-day configuration |
-| **Main Event Day** | A day type for multi-day bookings indicating the primary event day (triggers dependency blocking) |
-| **Rehearsal / Setup** | A day type for multi-day bookings indicating preparation (does not trigger full blocking) |
-| **Approval-required room** | A room where bookings start as `pending` until an admin approves |
-| **Approvers** | Email addresses (stored on the room) that receive notification when a new booking is submitted |
-| **Dependency group** | A shared identifier linking rooms that have inter-availability rules (e.g., Main Hall ↔ Lobby) |
-| **Unavailable period** | An admin-defined blackout window for a room |
-| **Linked booking** | A secondary booking (e.g., Lobby) created alongside a primary booking (e.g., Main Hall) via `parentBookingId` |
-| **Event Manager** | A user role that can create multi-day bookings for external paid events |
-| **PIC** | Person In Charge — the contact person for a booking |
+| Term                       | Definition                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Standard booking**       | A single-day, hourly booking created by regular members                                                       |
+| **Multi-day booking**      | A date-range booking spanning multiple days, with per-day configuration                                       |
+| **Main Event Day**         | A day type for multi-day bookings indicating the primary event day (triggers dependency blocking)             |
+| **Rehearsal / Setup**      | A day type for multi-day bookings indicating preparation (does not trigger full blocking)                     |
+| **Approval-required room** | A room where bookings start as `pending` until an admin approves                                              |
+| **Approvers**              | Email addresses (stored on the room) that receive notification when a new booking is submitted                |
+| **Dependency group**       | A shared identifier linking rooms that have inter-availability rules (e.g., Main Hall ↔ Lobby)                |
+| **Unavailable period**     | An admin-defined blackout window for a room                                                                   |
+| **Linked booking**         | A secondary booking (e.g., Lobby) created alongside a primary booking (e.g., Main Hall) via `parentBookingId` |
+| **Event Manager**          | A user role that can create multi-day bookings for external paid events                                       |
+| **PIC**                    | Person In Charge — the contact person for a booking                                                           |

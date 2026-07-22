@@ -1,22 +1,16 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2 } from "lucide-react"
-import Link from "next/link"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-import { sendOtp } from "./actions"
+import { sendOtp } from "./actions";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -34,9 +28,9 @@ export default function LoginPage() {
     setServerError(null);
 
     const formData = new FormData();
-    formData.append("email", data.email)
+    formData.append("email", data.email);
 
-    const result = await sendOtp(formData)
+    const result = await sendOtp(formData);
 
     if (result.error === "user_not_found") {
       setServerError(
@@ -46,12 +40,11 @@ export default function LoginPage() {
             signing up
           </Link>{" "}
           ?
-        </span>
-      )
-      
+        </span>,
+      );
     } else if (result.error === "server_error") {
-      setServerError("Something went wrong. Please try again later.")
-    } 
+      setServerError("Something went wrong. Please try again later.");
+    }
   };
 
   return (
@@ -59,8 +52,7 @@ export default function LoginPage() {
       <h1 className="text-2xl font-bold">Login</h1>
 
       <Form {...form}>
-        <form className="space-y-4" onSubmit={
-          form.handleSubmit(onSubmit) as unknown as () => void}>
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit) as unknown as () => void}>
           <FormField
             control={form.control}
             name="email"
@@ -76,7 +68,7 @@ export default function LoginPage() {
 
           {!form.formState.errors.email && serverError ? (
             <p className="text-sm text-destructive">{serverError}</p>
-          ): null}
+          ) : null}
 
           <Button disabled={form.formState.isSubmitting} type="submit">
             {form.formState.isSubmitting ? (

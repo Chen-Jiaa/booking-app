@@ -1,29 +1,29 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { cache } from 'react'
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { cache } from "react";
 
 interface Profile {
-  role: string
+  role: string;
 }
 
 export async function createClient() {
-  const cookieStore = await cookies()
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const cookieStore = await cookies();
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   if (supabaseAnonKey === undefined || supabaseUrl === undefined) {
-    throw new Error('Missing Supabase environment variables')
+    throw new Error("Missing Supabase environment variables");
   }
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
-        return cookieStore.getAll()
+        return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
         try {
           for (const { name, options, value } of cookiesToSet) {
-            cookieStore.set(name, value, options)
+            cookieStore.set(name, value, options);
           }
         } catch {
           // The `setAll` method was called from a Server Component.
@@ -32,35 +32,37 @@ export async function createClient() {
         }
       },
     },
-  })
+  });
 }
 
 export const getAuthUser = cache(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user ?? null
-})
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user ?? null;
+});
 
 export async function getUserAndRole() {
-  const user = await getAuthUser()
+  const user = await getAuthUser();
 
   if (!user) {
     return { role: null, user: null };
   }
 
-  const supabase = await createClient()
+  const supabase = await createClient();
 
-  let role: null | string = null
+  let role: null | string = null;
 
   const { data, error } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single<Profile>()
+    .single<Profile>();
 
   if (!error && data.role) {
-    role = data.role
+    role = data.role;
   }
 
-  return { role, user }
+  return { role, user };
 }

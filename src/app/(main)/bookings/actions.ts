@@ -1,22 +1,21 @@
-'use server'
+"use server";
 
-import { db } from "@/db"
-import { bookingDays, bookings } from "@/db/schema"
-import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/google-calendar"
-import { eq } from "drizzle-orm"
-import { revalidatePath } from "next/cache"
+import { db } from "@/db";
+import { bookingDays, bookings } from "@/db/schema";
+import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/google-calendar";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
-export async function cancelUserBooking(id:number): Promise<void> {
-
+export async function cancelUserBooking(id: number): Promise<void> {
   try {
     const cancelledBooking = await db.transaction(async (tx) => {
       const result = await tx
         .update(bookings)
-        .set({status: "cancelled"})
+        .set({ status: "cancelled" })
         .where(eq(bookings.id, id))
         .returning();
 
-      const cancelledBooking = result[0] as typeof result[0] | undefined
+      const cancelledBooking = result[0] as (typeof result)[0] | undefined;
 
       if (!cancelledBooking) {
         throw new Error("Failed to cancel booking: Booking not found.");
@@ -30,14 +29,11 @@ export async function cancelUserBooking(id:number): Promise<void> {
           .where(eq(bookings.parentBookingId, id));
 
         for (const linked of linkedBookings) {
-          await tx
-            .update(bookings)
-            .set({ status: "cancelled" })
-            .where(eq(bookings.id, linked.id));
+          await tx.update(bookings).set({ status: "cancelled" }).where(eq(bookings.id, linked.id));
         }
       } else {
         // Standard booking — delete calendar event inside transaction (existing pattern)
-        await updateCalendarEvent(cancelledBooking)
+        await updateCalendarEvent(cancelledBooking);
       }
 
       return cancelledBooking;
@@ -46,10 +42,7 @@ export async function cancelUserBooking(id:number): Promise<void> {
     // For multi-day bookings, delete calendar events outside transaction
     if (cancelledBooking.isMultiDay) {
       // Delete main booking's day calendar events
-      const mainDays = await db
-        .select()
-        .from(bookingDays)
-        .where(eq(bookingDays.bookingId, id));
+      const mainDays = await db.select().from(bookingDays).where(eq(bookingDays.bookingId, id));
 
       for (const day of mainDays) {
         if (day.eventId) {
@@ -85,7 +78,7 @@ export async function cancelUserBooking(id:number): Promise<void> {
       }
     }
 
-    revalidatePath("/bookings")
+    revalidatePath("/bookings");
   } catch (error) {
     console.error("Error in cancelUserBooking:", error);
     // Re-throw the error so the client-side code knows the operation failed.

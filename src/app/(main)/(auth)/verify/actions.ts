@@ -1,10 +1,10 @@
-"use server"
+"use server";
 
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server";
 
 export async function handleVerify(formData: FormData) {
-  const email = formData.get("email") as string
-  const token = formData.get("otp") as string
+  const email = formData.get("email") as string;
+  const token = formData.get("otp") as string;
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.verifyOtp({
@@ -14,9 +14,9 @@ export async function handleVerify(formData: FormData) {
   });
 
   if (error || !data.session) {
-    console.error("OTP verification failed:", error?.message)
-    return { error: true }
+    console.error("OTP verification failed:", error?.message);
+    return { error: true };
   }
 
-  return { success: true }
+  return { success: true };
 }

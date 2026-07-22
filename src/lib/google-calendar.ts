@@ -1,43 +1,45 @@
-import { type BookingDays, type Bookings } from '@/db/schema';
-import { calendar_v3, auth as googleAuth } from '@googleapis/calendar';
+import { type BookingDays, type Bookings } from "@/db/schema";
+import { calendar_v3, auth as googleAuth } from "@googleapis/calendar";
 
 // Helper to ensure env variables are set
 function requireEnv(varName: string): string {
-    const value = process.env[varName];
-    if (!value) {
-        throw new Error(`Misconfiguration: Missing environment variable: ${varName}`);
-    }
-    return value;
+  const value = process.env[varName];
+  if (!value) {
+    throw new Error(`Misconfiguration: Missing environment variable: ${varName}`);
+  }
+  return value;
 }
 
 // --- Google Auth Setup (Do this once at the top) ---
 const calendarId = requireEnv("GOOGLE_CALENDAR_ID");
-const privateKey = requireEnv("GOOGLE_PRIVATE_KEY").replaceAll(String.raw`\n`, '\n');
+const privateKey = requireEnv("GOOGLE_PRIVATE_KEY").replaceAll(String.raw`\n`, "\n");
 const jwtAuth = new googleAuth.JWT({
   email: requireEnv("GOOGLE_CLIENT_EMAIL"),
   key: privateKey,
-  scopes: ['https://www.googleapis.com/auth/calendar'],
+  scopes: ["https://www.googleapis.com/auth/calendar"],
 });
 const calendar = new calendar_v3.Calendar({ auth: jwtAuth });
 
 // --- Types ---
 export interface BookingDayEventInput {
-  clientName: string
-  date: Date
-  dayType: string
-  email: string
-  endTime: Date | null
-  eventName: string
-  isAllDay: boolean
-  phone: string
-  roomName: string
-  startTime: Date | null
-  status: string
+  clientName: string;
+  date: Date;
+  dayType: string;
+  email: string;
+  endTime: Date | null;
+  eventName: string;
+  isAllDay: boolean;
+  phone: string;
+  roomName: string;
+  startTime: Date | null;
+  status: string;
 }
 
 // --- Function: CREATE a calendar event for one day of a multi-day booking ---
-export async function createBookingDayCalendarEvent(input: BookingDayEventInput): Promise<null | string | undefined> {
-  const dayTypeLabel = input.dayType === 'main_event' ? 'MAIN EVENT' : 'SETUP';
+export async function createBookingDayCalendarEvent(
+  input: BookingDayEventInput,
+): Promise<null | string | undefined> {
+  const dayTypeLabel = input.dayType === "main_event" ? "MAIN EVENT" : "SETUP";
   const statusLabel = input.status.toUpperCase();
   const summary = `[${statusLabel} - ${dayTypeLabel}] ${input.roomName} - ${input.eventName} by ${input.clientName}`;
   const description = `Event: ${input.eventName}\nClient: ${input.clientName}\nPhone: ${input.phone}\nEmail: ${input.email}`;
@@ -62,35 +64,33 @@ export async function createBookingDayCalendarEvent(input: BookingDayEventInput)
     }
 
     if (!input.startTime || !input.endTime) {
-      throw new Error('startTime and endTime are required for non-all-day events.');
+      throw new Error("startTime and endTime are required for non-all-day events.");
     }
 
     const event = await calendar.events.insert({
       calendarId,
       requestBody: {
         description,
-        end: { dateTime: input.endTime.toISOString(), timeZone: 'Asia/Singapore' },
-        start: { dateTime: input.startTime.toISOString(), timeZone: 'Asia/Singapore' },
+        end: { dateTime: input.endTime.toISOString(), timeZone: "Asia/Singapore" },
+        start: { dateTime: input.startTime.toISOString(), timeZone: "Asia/Singapore" },
         summary,
       },
     });
     return event.data.id;
   } catch (error) {
-    console.error('Failed to create booking day calendar event:', error);
-    throw new Error('Failed to create Google Calendar event for booking day.');
+    console.error("Failed to create booking day calendar event:", error);
+    throw new Error("Failed to create Google Calendar event for booking day.");
   }
 }
 
 // --- Function: CREATE a new event (standard single-day booking) ---
 export async function createCalendarEvent(booking: Bookings) {
-  console.log(`Creating calendar event for booking: ${booking.id.toString()} with status: ${booking.status}`)
-
-  const summaryStatus = booking.status ? `[${booking.status.toUpperCase()}]` : '[STATUS UNKNOWN]';
+  const summaryStatus = booking.status ? `[${booking.status.toUpperCase()}]` : "[STATUS UNKNOWN]";
 
   let description: string;
   let summary: string;
 
-  if (booking.bookingType === 'multi_day') {
+  if (booking.bookingType === "multi_day") {
     summary = `${summaryStatus} ${booking.roomName} - ${booking.eventName ?? booking.purpose} by ${booking.clientName ?? booking.name}`;
     description = `Event: ${booking.eventName ?? booking.purpose}\nClient: ${booking.clientName ?? booking.name}\nPhone: ${booking.phone}\nEmail: ${booking.email}`;
   } else {
@@ -103,8 +103,8 @@ export async function createCalendarEvent(booking: Bookings) {
       calendarId,
       requestBody: {
         description,
-        end: { dateTime: booking.endTime.toISOString(), timeZone: 'Asia/Singapore' },
-        start: { dateTime: booking.startTime.toISOString(), timeZone: 'Asia/Singapore' },
+        end: { dateTime: booking.endTime.toISOString(), timeZone: "Asia/Singapore" },
+        start: { dateTime: booking.startTime.toISOString(), timeZone: "Asia/Singapore" },
         summary,
       },
     });
@@ -150,9 +150,11 @@ export async function createMultiDayCalendarEvents(
 export async function deleteCalendarEvent(eventId: string): Promise<void> {
   try {
     await calendar.events.delete({ calendarId, eventId });
-  } catch (error) {
+  } catch (error: unknown) {
+    // 410 Gone means already deleted — treat as success
+    if ((error as { status?: number }).status === 410) return;
     console.error(`Failed to delete calendar event ${eventId}:`, error);
-    throw new Error('Failed to delete Google Calendar event.');
+    throw new Error("Failed to delete Google Calendar event.");
   }
 }
 
@@ -166,7 +168,7 @@ export async function patchCalendarEventSummary(eventId: string, summary: string
     });
   } catch (error) {
     console.error(`Failed to patch calendar event ${eventId}:`, error);
-    throw new Error('Failed to update Google Calendar event.');
+    throw new Error("Failed to update Google Calendar event.");
   }
 }
 
@@ -176,20 +178,25 @@ export async function updateCalendarEvent(booking: Bookings) {
     console.warn(`Booking ${booking.id.toString()} has no eventId, skipping calendar update.`);
     return;
   }
-  console.log(`Updating calendar event ${booking.eventId} for booking ${booking.id.toString()} to status: ${booking.status}`);
 
   try {
     switch (booking.status) {
-      case 'cancelled':
-      case 'rejected': {
-        await calendar.events.delete({ calendarId, eventId: booking.eventId });
+      case "cancelled":
+      case "rejected": {
+        try {
+          await calendar.events.delete({ calendarId, eventId: booking.eventId });
+        } catch (deleteError: unknown) {
+          // 410 Gone means already deleted — treat as success
+          if ((deleteError as { status?: number }).status !== 410) throw deleteError;
+        }
         break;
       }
-      
-      case 'confirmed': {
-        const confirmedSummary = booking.bookingType === 'multi_day'
-          ? `[CONFIRMED] ${booking.roomName} - ${booking.eventName ?? booking.purpose} by ${booking.clientName ?? booking.name}`
-          : `[CONFIRMED] ${booking.roomName} by ${booking.name} for ${booking.purpose}`;
+
+      case "confirmed": {
+        const confirmedSummary =
+          booking.bookingType === "multi_day"
+            ? `[CONFIRMED] ${booking.roomName} - ${booking.eventName ?? booking.purpose} by ${booking.clientName ?? booking.name}`
+            : `[CONFIRMED] ${booking.roomName} by ${booking.name} for ${booking.purpose}`;
         await calendar.events.patch({
           calendarId,
           eventId: booking.eventId,
@@ -199,8 +206,9 @@ export async function updateCalendarEvent(booking: Bookings) {
         });
         break;
       }
-      
-      default: { // 'pending'
+
+      default: {
+        // 'pending'
         break;
       }
     }
@@ -219,14 +227,14 @@ export async function updateMultiDayCalendarEvents(
     if (!day.eventId) continue;
 
     switch (booking.status) {
-      case 'cancelled':
-      case 'rejected': {
+      case "cancelled":
+      case "rejected": {
         await deleteCalendarEvent(day.eventId);
         break;
       }
 
-      case 'confirmed': {
-        const dayTypeLabel = day.dayType === 'main_event' ? 'MAIN EVENT' : 'SETUP';
+      case "confirmed": {
+        const dayTypeLabel = day.dayType === "main_event" ? "MAIN EVENT" : "SETUP";
         const summary = `[CONFIRMED - ${dayTypeLabel}] ${booking.roomName} - ${booking.eventName ?? booking.purpose} by ${booking.clientName ?? booking.name}`;
         await patchCalendarEventSummary(day.eventId, summary);
         break;
@@ -242,7 +250,7 @@ export async function updateMultiDayCalendarEvents(
 // --- Helper: Format date as YYYY-MM-DD for all-day events ---
 function formatDateOnly(date: Date): string {
   const year = date.getFullYear().toString();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }

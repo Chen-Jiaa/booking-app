@@ -1,4 +1,4 @@
-'use server'
+"use server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,7 +36,7 @@ interface SupabaseBooking {
 
 export async function fetchWeekBookings(
   weekStart: string,
-  weekEnd: string
+  weekEnd: string,
 ): Promise<CalendarBooking[]> {
   const supabase = await createClient();
 

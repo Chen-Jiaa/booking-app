@@ -7,4 +7,4 @@ export const interval = 30; //30min
  * - 'public': All users including guests can view the calendar.
  * - 'restricted': Only admin and event_manager roles can access the calendar.
  */
-export const CALENDAR_ACCESS: 'public' | 'restricted' = 'public';
+export const CALENDAR_ACCESS: "public" | "restricted" = "public";

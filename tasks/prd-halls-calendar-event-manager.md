@@ -16,13 +16,13 @@ The booking app currently supports simple room bookings on an hourly basis for i
 
 ## 2. Goals
 
-| # | Goal |
-|---|------|
-| G1 | Add Stage 8, Main Hall, and Lobby to Main Hall as bookable rooms with correct dependency rules. |
-| G2 | Introduce the "Event Manager" role that can create multi-day bookings with per-day time slots. |
-| G3 | Provide a public calendar page displaying all bookings across all rooms to prevent double bookings. |
-| G4 | Sync all bookings (including multi-day) to Google Calendar so external tools also reflect the schedule. |
-| G5 | Ensure no double bookings can occur, even when multiple people are booking concurrently. |
+| #   | Goal                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------- |
+| G1  | Add Stage 8, Main Hall, and Lobby to Main Hall as bookable rooms with correct dependency rules.         |
+| G2  | Introduce the "Event Manager" role that can create multi-day bookings with per-day time slots.          |
+| G3  | Provide a public calendar page displaying all bookings across all rooms to prevent double bookings.     |
+| G4  | Sync all bookings (including multi-day) to Google Calendar so external tools also reflect the schedule. |
+| G5  | Ensure no double bookings can occur, even when multiple people are booking concurrently.                |
 
 ---
 
@@ -51,74 +51,74 @@ The booking app currently supports simple room bookings on an hourly basis for i
 
 ### 4.1 — New Halls
 
-| # | Requirement |
-|---|-------------|
-| FR-1 | Add three new rooms to the system: **Stage 8**, **Main Hall**, and **Lobby to Main Hall**. |
-| FR-2 | **Stage 8** operates completely independently — no dependency on any other room. It follows existing booking rules. |
-| FR-3 | **Main Hall + Lobby dependency rules:** |
-| FR-3a | If the Main Hall is booked for a **Main Event Day**, the Lobby is automatically marked unavailable for that date/time. |
-| FR-3b | If the Main Hall is booked for **Rehearsal / Setup only**, the Lobby remains available for other bookings. |
-| FR-3c | If only the Lobby is booked, the Main Hall remains available (the hall has a backdoor for access). |
-| FR-3d | When an Event Manager books the Main Hall, the booking form must display a prompt: _"Will the client also need the Lobby for setup?"_ — if "Yes", the Lobby is also blocked for the same date/time. |
-| FR-4 | The Lobby can be booked independently for its own events without affecting Main Hall availability. However, if the Lobby is booked for a **Main Event**, the Main Hall **cannot** be used as a Main Event Day at that time — it can only be booked for Rehearsal / Setup (since the hall has a backdoor). |
+| #     | Requirement                                                                                                                                                                                                                                                                                               |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-1  | Add three new rooms to the system: **Stage 8**, **Main Hall**, and **Lobby to Main Hall**.                                                                                                                                                                                                                |
+| FR-2  | **Stage 8** operates completely independently — no dependency on any other room. It follows existing booking rules.                                                                                                                                                                                       |
+| FR-3  | **Main Hall + Lobby dependency rules:**                                                                                                                                                                                                                                                                   |
+| FR-3a | If the Main Hall is booked for a **Main Event Day**, the Lobby is automatically marked unavailable for that date/time.                                                                                                                                                                                    |
+| FR-3b | If the Main Hall is booked for **Rehearsal / Setup only**, the Lobby remains available for other bookings.                                                                                                                                                                                                |
+| FR-3c | If only the Lobby is booked, the Main Hall remains available (the hall has a backdoor for access).                                                                                                                                                                                                        |
+| FR-3d | When an Event Manager books the Main Hall, the booking form must display a prompt: _"Will the client also need the Lobby for setup?"_ — if "Yes", the Lobby is also blocked for the same date/time.                                                                                                       |
+| FR-4  | The Lobby can be booked independently for its own events without affecting Main Hall availability. However, if the Lobby is booked for a **Main Event**, the Main Hall **cannot** be used as a Main Event Day at that time — it can only be booked for Rehearsal / Setup (since the hall has a backdoor). |
 
 ### 4.2 — Event Manager Role
 
-| # | Requirement |
-|---|-------------|
-| FR-5 | Add a new role value `event_manager` to the user profiles system (alongside existing `admin` and `user`). |
-| FR-6 | Admins can assign the `event_manager` role from the existing Users Table page via the role dropdown (currently supports `admin` and `user`). |
-| FR-7 | Event Managers can create **multi-day bookings** by selecting a date range (start date → end date). |
-| FR-8 | For each day in the range, the Event Manager can either: **(a)** specify start and end times, or **(b)** check an "All Day" checkbox (similar to Google Calendar). |
-| FR-9 | For each day in the range, the Event Manager must mark the day type as one of: **"Rehearsal / Setup"** or **"Main Event Day"**. |
-| FR-10 | Multi-day bookings must respect the same conflict-prevention logic — occupied slots/days are disabled in the picker. |
-| FR-11 | Event Managers can also make standard single-day/hourly bookings (they have all the capabilities of a regular member plus multi-day). |
-| FR-11a | Multi-day bookings by Event Managers still require **admin approval** before being confirmed. |
+| #      | Requirement                                                                                                                                                        |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-5   | Add a new role value `event_manager` to the user profiles system (alongside existing `admin` and `user`).                                                          |
+| FR-6   | Admins can assign the `event_manager` role from the existing Users Table page via the role dropdown (currently supports `admin` and `user`).                       |
+| FR-7   | Event Managers can create **multi-day bookings** by selecting a date range (start date → end date).                                                                |
+| FR-8   | For each day in the range, the Event Manager can either: **(a)** specify start and end times, or **(b)** check an "All Day" checkbox (similar to Google Calendar). |
+| FR-9   | For each day in the range, the Event Manager must mark the day type as one of: **"Rehearsal / Setup"** or **"Main Event Day"**.                                    |
+| FR-10  | Multi-day bookings must respect the same conflict-prevention logic — occupied slots/days are disabled in the picker.                                               |
+| FR-11  | Event Managers can also make standard single-day/hourly bookings (they have all the capabilities of a regular member plus multi-day).                              |
+| FR-11a | Multi-day bookings by Event Managers still require **admin approval** before being confirmed.                                                                      |
 
 ### 4.3 — Event Calendar Page
 
-| # | Requirement |
-|---|-------------|
-| FR-12 | Add a new page (e.g., `/calendar`) accessible to **all users** (including guests). |
-| FR-13 | The calendar displays bookings across **all rooms** in a weekly or monthly view, styled similarly to Google Calendar. |
+| #     | Requirement                                                                                                                                                                                                                                                                                              |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-12 | Add a new page (e.g., `/calendar`) accessible to **all users** (including guests).                                                                                                                                                                                                                       |
+| FR-13 | The calendar displays bookings across **all rooms** in a weekly or monthly view, styled similarly to Google Calendar.                                                                                                                                                                                    |
 | FR-14 | Each booking entry on the calendar must show: room name, event name/description, and the day type label ("Rehearsal / Setup" or "Main Event Day" or standard booking). **Guests** can see that a slot is booked (room name, time, day type) but **cannot** see detailed info (event name, PIC, contact). |
-| FR-15 | Clicking a booking entry opens a detail view / popover showing: Event Name, Client Name, Event Manager Name & Phone, room, date & time, expected attendance, day type, and booking status. **This detail view is only visible to logged-in users.** |
-| FR-16 | The calendar must support switching between rooms (filter by room) and navigating between weeks/months. |
-| FR-17 | Build the access control so it can be easily restricted to `admin` and `event_manager` roles in the future (e.g., a config flag or middleware check), but default to public for now. |
+| FR-15 | Clicking a booking entry opens a detail view / popover showing: Event Name, Client Name, Event Manager Name & Phone, room, date & time, expected attendance, day type, and booking status. **This detail view is only visible to logged-in users.**                                                      |
+| FR-16 | The calendar must support switching between rooms (filter by room) and navigating between weeks/months.                                                                                                                                                                                                  |
+| FR-17 | Build the access control so it can be easily restricted to `admin` and `event_manager` roles in the future (e.g., a config flag or middleware check), but default to public for now.                                                                                                                     |
 
 ### 4.4 — Google Calendar Sync
 
-| # | Requirement |
-|---|-------------|
+| #     | Requirement                                                                                                                                                            |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR-18 | Multi-day bookings must sync to Google Calendar. Each day in a multi-day booking should appear as its own calendar event (with appropriate title indicating day type). |
-| FR-19 | When a multi-day booking is approved, updated, or cancelled, the corresponding Google Calendar events must be updated accordingly. |
+| FR-19 | When a multi-day booking is approved, updated, or cancelled, the corresponding Google Calendar events must be updated accordingly.                                     |
 
 ### 4.5 — Booking Form Updates
 
-| # | Requirement |
-|---|-------------|
-| FR-20 | Regular members continue to use the existing hourly booking flow (no changes). |
+| #     | Requirement                                                                                                                                                                  |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-20 | Regular members continue to use the existing hourly booking flow (no changes).                                                                                               |
 | FR-21 | Event Managers see an enhanced booking form that supports: date range selection, per-day time or "All Day", day type marking, and the Lobby prompt (when booking Main Hall). |
-| FR-22 | The booking form must show existing bookings/conflicts inline so the Event Manager can avoid clashes while filling out the form. |
+| FR-22 | The booking form must show existing bookings/conflicts inline so the Event Manager can avoid clashes while filling out the form.                                             |
 
 ### 4.6 — Booking Edit Flow
 
-| # | Requirement |
-|---|-------------|
-| FR-28 | All users (members and Event Managers) can **edit** their own bookings via an edit button on their booking details. |
-| FR-29 | If an edit **changes the date(s) or time(s)**, the edited booking is treated as a **new booking** — it re-enters the approval flow (status resets to `pending` for rooms requiring approval). |
+| #     | Requirement                                                                                                                                                                                                                                |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-28 | All users (members and Event Managers) can **edit** their own bookings via an edit button on their booking details.                                                                                                                        |
+| FR-29 | If an edit **changes the date(s) or time(s)**, the edited booking is treated as a **new booking** — it re-enters the approval flow (status resets to `pending` for rooms requiring approval).                                              |
 | FR-30 | When a date/time edit is submitted: **(a)** the previous Google Calendar event(s) are deleted, **(b)** new Google Calendar event(s) are created, and **(c)** email notifications are sent to the relevant approvers and the booking owner. |
-| FR-31 | Edits to non-date fields (e.g., Event Name, Client Name, Expected Attendance) do **not** require re-approval — they update in place and sync to Google Calendar. |
-| FR-32 | Multi-day bookings are approved or rejected **as a whole** (not per-day). |
+| FR-31 | Edits to non-date fields (e.g., Event Name, Client Name, Expected Attendance) do **not** require re-approval — they update in place and sync to Google Calendar.                                                                           |
+| FR-32 | Multi-day bookings are approved or rejected **as a whole** (not per-day).                                                                                                                                                                  |
 
 ### 4.7 — Booking Form Fields & User Profile Autofill
 
-| # | Requirement |
-|---|-------------|
-| FR-23 | The Event Manager booking form must collect: **Event Name**, **Client Name**, **Event Manager Name**, **Event Manager Phone**, and **Expected Attendance**. |
-| FR-24 | **Event Manager Name** and **Event Manager Phone** must be **autofilled** from the logged-in user's profile data. |
-| FR-25 | Add a **phone number** field to the user profile / user settings page. |
-| FR-26 | For **all logged-in users** (not just Event Managers), the booking form should prefill available fields (name, email, phone) from their profile. |
+| #     | Requirement                                                                                                                                                                 |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-23 | The Event Manager booking form must collect: **Event Name**, **Client Name**, **Event Manager Name**, **Event Manager Phone**, and **Expected Attendance**.                 |
+| FR-24 | **Event Manager Name** and **Event Manager Phone** must be **autofilled** from the logged-in user's profile data.                                                           |
+| FR-25 | Add a **phone number** field to the user profile / user settings page.                                                                                                      |
+| FR-26 | For **all logged-in users** (not just Event Managers), the booking form should prefill available fields (name, email, phone) from their profile.                            |
 | FR-27 | If a user submits a booking and their profile does not yet have a phone number, the phone number entered in the form must be **saved back to their profile** automatically. |
 
 ---
@@ -156,26 +156,26 @@ The booking app currently supports simple room bookings on an hourly basis for i
 
 ## 8. Success Metrics
 
-| # | Metric |
-|---|--------|
-| SM-1 | Zero double bookings occur after launch (conflicts are prevented by the system). |
+| #    | Metric                                                                                                                              |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| SM-1 | Zero double bookings occur after launch (conflicts are prevented by the system).                                                    |
 | SM-2 | All bookings (single-day and multi-day) appear on both the in-app calendar and Google Calendar within seconds of creation/approval. |
-| SM-3 | Event Managers can successfully create a multi-day booking spanning 3+ days with mixed day types in a single form submission. |
-| SM-4 | All users can view the calendar page and identify room availability without needing to contact anyone. |
+| SM-3 | Event Managers can successfully create a multi-day booking spanning 3+ days with mixed day types in a single form submission.       |
+| SM-4 | All users can view the calendar page and identify room availability without needing to contact anyone.                              |
 
 ---
 
 ## 9. Resolved Questions
 
-| # | Question | Decision |
-|---|----------|----------|
-| RQ-1 | Should the calendar page show booking details to guests? | **No.** Guests can see that a slot is booked (room, time, day type) but details (event name, PIC, contact) are visible to logged-in users only. |
+| #    | Question                                                                                  | Decision                                                                                                                                                                  |
+| ---- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RQ-1 | Should the calendar page show booking details to guests?                                  | **No.** Guests can see that a slot is booked (room, time, day type) but details (event name, PIC, contact) are visible to logged-in users only.                           |
 | RQ-2 | If the Lobby is booked and an Event Manager books Main Hall — should the system block it? | **Partially.** If the Lobby has a Main Event booking, the Main Hall cannot be booked as a Main Event Day at that time — but it can still be booked for Rehearsal / Setup. |
-| RQ-3 | Should multi-day bookings require admin approval? | **Yes.** Event Manager bookings still require admin approval. |
-| RQ-4 | What fields should the Event Manager fill in? | Event Name, Client Name, Event Manager Name (autofilled), Event Manager Phone (autofilled), Expected Attendance. |
-| RQ-5 | Should there be a max advance booking limit? | **No limit.** |
-| RQ-6 | What calendar library to use? | **FullCalendar** (`@fullcalendar/react`) — mature, MIT-licensed, Google Calendar–style out of the box. |
-| RQ-7 | Multi-day approval: whole booking or per-day? | **Whole booking.** Approve/reject the entire multi-day booking at once. |
+| RQ-3 | Should multi-day bookings require admin approval?                                         | **Yes.** Event Manager bookings still require admin approval.                                                                                                             |
+| RQ-4 | What fields should the Event Manager fill in?                                             | Event Name, Client Name, Event Manager Name (autofilled), Event Manager Phone (autofilled), Expected Attendance.                                                          |
+| RQ-5 | Should there be a max advance booking limit?                                              | **No limit.**                                                                                                                                                             |
+| RQ-6 | What calendar library to use?                                                             | **FullCalendar** (`@fullcalendar/react`) — mature, MIT-licensed, Google Calendar–style out of the box.                                                                    |
+| RQ-7 | Multi-day approval: whole booking or per-day?                                             | **Whole booking.** Approve/reject the entire multi-day booking at once.                                                                                                   |
 
 ## 10. Open Questions
 

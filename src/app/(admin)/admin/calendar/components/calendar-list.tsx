@@ -1,48 +1,43 @@
-'use client'
+"use client";
 
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import { addDays, format, isSameDay } from "date-fns"
-import { toZonedTime } from "date-fns-tz"
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { addDays, format, isSameDay } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 
-import { type CalendarBooking } from "../actions/fetch-week-bookings"
-import { BookingPopover } from "./booking-popover"
+import { type CalendarBooking } from "../actions/fetch-week-bookings";
+import { BookingPopover } from "./booking-popover";
 
 interface CalendarListProps {
-  bookings: CalendarBooking[]
-  weekStart: Date
+  bookings: CalendarBooking[];
+  weekStart: Date;
 }
 
-const TIMEZONE = "Asia/Kuala_Lumpur"
+const TIMEZONE = "Asia/Kuala_Lumpur";
 
 export function CalendarList({ bookings, weekStart }: CalendarListProps) {
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   const getBookingsForDay = (day: Date) => {
     return bookings.filter((booking) => {
-      const bookingStart = toZonedTime(booking.startTime, TIMEZONE)
-      const bookingEnd = toZonedTime(booking.endTime, TIMEZONE)
-      const dayStart = day
-      const dayEnd = addDays(day, 1)
-      return bookingStart < dayEnd && bookingEnd > dayStart
-    })
-  }
+      const bookingStart = toZonedTime(booking.startTime, TIMEZONE);
+      const bookingEnd = toZonedTime(booking.endTime, TIMEZONE);
+      const dayStart = day;
+      const dayEnd = addDays(day, 1);
+      return bookingStart < dayEnd && bookingEnd > dayStart;
+    });
+  };
 
   return (
     <div className="space-y-6">
       {weekDays.map((day) => {
-        const dayBookings = getBookingsForDay(day)
-        const isToday = isSameDay(day, new Date())
+        const dayBookings = getBookingsForDay(day);
+        const isToday = isSameDay(day, new Date());
 
         return (
           <div key={day.toISOString()}>
-            <h3
-              className={cn(
-                "text-lg font-semibold mb-3 pb-2 border-b",
-                isToday && "text-info"
-              )}
-            >
+            <h3 className={cn("text-lg font-semibold mb-3 pb-2 border-b", isToday && "text-info")}>
               {format(day, "EEEE, MMM d")}
               {isToday && <span className="ml-2 text-sm font-normal">(Today)</span>}
             </h3>
@@ -78,29 +73,29 @@ export function CalendarList({ bookings, weekStart }: CalendarListProps) {
               </div>
             )}
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 function formatTime(date: Date) {
-  return format(toZonedTime(date, TIMEZONE), "h:mm a")
+  return format(toZonedTime(date, TIMEZONE), "h:mm a");
 }
 
 function getStatusStyles(status: string) {
   switch (status) {
     case "confirmed": {
-      return "bg-success-bg text-success"
+      return "bg-success-bg text-success";
     }
     case "pending": {
-      return "bg-warning-bg text-warning"
+      return "bg-warning-bg text-warning";
     }
     case "rejected": {
-      return "bg-error-bg text-error"
+      return "bg-error-bg text-error";
     }
     default: {
-      return "bg-muted text-muted-foreground"
+      return "bg-muted text-muted-foreground";
     }
   }
 }

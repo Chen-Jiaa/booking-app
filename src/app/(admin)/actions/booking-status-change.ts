@@ -1,16 +1,30 @@
-'use server'
+"use server";
 
 import { db } from "@/db";
 import { bookingDays, bookings } from "@/db/schema";
-import { createCalendarEvent, deleteCalendarEvent, patchCalendarEventSummary, updateCalendarEvent } from "@/lib/google-calendar";
+import {
+  createCalendarEvent,
+  deleteCalendarEvent,
+  patchCalendarEventSummary,
+  updateCalendarEvent,
+} from "@/lib/google-calendar";
 import { sendBookingConfirmationEmail, sendBookingRejectionEmail } from "@/lib/sendBookingEmail";
+import { getUserAndRole } from "@/lib/supabase/server";
 import { eq } from "drizzle-orm";
 import { after } from "next/server";
 
 export async function updateBookingStatus(
   bookingId: number,
-  newStatus: 'confirmed' | 'pending' | 'rejected'
+  newStatus: "confirmed" | "pending" | "rejected",
 ) {
+  // This is an exported Server Action — a public HTTP endpoint. It must
+  // authorize independently, not rely on its callers doing so.
+  const { role } = await getUserAndRole();
+
+  if (role !== "admin") {
+    return { error: "Unauthorized: Admin access required", success: false as const };
+  }
+
   try {
     const result = await db
       .update(bookings)
@@ -18,7 +32,7 @@ export async function updateBookingStatus(
       .where(eq(bookings.id, bookingId))
       .returning();
 
-    const updatedBooking = result[0] as typeof result[0] | undefined;
+    const updatedBooking = result[0] as (typeof result)[0] | undefined;
 
     if (!updatedBooking) {
       throw new Error(`Booking with ID ${bookingId.toString()} not found.`);
@@ -41,7 +55,7 @@ export async function updateBookingStatus(
           .where(eq(bookings.id, linked.id))
           .returning();
 
-        const updatedLinked = linkedResult[0] as typeof linkedResult[0] | undefined;
+        const updatedLinked = linkedResult[0] as (typeof linkedResult)[0] | undefined;
 
         if (updatedLinked) {
           await handleMultiDayCalendarUpdate(updatedLinked, newStatus);
@@ -49,13 +63,10 @@ export async function updateBookingStatus(
       }
     } else {
       // Standard booking (existing logic)
-      if (newStatus === 'confirmed' && !updatedBooking.eventId) {
+      if (newStatus === "confirmed" && !updatedBooking.eventId) {
         // No existing calendar event (edge case) — create one
         const eventId = await createCalendarEvent(updatedBooking);
-        await db
-          .update(bookings)
-          .set({ eventId })
-          .where(eq(bookings.id, bookingId));
+        await db.update(bookings).set({ eventId }).where(eq(bookings.id, bookingId));
       } else {
         // Update existing event: patches to [CONFIRMED] or deletes on reject
         await updateCalendarEvent(updatedBooking);
@@ -67,13 +78,15 @@ export async function updateBookingStatus(
     const bookingIdStr = updatedBooking.id.toString();
     after(async () => {
       if (!bookingEmail) {
-        console.warn(`Booking ID ${bookingIdStr} was updated to "${newStatus}", but no email is on file.`);
+        console.warn(
+          `Booking ID ${bookingIdStr} was updated to "${newStatus}", but no email is on file.`,
+        );
         return;
       }
 
-      if (newStatus === 'confirmed') {
+      if (newStatus === "confirmed") {
         await sendBookingConfirmationEmail({ ...updatedBooking, to: bookingEmail });
-      } else if (newStatus === 'rejected') {
+      } else if (newStatus === "rejected") {
         await sendBookingRejectionEmail({ ...updatedBooking, to: bookingEmail });
       }
     });
@@ -90,30 +103,26 @@ export async function updateBookingStatus(
       },
       success: true as const,
     };
-
   } catch (error) {
-    console.error('Failed to update booking status:', error);
-    return { error: 'Failed to update booking status', success: false as const };
+    console.error("Failed to update booking status:", error);
+    return { error: "Failed to update booking status", success: false as const };
   }
 }
 
 async function handleMultiDayCalendarUpdate(
   booking: typeof bookings.$inferSelect,
-  newStatus: string
+  newStatus: string,
 ) {
-  const days = await db
-    .select()
-    .from(bookingDays)
-    .where(eq(bookingDays.bookingId, booking.id));
+  const days = await db.select().from(bookingDays).where(eq(bookingDays.bookingId, booking.id));
 
   for (const day of days) {
     if (!day.eventId) continue;
 
-    if (newStatus === 'confirmed') {
-      const dayTypeLabel = day.dayType === 'main_event' ? 'MAIN EVENT' : 'SETUP';
-      const summary = `[CONFIRMED - ${dayTypeLabel}] ${booking.roomName} - ${booking.eventName ?? ''} by ${booking.clientName ?? booking.name}`;
+    if (newStatus === "confirmed") {
+      const dayTypeLabel = day.dayType === "main_event" ? "MAIN EVENT" : "SETUP";
+      const summary = `[CONFIRMED - ${dayTypeLabel}] ${booking.roomName} - ${booking.eventName ?? ""} by ${booking.clientName ?? booking.name}`;
       await patchCalendarEventSummary(day.eventId, summary);
-    } else if (newStatus === 'rejected') {
+    } else if (newStatus === "rejected") {
       try {
         await deleteCalendarEvent(day.eventId);
       } catch (error) {

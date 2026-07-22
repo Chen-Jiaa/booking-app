@@ -8,13 +8,13 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod"
+import { z } from "zod";
 
 import { signup } from "./actions";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-})
+});
 
 export default function SignupPage() {
   const [serverError, setServerError] = useState<React.ReactNode>(null);
@@ -22,7 +22,7 @@ export default function SignupPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     defaultValues: { email: "" },
     resolver: zodResolver(formSchema),
-  })
+  });
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setServerError(null);
@@ -40,7 +40,7 @@ export default function SignupPage() {
             Log in instead
           </Link>
           ?
-        </span>
+        </span>,
       );
     } else if (result.error === "server_error") {
       setServerError("Something went wrong. Please try again later.");
@@ -68,7 +68,7 @@ export default function SignupPage() {
 
           {!form.formState.errors.email && serverError ? (
             <p className="text-sm text-destructive">{serverError}</p>
-          ): null}
+          ) : null}
 
           <Button disabled={form.formState.isSubmitting} type="submit">
             {form.formState.isSubmitting ? (

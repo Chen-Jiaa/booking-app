@@ -2,35 +2,33 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function updateSession(request: NextRequest) {
-  
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Missing Supabase environment variables");
   }
-  
+
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient( supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          for (const {name, value} of cookiesToSet) {
-            request.cookies.set(name, value)
-          }
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        for (const { name, value } of cookiesToSet) {
+          request.cookies.set(name, value);
+        }
 
-          supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = NextResponse.next({ request });
 
-          for (const {name, options, value} of cookiesToSet) {
-            supabaseResponse.cookies.set(name, value, options)
-          }
-        },
+        for (const { name, options, value } of cookiesToSet) {
+          supabaseResponse.cookies.set(name, value, options);
+        }
       },
     },
-  );
+  });
 
   // Do not run code between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug

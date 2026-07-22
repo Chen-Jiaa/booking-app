@@ -1,89 +1,86 @@
-'use client'
+"use client";
 
-import { useSupabase } from "@/components/providers/supabase-providers"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { type Rooms } from "@/db/schema"
-import { eachDayOfInterval, format } from "date-fns"
-import { Loader2 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { type DateRange } from "react-day-picker"
-import { toast } from "sonner"
+import { useSupabase } from "@/components/providers/supabase-providers";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { type Rooms } from "@/db/schema";
+import { eachDayOfInterval, format } from "date-fns";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { type DateRange } from "react-day-picker";
+import { toast } from "sonner";
 
-import { getUserProfile } from "../actions/getUserProfile"
-import { submitMultiDayBooking } from "../actions/submitMultiDayBooking"
-import MultiDayDateConfig, { type DayConfig } from "./MultiDayDateConfig"
+import { getUserProfile } from "../actions/getUserProfile";
+import { submitMultiDayBooking } from "../actions/submitMultiDayBooking";
+import MultiDayDateConfig, { type DayConfig } from "./MultiDayDateConfig";
 
 interface MultiDayBookingFormProps {
-  rooms: Rooms[]
-  selectedRoom: Rooms
+  rooms: Rooms[];
+  selectedRoom: Rooms;
 }
 
-export default function MultiDayBookingForm({
-  rooms,
-  selectedRoom,
-}: MultiDayBookingFormProps) {
-  const { user } = useSupabase()
-  const router = useRouter()
+export default function MultiDayBookingForm({ rooms, selectedRoom }: MultiDayBookingFormProps) {
+  const { user } = useSupabase();
+  const router = useRouter();
 
   // Event info
-  const [eventName, setEventName] = useState("")
-  const [clientName, setClientName] = useState("")
-  const [managerName, setManagerName] = useState("")
-  const [managerPhone, setManagerPhone] = useState("")
-  const [expectedAttendance, setExpectedAttendance] = useState("")
+  const [eventName, setEventName] = useState("");
+  const [clientName, setClientName] = useState("");
+  const [managerName, setManagerName] = useState("");
+  const [managerPhone, setManagerPhone] = useState("");
+  const [expectedAttendance, setExpectedAttendance] = useState("");
 
   // Date range
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // Lobby prompt
-  const [needsLobby, setNeedsLobby] = useState<boolean | null>(null)
+  const [needsLobby, setNeedsLobby] = useState<boolean | null>(null);
 
   // Per-day config
-  const [showDayConfig, setShowDayConfig] = useState(false)
-  const [dayConfigs, setDayConfigs] = useState<DayConfig[]>([])
+  const [showDayConfig, setShowDayConfig] = useState(false);
+  const [dayConfigs, setDayConfigs] = useState<DayConfig[]>([]);
 
   // Submission
-  const [submitting, setSubmitting] = useState(false)
+  const [submitting, setSubmitting] = useState(false);
 
   // Autofill manager info from profile
   useEffect(() => {
     async function loadProfile() {
       try {
-        const profile = await getUserProfile()
+        const profile = await getUserProfile();
         if (profile) {
-          setManagerName(profile.fullName ?? "")
-          setManagerPhone(profile.phone ?? "")
+          setManagerName(profile.fullName ?? "");
+          setManagerPhone(profile.phone ?? "");
         }
       } catch (error) {
-        console.error("Failed to load profile:", error)
+        console.error("Failed to load profile:", error);
       }
     }
     if (user) {
-      void loadProfile()
+      void loadProfile();
     }
-  }, [user])
+  }, [user]);
 
-  const isMainHall = selectedRoom.name === "Main Hall"
+  const isMainHall = selectedRoom.name === "Main Hall";
 
   const canContinue =
     eventName.trim() !== "" &&
     clientName.trim() !== "" &&
     dateRange?.from != null &&
     dateRange.to != null &&
-    (!isMainHall || needsLobby !== null)
+    (!isMainHall || needsLobby !== null);
 
   const handleContinue = () => {
-    if (!dateRange?.from || !dateRange.to) return
+    if (!dateRange?.from || !dateRange.to) return;
 
     const days = eachDayOfInterval({
       end: dateRange.to,
       start: dateRange.from,
-    })
+    });
     setDayConfigs(
       days.map((date) => ({
         date,
@@ -92,19 +89,19 @@ export default function MultiDayBookingForm({
         isAllDay: false,
         startTime: undefined,
       })),
-    )
-    setShowDayConfig(true)
-  }
+    );
+    setShowDayConfig(true);
+  };
 
   const allDaysConfigured = dayConfigs.every(
     (day) => day.isAllDay || (day.startTime && day.endTime),
-  )
+  );
 
-  const lobbyRoom = rooms.find((r) => r.name === "Lobby to Main Hall")
+  const lobbyRoom = rooms.find((r) => r.name === "Lobby to Main Hall");
 
   const handleSubmit = async () => {
-    if (!user) return
-    setSubmitting(true)
+    if (!user) return;
+    setSubmitting(true);
     try {
       const result = await submitMultiDayBooking({
         clientName,
@@ -115,7 +112,7 @@ export default function MultiDayBookingForm({
           isAllDay: day.isAllDay,
           startTime: day.startTime,
         })),
-        email: user.email ?? '',
+        email: user.email ?? "",
         eventName,
         expectedAttendance: expectedAttendance ? Number.parseInt(expectedAttendance) : null,
         managerName,
@@ -124,21 +121,21 @@ export default function MultiDayBookingForm({
         roomId: selectedRoom.id,
         roomName: selectedRoom.name,
         userId: user.id,
-      })
+      });
 
       if (result.success) {
-        toast.success('Multi-day booking submitted successfully! Awaiting approval.')
-        router.push(`/booking-confirmation/${result.booking.id.toString()}`)
+        toast.success("Multi-day booking submitted successfully! Awaiting approval.");
+        router.push(`/booking-confirmation/${result.booking.id.toString()}`);
       } else {
-        toast.error(`Booking conflicts detected:\n${result.conflicts.join('\n')}`)
+        toast.error(`Booking conflicts detected:\n${result.conflicts.join("\n")}`);
       }
     } catch (error) {
-      console.error('Multi-day booking error:', error)
-      toast.error('Failed to submit booking. Please try again.')
+      console.error("Multi-day booking error:", error);
+      toast.error("Failed to submit booking. Please try again.");
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -149,7 +146,7 @@ export default function MultiDayBookingForm({
             <Label>Event Name</Label>
             <Input
               onChange={(e) => {
-                setEventName(e.target.value)
+                setEventName(e.target.value);
               }}
               placeholder="Enter event name"
               value={eventName}
@@ -159,7 +156,7 @@ export default function MultiDayBookingForm({
             <Label>Client Name</Label>
             <Input
               onChange={(e) => {
-                setClientName(e.target.value)
+                setClientName(e.target.value);
               }}
               placeholder="Enter client name"
               value={clientName}
@@ -177,7 +174,7 @@ export default function MultiDayBookingForm({
             <Label>Expected Attendance</Label>
             <Input
               onChange={(e) => {
-                setExpectedAttendance(e.target.value)
+                setExpectedAttendance(e.target.value);
               }}
               placeholder="Number of attendees"
               type="number"
@@ -198,22 +195,19 @@ export default function MultiDayBookingForm({
           <div>
             <Label>Select Date Range</Label>
             <Calendar
-              disabled={(date) =>
-                date < new Date(new Date().setHours(0, 0, 0, 0))
-              }
+              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
               mode="range"
               numberOfMonths={1}
               onSelect={(range) => {
-                setDateRange(range)
-                setShowDayConfig(false)
-                setDayConfigs([])
+                setDateRange(range);
+                setShowDayConfig(false);
+                setDayConfigs([]);
               }}
               selected={dateRange}
             />
             {dateRange?.from && dateRange.to && (
               <p className="text-sm text-muted-foreground mt-2">
-                {format(dateRange.from, "MMM d, yyyy")} —{" "}
-                {format(dateRange.to, "MMM d, yyyy")} (
+                {format(dateRange.from, "MMM d, yyyy")} — {format(dateRange.to, "MMM d, yyyy")} (
                 {
                   eachDayOfInterval({
                     end: dateRange.to,
@@ -234,7 +228,7 @@ export default function MultiDayBookingForm({
               <div className="flex gap-2">
                 <Button
                   onClick={() => {
-                    setNeedsLobby(true)
+                    setNeedsLobby(true);
                   }}
                   size="sm"
                   variant={needsLobby === true ? "default" : "outline"}
@@ -243,7 +237,7 @@ export default function MultiDayBookingForm({
                 </Button>
                 <Button
                   onClick={() => {
-                    setNeedsLobby(false)
+                    setNeedsLobby(false);
                   }}
                   size="sm"
                   variant={needsLobby === false ? "default" : "outline"}
@@ -253,19 +247,14 @@ export default function MultiDayBookingForm({
               </div>
               {needsLobby && lobbyRoom && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  The Lobby to Main Hall will be included and blocked for the
-                  same dates/times.
+                  The Lobby to Main Hall will be included and blocked for the same dates/times.
                 </p>
               )}
             </div>
           )}
 
           {!showDayConfig && (
-            <Button
-              className="w-full"
-              disabled={!canContinue}
-              onClick={handleContinue}
-            >
+            <Button className="w-full" disabled={!canContinue} onClick={handleContinue}>
               Continue to Day Configuration
             </Button>
           )}
@@ -302,12 +291,8 @@ export default function MultiDayBookingForm({
                     )}
                     {expectedAttendance !== "" && (
                       <>
-                        <span className="text-muted-foreground">
-                          Attendance:
-                        </span>
-                        <span className="font-medium">
-                          {expectedAttendance}
-                        </span>
+                        <span className="text-muted-foreground">Attendance:</span>
+                        <span className="font-medium">{expectedAttendance}</span>
                       </>
                     )}
                   </div>
@@ -324,18 +309,14 @@ export default function MultiDayBookingForm({
                     <tbody>
                       {dayConfigs.map((day) => (
                         <tr className="border-t" key={day.date.toISOString()}>
-                          <td className="px-3 py-2">
-                            {format(day.date, "EEE, MMM d")}
-                          </td>
+                          <td className="px-3 py-2">{format(day.date, "EEE, MMM d")}</td>
                           <td className="px-3 py-2">
                             {day.isAllDay
                               ? "All Day"
                               : `${day.startTime ?? ""} – ${day.endTime ?? ""}`}
                           </td>
                           <td className="px-3 py-2">
-                            {day.dayType === "main_event"
-                              ? "Main Event Day"
-                              : "Rehearsal / Setup"}
+                            {day.dayType === "main_event" ? "Main Event Day" : "Rehearsal / Setup"}
                           </td>
                         </tr>
                       ))}
@@ -346,7 +327,9 @@ export default function MultiDayBookingForm({
                   className="w-full mt-4"
                   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime state
                   disabled={!allDaysConfigured || submitting || !user}
-                  onClick={() => { void handleSubmit() }}
+                  onClick={() => {
+                    void handleSubmit();
+                  }}
                 >
                   {submitting ? (
                     <>
@@ -354,7 +337,7 @@ export default function MultiDayBookingForm({
                       Submitting...
                     </>
                   ) : (
-                    'Submit Multi-Day Booking'
+                    "Submit Multi-Day Booking"
                   )}
                 </Button>
               </CardContent>
@@ -363,5 +346,5 @@ export default function MultiDayBookingForm({
         </>
       )}
     </div>
-  )
+  );
 }

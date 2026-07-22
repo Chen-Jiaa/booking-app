@@ -10,37 +10,38 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/ui/sidebar"
-import { CalendarDays, ListChecks, Settings, Undo2, Users } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
+} from "@/components/ui/sidebar";
+import { CalendarDays, ListChecks, Settings, Undo2, Users } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
-import { NavUser } from "./nav-user"
+import { NavUser } from "./nav-user";
 
 // Menu items.
 const data = {
-  navMain: [{
-    icon: ListChecks,
-    title: "Recent Bookings",
-    url: "/admin",
-  },
-  {
-    icon: CalendarDays,
-    title: "Calendar",
-    url: "/admin/calendar",
-  },
-  {
-    icon: Settings,
-    title: "Rooms Setting",
-    url: "/admin/rooms",
-  },
-  {
-    icon: Users,
-    title: "User List",
-    url: "/admin/users",
-  },
-  ]
-}
+  navMain: [
+    {
+      icon: ListChecks,
+      title: "Recent Bookings",
+      url: "/admin",
+    },
+    {
+      icon: CalendarDays,
+      title: "Calendar",
+      url: "/admin/calendar",
+    },
+    {
+      icon: Settings,
+      title: "Rooms Setting",
+      url: "/admin/rooms",
+    },
+    {
+      icon: Users,
+      title: "User List",
+      url: "/admin/users",
+    },
+  ],
+};
 
 export function AppSidebar() {
   return (
@@ -48,16 +49,18 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <div className="flex-shrink-0">
-          <Image 
-            alt="Collective Logo"
-            className="rounded-sm"
-            height={20}
-            src="/favicon.jpg"
-            width={20}
-          />
+            <Image
+              alt="Collective Logo"
+              className="rounded-sm"
+              height={20}
+              src="/favicon.jpg"
+              width={20}
+            />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsed=true]/sidebar:hidden">
-            <span className="truncate font-semibold"><Link href="/">Collective Booking</Link></span>
+            <span className="truncate font-semibold">
+              <Link href="/">Collective Booking</Link>
+            </span>
           </div>
         </div>
       </SidebarHeader>
@@ -78,13 +81,13 @@ export function AppSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
-          <SidebarSeparator/>
+          <SidebarSeparator />
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link href="/">
-                    <Undo2/>
+                    <Undo2 />
                     <span>Back to Home Page</span>
                   </Link>
                 </SidebarMenuButton>
@@ -97,5 +100,5 @@ export function AppSidebar() {
         <NavUser />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

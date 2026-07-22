@@ -34,9 +34,7 @@ export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalenda
   const calendarRef = useRef<FullCalendar>(null);
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selectedRoom, setSelectedRoom] = useState<string>("all");
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null,
-  );
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Client-side event cache keyed by "YYYY-MM" — seed with server-prefetched data
@@ -86,10 +84,7 @@ export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalenda
       fetchingRef.current.add(key);
 
       try {
-        const result = await fetchCalendarBookings(
-          start.toISOString(),
-          end.toISOString(),
-        );
+        const result = await fetchCalendarBookings(start.toISOString(), end.toISOString());
         cacheRef.current.set(key, result.events);
         return result.events;
       } finally {
@@ -124,9 +119,7 @@ export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalenda
           (m) => !cacheRef.current.has(monthKey(monthStart(m.year, m.month))),
         );
         if (missing.length > 0) {
-          void Promise.all(
-            missing.map((m) => fetchAndCacheMonth(m.year, m.month)),
-          ).then(() => {
+          void Promise.all(missing.map((m) => fetchAndCacheMonth(m.year, m.month))).then(() => {
             setEvents([...cacheRef.current.values()].flat());
           });
         }
@@ -142,17 +135,13 @@ export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalenda
   );
 
   const filteredEvents =
-    selectedRoom === "all"
-      ? events
-      : events.filter((e) => e.roomId === selectedRoom);
+    selectedRoom === "all" ? events : events.filter((e) => e.roomId === selectedRoom);
 
   const calendarEvents = filteredEvents.map((event) => {
     const isPending = event.status === "pending";
     const colors = isPending ? PENDING_COLORS : DAY_TYPE_COLORS[event.dayType];
     const dayTypeLabel = DAY_TYPE_LABELS[event.dayType];
-    const baseName = event.eventName
-      ? `${event.eventName} @ ${event.roomName}`
-      : event.roomName;
+    const baseName = event.eventName ? `${event.eventName} @ ${event.roomName}` : event.roomName;
     const title = isPending
       ? `${baseName} — Pending`
       : event.dayType === "standard"
@@ -210,13 +199,10 @@ export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalenda
             <span
               className="h-3 w-3 rounded-sm"
               style={{
-                backgroundColor:
-                  DAY_TYPE_COLORS.rehearsal_setup.backgroundColor,
+                backgroundColor: DAY_TYPE_COLORS.rehearsal_setup.backgroundColor,
               }}
             />
-            <span className="text-xs text-muted-foreground">
-              Rehearsal / Setup
-            </span>
+            <span className="text-xs text-muted-foreground">Rehearsal / Setup</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span

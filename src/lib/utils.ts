@@ -5,10 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const getErrorMessage = (
-  error: unknown,
-  defaultMessage = "Something went wrong",
-) => {
+export const getErrorMessage = (error: unknown, defaultMessage = "Something went wrong") => {
   console.error(error);
   let errorMessage = defaultMessage;
   if (error instanceof Error && error.message.length < 100) {

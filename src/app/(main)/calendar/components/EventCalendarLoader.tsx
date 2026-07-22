@@ -34,11 +34,5 @@ export function EventCalendarLoader({
   isLoggedIn: boolean;
   rooms: CalendarRoom[];
 }) {
-  return (
-    <EventCalendar
-      initialEvents={initialEvents}
-      isLoggedIn={isLoggedIn}
-      rooms={rooms}
-    />
-  );
+  return <EventCalendar initialEvents={initialEvents} isLoggedIn={isLoggedIn} rooms={rooms} />;
 }

@@ -4,7 +4,7 @@
 
 The booking app currently suffers from two critical performance problems that directly impact perceived speed and user experience:
 
-1. **Client-side data fetching after page render** — Three major screens (`admin-booking-table.tsx`, `BookingForm.tsx`, `EventCalendar.tsx`) use `"use client"` components with `useEffect` to fetch data *after* the page is already visible. This causes a visible "pop-in" effect where users see empty states ("No results", blank form fields, empty calendar) before data appears.
+1. **Client-side data fetching after page render** — Three major screens (`admin-booking-table.tsx`, `BookingForm.tsx`, `EventCalendar.tsx`) use `"use client"` components with `useEffect` to fetch data _after_ the page is already visible. This causes a visible "pop-in" effect where users see empty states ("No results", blank form fields, empty calendar) before data appears.
 
 2. **Repeated authentication waterfalls** — Every server action that needs user data (`getUserProfile()`, `getUserAndRole()`, `fetchCalendarBookings()`) independently creates a new Supabase client and makes a network round-trip to the Supabase Auth API, followed by a second sequential database query. This creates unnecessary latency on every request.
 
@@ -108,30 +108,32 @@ Server Component (page.tsx)
 
 ### Key Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/app/(admin)/admin/page.tsx` | Already fetches server-side — consolidate to use only `Table2` (or enhanced version) |
-| `src/app/(admin)/admin/components/admin-booking-table.tsx` | Remove after migrating features to `Table2` |
+| File                                                         | Change                                                                                                                                                      |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/(admin)/admin/page.tsx`                             | Already fetches server-side — consolidate to use only `Table2` (or enhanced version)                                                                        |
+| `src/app/(admin)/admin/components/admin-booking-table.tsx`   | Remove after migrating features to `Table2`                                                                                                                 |
 | `src/app/(admin)/admin/components/admin-booking-table-2.tsx` | Add column sorting, visibility toggle, email filter from old table. Add `/api/update-calendar-event` call to `updateBookingStatus` to sync Google Calendar. |
-| `src/app/(admin)/actions/booking-status-change.ts` | Add Google Calendar sync — call `/api/update-calendar-event` after status update (currently missing from `Table2`'s flow) |
-| `src/app/(main)/components/BookingForm.tsx` | Accept `initialProfile` prop, remove `useEffect` fetch |
-| Booking form parent page (server component) | Fetch `getUserProfile()` and pass to `BookingForm` |
-| `src/app/(main)/calendar/components/EventCalendar.tsx` | Accept `initialEvents` prop, use as initial state |
-| Calendar parent page (server component) | Fetch initial events server-side, pass to `EventCalendar` |
-| `src/lib/supabase/server.ts` | Wrap `createClient()` and add `getAuthUser()` with React `cache()` |
-| `src/app/(main)/actions/getUserProfile.ts` | Use cached `getAuthUser()` instead of direct `supabase.auth.getUser()` |
-| `src/app/(main)/calendar/actions/fetchCalendarBookings.ts` | Use cached `getAuthUser()`, parallelize where possible |
+| `src/app/(admin)/actions/booking-status-change.ts`           | Add Google Calendar sync — call `/api/update-calendar-event` after status update (currently missing from `Table2`'s flow)                                   |
+| `src/app/(main)/components/BookingForm.tsx`                  | Accept `initialProfile` prop, remove `useEffect` fetch                                                                                                      |
+| Booking form parent page (server component)                  | Fetch `getUserProfile()` and pass to `BookingForm`                                                                                                          |
+| `src/app/(main)/calendar/components/EventCalendar.tsx`       | Accept `initialEvents` prop, use as initial state                                                                                                           |
+| Calendar parent page (server component)                      | Fetch initial events server-side, pass to `EventCalendar`                                                                                                   |
+| `src/lib/supabase/server.ts`                                 | Wrap `createClient()` and add `getAuthUser()` with React `cache()`                                                                                          |
+| `src/app/(main)/actions/getUserProfile.ts`                   | Use cached `getAuthUser()` instead of direct `supabase.auth.getUser()`                                                                                      |
+| `src/app/(main)/calendar/actions/fetchCalendarBookings.ts`   | Use cached `getAuthUser()`, parallelize where possible                                                                                                      |
 
 ### React `cache()` Pattern for Auth
 
 ```typescript
-import { cache } from 'react'
+import { cache } from "react";
 
 export const getAuthUser = cache(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
-})
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+});
 ```
 
 This ensures that within a single server request, no matter how many components or server actions call `getAuthUser()`, the Supabase Auth API is hit exactly once.
@@ -145,14 +147,14 @@ This ensures that within a single server request, no matter how many components 
 
 ## 8. Success Metrics
 
-| Metric | Target |
-|--------|--------|
-| LCP (admin dashboard) | Reduce by ≥ 40% |
-| LCP (calendar page) | Reduce by ≥ 40% |
-| TTFB (pages with auth) | Reduce by ≥ 30% (fewer auth round-trips) |
-| "Pop-in" flash | Eliminated on admin table, booking form, and calendar |
-| Supabase Auth API calls per page load | Exactly 1 (down from 2-3+) |
-| Vercel Speed Insights — real user LCP | Measurable improvement within 1 week of deployment |
+| Metric                                | Target                                                |
+| ------------------------------------- | ----------------------------------------------------- |
+| LCP (admin dashboard)                 | Reduce by ≥ 40%                                       |
+| LCP (calendar page)                   | Reduce by ≥ 40%                                       |
+| TTFB (pages with auth)                | Reduce by ≥ 30% (fewer auth round-trips)              |
+| "Pop-in" flash                        | Eliminated on admin table, booking form, and calendar |
+| Supabase Auth API calls per page load | Exactly 1 (down from 2-3+)                            |
+| Vercel Speed Insights — real user LCP | Measurable improvement within 1 week of deployment    |
 
 ---
 

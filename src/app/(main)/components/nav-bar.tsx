@@ -5,7 +5,7 @@ import { AuthButton, SignOutButton } from "./nav-components/NavButtons";
 import NavLinks from "./nav-components/NavLinks";
 
 export default async function NavBar() {
-  const { role, user} = await getUserAndRole()
+  const { role, user } = await getUserAndRole();
 
   const navigation = [
     { href: "/", name: "Book a Room" },
@@ -23,26 +23,26 @@ export default async function NavBar() {
             <Link className="text-xl font-bold" href="/">
               COLLECTIVE
             </Link>
-              <div className="hidden md:flex items-center gap-4">
-                <NavLinks navItems={user ? navigation : [navigation[0], navigation[1]]} />
-              </div>
+            <div className="hidden md:flex items-center gap-4">
+              <NavLinks navItems={user ? navigation : [navigation[0], navigation[1]]} />
+            </div>
           </div>
           <div className="flex gap-4">
-              <div className="flex items-center gap-4">
-                  { user ?
-                    <>
-                      <span className="hidden md:inline text-muted-foreground">{user.email}</span>
-                      <SignOutButton/>
-                    </>
-                  :
-                    <AuthButton/> 
-                  }
-              </div>
+            <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  <span className="hidden md:inline text-muted-foreground">{user.email}</span>
+                  <SignOutButton />
+                </>
+              ) : (
+                <AuthButton />
+              )}
+            </div>
           </div>
         </div>
-            <div className="md:hidden flex items-center gap-2">
-              <NavLinks navItems={user ? navigation : [navigation[0], navigation[1]]} />
-            </div>        
+        <div className="md:hidden flex items-center gap-2">
+          <NavLinks navItems={user ? navigation : [navigation[0], navigation[1]]} />
+        </div>
       </div>
     </nav>
   );
