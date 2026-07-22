@@ -6,13 +6,13 @@ import { redirect } from "next/navigation";
 
 export async function signup(formData: FormData) {
   const email = formData.get("email") as string;
-  
+
   const supabase = await createClient();
   const { error: fetchError } = await supabase
     .from("auth_users")
     .select("id")
     .eq("email", email)
-    .single()
+    .single();
 
   if (fetchError === null) {
     return { error: "user_exists" };

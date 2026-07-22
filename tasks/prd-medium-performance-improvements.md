@@ -125,7 +125,7 @@ These changes build on top of the critical fixes (PRD: Critical Performance Fixe
     ```typescript
     const client = postgres(databaseUrl, {
       prepare: false, // Required for Transaction mode pooling
-    })
+    });
     ```
     The `prepare: false` option is required because Supabase's Transaction mode pooler (PgBouncer) does not support prepared statements.
 27. No code changes are needed beyond `src/db/index.ts` and the environment variable — the Drizzle ORM layer and all existing queries remain the same.
@@ -149,15 +149,18 @@ These changes build on top of the critical fixes (PRD: Critical Performance Fixe
 ### Skeleton Examples
 
 **Admin Table Skeleton:**
+
 - Render the table header row with real column names.
 - Render 8 rows with animated gray bars (shimmer effect) in each cell.
 - Use existing `Skeleton` component from shadcn/ui if available, or simple `animate-pulse` divs.
 
 **Calendar Skeleton:**
+
 - Render the calendar toolbar (prev/next/today buttons, month title) as static elements.
 - Render a grid placeholder with muted background cells matching the month grid layout.
 
 **Booking Form Skeleton:**
+
 - Render labeled input outlines with shimmer bars inside each field.
 
 ---
@@ -167,27 +170,27 @@ These changes build on top of the critical fixes (PRD: Critical Performance Fixe
 ### `unstable_cache` Pattern
 
 ```typescript
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from "next/cache";
 
 const getCachedRooms = unstable_cache(
   async () => {
     // ... fetch rooms from DB
   },
-  ['rooms'],
-  { tags: ['rooms'], revalidate: 3600 } // 1 hour TTL
-)
+  ["rooms"],
+  { tags: ["rooms"], revalidate: 3600 }, // 1 hour TTL
+);
 ```
 
 ### Revalidation in Server Actions
 
 ```typescript
-'use server'
-import { revalidateTag } from 'next/cache'
+"use server";
+import { revalidateTag } from "next/cache";
 
 export async function submitBooking(data: BookingInput) {
   // ... insert booking ...
-  revalidateTag('calendar-events')
-  revalidateTag('admin-bookings')
+  revalidateTag("calendar-events");
+  revalidateTag("admin-bookings");
 }
 ```
 
@@ -195,33 +198,33 @@ export async function submitBooking(data: BookingInput) {
 
 ```typescript
 // page.tsx
-const sortColumn = searchParams.sort ?? 'start_time'
-const sortOrder = searchParams.order === 'asc' ? asc : desc
+const sortColumn = searchParams.sort ?? "start_time";
+const sortOrder = searchParams.order === "asc" ? asc : desc;
 
 const bookingData = await db
   .select()
   .from(bookings)
   .orderBy(sortOrder(bookings[sortColumn]))
   .limit(pageSize)
-  .offset(pageSize * (page - 1))
+  .offset(pageSize * (page - 1));
 ```
 
 ### Key Files to Modify / Create
 
-| File | Change |
-|------|--------|
-| `src/app/(admin)/admin/page.tsx` | `Promise.all` for queries, accept sort params |
-| `src/app/(admin)/admin/loading.tsx` | **New** — table skeleton |
-| `src/app/(main)/calendar/loading.tsx` | **New** — calendar skeleton |
-| `src/app/(main)/calendar/actions/fetchCalendarBookings.ts` | `Promise.all` for standard + multi-day queries, wrap with `unstable_cache` |
-| `src/app/(main)/calendar/page.tsx` (or parent server component) | Wrap rooms fetch with `unstable_cache` |
-| `src/app/(main)/actions/submitBooking.ts` | Add `revalidateTag()` calls |
-| `src/app/(admin)/actions/booking-status-change.ts` | Add `revalidateTag()` calls |
-| `src/app/(admin)/admin/components/admin-booking-table.tsx` | **Delete** |
-| `src/app/(admin)/admin/components/admin-booking-table-2.tsx` | Add URL-based sorting via search params |
-| `src/db/index.ts` | Add `{ prepare: false }` to `postgres()` client config |
-| `drizzle.config.ts` | Use `DIRECT_DATABASE_URL` for migrations |
-| `.env.local` / Vercel env vars | Switch `DATABASE_URL` to pooler URL, add `DIRECT_DATABASE_URL` for direct connection |
+| File                                                            | Change                                                                               |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `src/app/(admin)/admin/page.tsx`                                | `Promise.all` for queries, accept sort params                                        |
+| `src/app/(admin)/admin/loading.tsx`                             | **New** — table skeleton                                                             |
+| `src/app/(main)/calendar/loading.tsx`                           | **New** — calendar skeleton                                                          |
+| `src/app/(main)/calendar/actions/fetchCalendarBookings.ts`      | `Promise.all` for standard + multi-day queries, wrap with `unstable_cache`           |
+| `src/app/(main)/calendar/page.tsx` (or parent server component) | Wrap rooms fetch with `unstable_cache`                                               |
+| `src/app/(main)/actions/submitBooking.ts`                       | Add `revalidateTag()` calls                                                          |
+| `src/app/(admin)/actions/booking-status-change.ts`              | Add `revalidateTag()` calls                                                          |
+| `src/app/(admin)/admin/components/admin-booking-table.tsx`      | **Delete**                                                                           |
+| `src/app/(admin)/admin/components/admin-booking-table-2.tsx`    | Add URL-based sorting via search params                                              |
+| `src/db/index.ts`                                               | Add `{ prepare: false }` to `postgres()` client config                               |
+| `drizzle.config.ts`                                             | Use `DIRECT_DATABASE_URL` for migrations                                             |
+| `.env.local` / Vercel env vars                                  | Switch `DATABASE_URL` to pooler URL, add `DIRECT_DATABASE_URL` for direct connection |
 
 ### Dependencies
 
@@ -237,15 +240,15 @@ const bookingData = await db
 
 ## 8. Success Metrics
 
-| Metric | Target |
-|--------|--------|
-| TTFB (admin dashboard) | Reduce by ≥ 20% via parallel queries |
-| Repeat-visit load time (calendar, admin) | Reduce by ≥ 50% via server cache hits |
-| Time-to-interactive (all pages) | Users see skeleton within 100ms of navigation |
-| Admin table with 1,000+ bookings | Page load < 2s (server-paginated, max 20 rows transferred) |
-| LCP (all major pages) | Under 2 seconds on Vercel Speed Insights |
-| Zero "blank screen" moments | Every route shows a skeleton or content immediately |
-| DB connection errors under load | Zero connection exhaustion errors on Vercel |
+| Metric                                   | Target                                                     |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| TTFB (admin dashboard)                   | Reduce by ≥ 20% via parallel queries                       |
+| Repeat-visit load time (calendar, admin) | Reduce by ≥ 50% via server cache hits                      |
+| Time-to-interactive (all pages)          | Users see skeleton within 100ms of navigation              |
+| Admin table with 1,000+ bookings         | Page load < 2s (server-paginated, max 20 rows transferred) |
+| LCP (all major pages)                    | Under 2 seconds on Vercel Speed Insights                   |
+| Zero "blank screen" moments              | Every route shows a skeleton or content immediately        |
+| DB connection errors under load          | Zero connection exhaustion errors on Vercel                |
 
 ---
 

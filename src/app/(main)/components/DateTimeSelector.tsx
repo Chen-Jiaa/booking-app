@@ -14,11 +14,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Rooms } from "@/db/schema";
 import { generateTimeSlots } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
@@ -28,6 +24,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { getUnavailableSlots } from "../actions/getUnavailableSlots";
+
+const timeSlots = generateTimeSlots();
 
 interface DateTimeSelectorProps {
   date: Date | undefined;
@@ -63,8 +61,6 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
   const { role } = useSupabase();
   const isAdmin = role === "admin";
 
-  const timeSlots = generateTimeSlots();
-
   const selectedRoomId = selectedRoom?.id;
   const dateString = date?.toDateString();
 
@@ -94,13 +90,8 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
 
       try {
         const userTimezone =
-          Intl.DateTimeFormat().resolvedOptions().timeZone ||
-          "Asia/Kuala_Lumpur";
-        const booked = await getUnavailableSlots(
-          selectedRoom.id,
-          date,
-          userTimezone,
-        );
+          Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kuala_Lumpur";
+        const booked = await getUnavailableSlots(selectedRoom.id, date, userTimezone);
 
         if (!isCancelled) {
           setBookedSlots(booked);
@@ -124,19 +115,11 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
     return () => {
       isCancelled = true;
     };
-  }, [
-    selectedRoom,
-    date,
-    selectedRoomId,
-    dateString,
-    setStartTime,
-    setEndTime,
-  ]);
+  }, [selectedRoomId, dateString, setStartTime, setEndTime]);
 
   const getNextTimeSlot = (currentTime: string): null | string => {
     const currentIndex = timeSlots.indexOf(currentTime);
-    if (currentIndex === -1 || currentIndex >= timeSlots.length - 1)
-      return null;
+    if (currentIndex === -1 || currentIndex >= timeSlots.length - 1) return null;
     return timeSlots[currentIndex + 1];
   };
 
@@ -277,8 +260,7 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
           disabled={
             isAdmin
               ? (date) => date < startOfToday()
-              : (date) =>
-                  date < startOfToday() || date > addWeeks(new Date(), 1)
+              : (date) => date < startOfToday() || date > addWeeks(new Date(), 1)
           }
           mode="single"
           onSelect={handleDateSelect}
@@ -325,11 +307,7 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
             })}
           </div>
         )}
-        <Button
-          className="mt-6"
-          disabled={!date || !startTime || !endTime}
-          onClick={goToStep2}
-        >
+        <Button className="mt-6" disabled={!date || !startTime || !endTime} onClick={goToStep2}>
           Continue
         </Button>
       </CardContent>

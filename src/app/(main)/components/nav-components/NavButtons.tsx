@@ -8,10 +8,7 @@ import { useRouter } from "next/navigation";
 export function AuthButton() {
   return (
     <>
-      <Link
-        className="text-sm transition-colors hover:text-primary"
-        href="/login"
-      >
+      <Link className="text-sm transition-colors hover:text-primary" href="/login">
         Log In
       </Link>
       <Button asChild>

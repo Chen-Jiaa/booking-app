@@ -1,32 +1,45 @@
-'use client'
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { format } from "date-fns"
-import { CalendarIcon, Loader2 } from "lucide-react"
-import { type ReactNode, useState } from "react"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-import { createAdminBooking } from "../actions/create-booking"
+import { createAdminBooking } from "../actions/create-booking";
 
 interface CreateBookingPopoverProps {
-  children: ReactNode
-  prefilledDate?: Date
-  prefilledHour?: number
-  roomId: string
-  roomName: string
+  children: ReactNode;
+  prefilledDate?: Date;
+  prefilledHour?: number;
+  roomId: string;
+  roomName: string;
 }
 
 const timeSlots = Array.from({ length: 16 }, (_, i) => {
-  const hour = i + 8
-  return `${hour.toString().padStart(2, "0")}:00`
-})
+  const hour = i + 8;
+  return `${hour.toString().padStart(2, "0")}:00`;
+});
 
 const purposeOptions = [
   { label: "Connect Group", value: "Connect Group" },
@@ -34,7 +47,7 @@ const purposeOptions = [
   { label: "Bible Study", value: "Bible Study" },
   { label: "Prayer Meeting", value: "Prayer Meeting" },
   { label: "Zone Meeting", value: "Zone Meeting" },
-]
+];
 
 const formSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -46,7 +59,7 @@ const formSchema = z.object({
   startDate: z.date(),
   startTime: z.string(),
   status: z.enum(["pending", "confirmed"]),
-})
+});
 
 export function CreateBookingPopover({
   children,
@@ -55,15 +68,13 @@ export function CreateBookingPopover({
   roomId,
   roomName,
 }: CreateBookingPopoverProps) {
-  const [open, setOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const defaultStartTime = prefilledHour === undefined
-    ? "08:00"
-    : `${prefilledHour.toString().padStart(2, "0")}:00`
-  const defaultEndTime = prefilledHour === undefined
-    ? "09:00"
-    : `${(prefilledHour + 1).toString().padStart(2, "0")}:00`
+  const defaultStartTime =
+    prefilledHour === undefined ? "08:00" : `${prefilledHour.toString().padStart(2, "0")}:00`;
+  const defaultEndTime =
+    prefilledHour === undefined ? "09:00" : `${(prefilledHour + 1).toString().padStart(2, "0")}:00`;
 
   const form = useForm<z.infer<typeof formSchema>>({
     defaultValues: {
@@ -78,18 +89,18 @@ export function CreateBookingPopover({
       status: "confirmed",
     },
     resolver: zodResolver(formSchema),
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const startDateTime = new Date(values.startDate)
-      const [startHour, startMin] = values.startTime.split(":").map(Number)
-      startDateTime.setHours(startHour, startMin, 0, 0)
+      const startDateTime = new Date(values.startDate);
+      const [startHour, startMin] = values.startTime.split(":").map(Number);
+      startDateTime.setHours(startHour, startMin, 0, 0);
 
-      const endDateTime = new Date(values.endDate)
-      const [endHour, endMin] = values.endTime.split(":").map(Number)
-      endDateTime.setHours(endHour, endMin, 0, 0)
+      const endDateTime = new Date(values.endDate);
+      const [endHour, endMin] = values.endTime.split(":").map(Number);
+      endDateTime.setHours(endHour, endMin, 0, 0);
 
       await createAdminBooking({
         email: values.email,
@@ -100,22 +111,20 @@ export function CreateBookingPopover({
         roomId,
         startTime: startDateTime.toISOString(),
         status: values.status,
-      })
+      });
 
-      form.reset()
-      setOpen(false)
+      form.reset();
+      setOpen(false);
     } catch (error) {
-      console.error("Failed to create booking:", error)
+      console.error("Failed to create booking:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        {children}
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-96 max-h-[80vh] overflow-y-auto">
         <div className="space-y-4">
           <div>
@@ -135,10 +144,7 @@ export function CreateBookingPopover({
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
-                            <Button
-                              className="w-full pl-3 text-left font-normal"
-                              variant="outline"
-                            >
+                            <Button className="w-full pl-3 text-left font-normal" variant="outline">
                               {format(field.value, "MMM d")}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
@@ -170,7 +176,9 @@ export function CreateBookingPopover({
                         </FormControl>
                         <SelectContent>
                           {timeSlots.map((slot) => (
-                            <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                            <SelectItem key={slot} value={slot}>
+                              {slot}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -190,10 +198,7 @@ export function CreateBookingPopover({
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
-                            <Button
-                              className="w-full pl-3 text-left font-normal"
-                              variant="outline"
-                            >
+                            <Button className="w-full pl-3 text-left font-normal" variant="outline">
                               {format(field.value, "MMM d")}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
@@ -225,7 +230,9 @@ export function CreateBookingPopover({
                         </FormControl>
                         <SelectContent>
                           {timeSlots.map((slot) => (
-                            <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                            <SelectItem key={slot} value={slot}>
+                              {slot}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -339,5 +346,5 @@ export function CreateBookingPopover({
         </div>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

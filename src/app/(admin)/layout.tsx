@@ -27,13 +27,11 @@ export default function AdminLayout({
             <p>{}</p>
           </div>
         </header>
-        <main className="px-4">
-            {children}
-        </main>
+        <main className="px-4">{children}</main>
         <footer className="mt-auto mb-0">
-            <Footer />
+          <Footer />
         </footer>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

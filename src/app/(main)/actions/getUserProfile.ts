@@ -1,4 +1,4 @@
-'use server'
+"use server";
 
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
@@ -6,10 +6,10 @@ import { getAuthUser } from "@/lib/supabase/server";
 import { eq } from "drizzle-orm";
 
 export async function getUserProfile() {
-  const user = await getAuthUser()
+  const user = await getAuthUser();
 
   if (!user) {
-    return null
+    return null;
   }
 
   const result = await db
@@ -20,7 +20,7 @@ export async function getUserProfile() {
     })
     .from(profiles)
     .where(eq(profiles.id, user.id))
-    .limit(1)
+    .limit(1);
 
-  return result[0] ?? null
+  return result[0] ?? null;
 }

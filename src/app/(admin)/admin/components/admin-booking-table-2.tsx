@@ -34,7 +34,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown } from "lucide-react";
-import { type ReactElement, useOptimistic, useState } from "react";
+import { type ReactElement, useState } from "react";
 
 import { updateBookingStatus } from "../../actions/booking-status-change";
 
@@ -73,9 +73,7 @@ const columns: ColumnDef<Bookings>[] = [
   },
   {
     accessorKey: "email",
-    cell: ({ row }) => (
-      <div className="lowercase ml-4">{row.getValue("email")}</div>
-    ),
+    cell: ({ row }) => <div className="lowercase ml-4">{row.getValue("email")}</div>,
     header: ({ column }) => (
       <Button
         onClick={() => {
@@ -157,14 +155,17 @@ const columns: ColumnDef<Bookings>[] = [
     accessorKey: "status",
     cell: ({ row, table }) => {
       const booking = row.original;
-      const onStatusChange = (table.options.meta as { onStatusChange: StatusUpdater }).onStatusChange;
+      const onStatusChange = (table.options.meta as { onStatusChange: StatusUpdater })
+        .onStatusChange;
 
       if (booking.status === "cancelled") {
         return (
-          <span className={cn(
-            "flex ml-auto px-2 py-1 rounded-sm text-sm capitalize w-fit",
-            "bg-muted text-muted-foreground",
-          )}>
+          <span
+            className={cn(
+              "flex ml-auto px-2 py-1 rounded-sm text-sm capitalize w-fit",
+              "bg-muted text-muted-foreground",
+            )}
+          >
             {booking.status}
           </span>
         );
@@ -176,12 +177,9 @@ const columns: ColumnDef<Bookings>[] = [
             <Button
               className={cn(
                 "flex ml-auto px-2 py-1 rounded-sm text-sm capitalize",
-                booking.status === "pending" &&
-                  "bg-warning-bg text-warning hover:bg-warning/25",
-                booking.status === "confirmed" &&
-                  "bg-success-bg text-success hover:bg-success/25",
-                booking.status === "rejected" &&
-                  "bg-error-bg text-error hover:bg-error/25",
+                booking.status === "pending" && "bg-warning-bg text-warning hover:bg-warning/25",
+                booking.status === "confirmed" && "bg-success-bg text-success hover:bg-success/25",
+                booking.status === "rejected" && "bg-error-bg text-error hover:bg-error/25",
               )}
               variant="ghost"
             >
@@ -230,29 +228,21 @@ interface TableProps {
   pageCount: number;
 }
 
-export function Table2({
-  bookingData,
-  page,
-  pageCount,
-}: TableProps): ReactElement {
+export function Table2({ bookingData, page, pageCount }: TableProps): ReactElement {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  const [optimisticData, setOptimisticStatus] = useOptimistic(
-    bookingData,
-    (current, { id, status }: { id: number; status: string }) =>
-      current.map((b) => (b.id === id ? { ...b, status } : b)),
-  );
+  const [localData, setLocalData] = useState<Bookings[]>(bookingData);
 
   const handleStatusChange: StatusUpdater = (id, newStatus) => {
-    setOptimisticStatus({ id, status: newStatus });
+    setLocalData((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)));
     void updateBookingStatus(id, newStatus);
   };
 
   const table = useReactTable({
     columns,
-    data: optimisticData,
+    data: localData,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -274,9 +264,7 @@ export function Table2({
       <div className="flex items-center py-4 overflow-x-scroll">
         <Input
           className="max-w-sm"
-          onChange={(event) =>
-            table.getColumn("email")?.setFilterValue(event.target.value)
-          }
+          onChange={(event) => table.getColumn("email")?.setFilterValue(event.target.value)}
           placeholder="Filter emails..."
           value={(table.getColumn("email")?.getFilterValue() as string | undefined) ?? ""}
         />
@@ -314,10 +302,7 @@ export function Table2({
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -329,20 +314,14 @@ export function Table2({
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  className="h-24 text-center"
-                  colSpan={columns.length}
-                >
+                <TableCell className="h-24 text-center" colSpan={columns.length}>
                   No results.
                 </TableCell>
               </TableRow>

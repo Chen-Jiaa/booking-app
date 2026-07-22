@@ -31,11 +31,7 @@ interface Room {
 const TIMEZONE = "Asia/Kuala_Lumpur";
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 8); // 8am to 11pm
 
-export function CalendarGrid({
-  bookings,
-  rooms,
-  weekStart,
-}: CalendarGridProps) {
+export function CalendarGrid({ bookings, rooms, weekStart }: CalendarGridProps) {
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   return (
@@ -43,9 +39,7 @@ export function CalendarGrid({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-20 sticky left-0 bg-background z-10">
-              Time
-            </TableHead>
+            <TableHead className="w-20 sticky left-0 bg-background z-10">Time</TableHead>
             {rooms.map((room) => (
               <TableHead className="min-w-32 text-center" key={room.id}>
                 {room.name}
@@ -70,25 +64,20 @@ export function CalendarGrid({
                     {format(setHours(new Date(), hour), "h a")}
                   </TableCell>
                   {rooms.map((room) => {
-                    const booking = getBookingForCell(
-                      bookings,
-                      room.id,
-                      day,
-                      hour,
-                    );
+                    const booking = getBookingForCell(bookings, room.id, day, hour);
                     const isToday = isSameDay(day, new Date());
 
                     if (booking) {
                       return (
                         <TableCell className="p-1" key={room.id}>
-                         <BookingPopover booking={booking}>
-                           <button
-                             className={cn(
-                               "w-full h-10 rounded border text-xs px-1 truncate cursor-pointer transition-colors",
-                               getStatusColor(booking.status),
-                             )}
-                             type="button"
-                           >
+                          <BookingPopover booking={booking}>
+                            <button
+                              className={cn(
+                                "w-full h-10 rounded border text-xs px-1 truncate cursor-pointer transition-colors",
+                                getStatusColor(booking.status),
+                              )}
+                              type="button"
+                            >
                               {booking.name}
                             </button>
                           </BookingPopover>

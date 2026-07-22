@@ -36,144 +36,173 @@ import { useCallback, useMemo, useState } from "react";
 import { updateUserRole } from "../actions";
 
 interface User {
-    email: null | string,
-    id: string,
-    role: null | string,
+  email: null | string;
+  id: string;
+  role: null | string;
 }
 
 export default function UserTable({ users: initialUsers }: { users: User[] }) {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = useState({})
-  const [users, setUsers] = useState<User[]>(initialUsers)
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [users, setUsers] = useState<User[]>(initialUsers);
 
-  const handleRoleChange = useCallback( async (id: string, newRole: 'admin' | 'event_manager' | 'superUser' | 'user') => {
-    const result = await updateUserRole(id, newRole)
+  const handleRoleChange = useCallback(
+    async (id: string, newRole: "admin" | "event_manager" | "superUser" | "user") => {
+      const result = await updateUserRole(id, newRole);
 
-    if (!result.success) {
-      console.log("error changing user role", result.error)
-      return
-    }  
-      
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === id ? { ...user, role: newRole } : user
-      ))
+      if (!result.success) {
+        console.error("error changing user role", result.error);
+        return;
+      }
 
-  }, [])
-
-  const columns = useMemo<ColumnDef<User>[]>(()=> [
-    // {
-    //   cell: ({ row }) => (
-    //     <Checkbox
-    //       aria-label="Select row"
-    //       checked={row.getIsSelected()}
-    //       onCheckedChange={(value) => { row.toggleSelected(!!value); }}
-    //     />
-    //   ),
-    //   enableHiding: false,
-    //   enableSorting: false,
-    //   header: ({ table }) => (
-    //     <Checkbox
-    //       aria-label="Select all"
-    //       checked={
-    //         table.getIsAllPageRowsSelected() ||
-    //         (table.getIsSomePageRowsSelected() && "indeterminate")
-    //       }
-    //       onCheckedChange={(value) => { table.toggleAllPageRowsSelected(!!value); }}
-    //     />
-    //   ),
-    //   id: "select",
-    // },
-    // {
-    //   accessorKey: "name",
-    //   cell: ({ row }) => <div className="ml-4">{row.getValue("name")}</div>,
-    //   header: ({ column }) => {
-    //     return (
-    //       <Button
-    //         onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-    //         variant="ghost"
-    //       >
-    //         Name
-    //         <ArrowUpDown />
-    //       </Button>
-    //     );
-    //   },
-    // },
-    // {
-    //   accessorKey: "phone",
-    //   cell: ({ row }) => <div className="ml-4">0{row.getValue("phone")}</div>,
-    //   header: ({ column }) => {
-    //     return (
-    //       <Button
-    //         onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-    //         variant="ghost"
-    //       >
-    //         Phone Number
-    //         <ArrowUpDown />
-    //       </Button>
-    //     );
-    //   },
-    // },
-    {
-      accessorKey: "email",
-      cell: ({ row }) => (
-        <div className="lowercase ml-4">{row.getValue("email")}</div>
-      ),
-      header: ({ column }) => {
-        return (
-          <Button
-            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-            variant="ghost"
-          >
-            Email
-            <ArrowUpDown />
-          </Button>
-        );
-      },
-    },    
-    {
-      accessorKey: "role",
-      cell: ({ row }) => {
-        const user = row.original
-
-        return (
-          <div className="capitalize">
-            <DropdownMenu>
-              <DropdownMenuTrigger 
-                asChild
-                className="px-1 py-1 rounded text-sm"
-                >
-                <Button className="flex capitalize" variant="ghost">
-                  {user.role} <ChevronDown />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Make User</DropdownMenuLabel>
-                <DropdownMenuItem disabled={user.role === 'admin'} onClick={() => {void handleRoleChange(user.id, 'admin')}}>Admin</DropdownMenuItem>
-                <DropdownMenuItem disabled={user.role === 'superUser'} onClick={() => {void handleRoleChange(user.id, 'superUser')}}>Super User</DropdownMenuItem>
-                <DropdownMenuItem disabled={user.role === 'event_manager'} onClick={() => {void handleRoleChange(user.id, 'event_manager')}}>Event Manager</DropdownMenuItem>
-                <DropdownMenuItem disabled={user.role === 'user'} onClick={() => {void handleRoleChange(user.id, 'user')}}>User</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )
-      },
-      enableSorting: true,
-      header: ({ column }) => {
-        return (
-          <Button
-            onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
-            variant="ghost"
-          >
-            Status
-            <ArrowUpDown />
-          </Button>
-        );
-      },
+      setUsers((prev) => prev.map((user) => (user.id === id ? { ...user, role: newRole } : user)));
     },
-  ], [handleRoleChange])
+    [],
+  );
+
+  const columns = useMemo<ColumnDef<User>[]>(
+    () => [
+      // {
+      //   cell: ({ row }) => (
+      //     <Checkbox
+      //       aria-label="Select row"
+      //       checked={row.getIsSelected()}
+      //       onCheckedChange={(value) => { row.toggleSelected(!!value); }}
+      //     />
+      //   ),
+      //   enableHiding: false,
+      //   enableSorting: false,
+      //   header: ({ table }) => (
+      //     <Checkbox
+      //       aria-label="Select all"
+      //       checked={
+      //         table.getIsAllPageRowsSelected() ||
+      //         (table.getIsSomePageRowsSelected() && "indeterminate")
+      //       }
+      //       onCheckedChange={(value) => { table.toggleAllPageRowsSelected(!!value); }}
+      //     />
+      //   ),
+      //   id: "select",
+      // },
+      // {
+      //   accessorKey: "name",
+      //   cell: ({ row }) => <div className="ml-4">{row.getValue("name")}</div>,
+      //   header: ({ column }) => {
+      //     return (
+      //       <Button
+      //         onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
+      //         variant="ghost"
+      //       >
+      //         Name
+      //         <ArrowUpDown />
+      //       </Button>
+      //     );
+      //   },
+      // },
+      // {
+      //   accessorKey: "phone",
+      //   cell: ({ row }) => <div className="ml-4">0{row.getValue("phone")}</div>,
+      //   header: ({ column }) => {
+      //     return (
+      //       <Button
+      //         onClick={() => { column.toggleSorting(column.getIsSorted() === "asc"); }}
+      //         variant="ghost"
+      //       >
+      //         Phone Number
+      //         <ArrowUpDown />
+      //       </Button>
+      //     );
+      //   },
+      // },
+      {
+        accessorKey: "email",
+        cell: ({ row }) => <div className="lowercase ml-4">{row.getValue("email")}</div>,
+        header: ({ column }) => {
+          return (
+            <Button
+              onClick={() => {
+                column.toggleSorting(column.getIsSorted() === "asc");
+              }}
+              variant="ghost"
+            >
+              Email
+              <ArrowUpDown />
+            </Button>
+          );
+        },
+      },
+      {
+        accessorKey: "role",
+        cell: ({ row }) => {
+          const user = row.original;
+
+          return (
+            <div className="capitalize">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild className="px-1 py-1 rounded text-sm">
+                  <Button className="flex capitalize" variant="ghost">
+                    {user.role} <ChevronDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Make User</DropdownMenuLabel>
+                  <DropdownMenuItem
+                    disabled={user.role === "admin"}
+                    onClick={() => {
+                      void handleRoleChange(user.id, "admin");
+                    }}
+                  >
+                    Admin
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={user.role === "superUser"}
+                    onClick={() => {
+                      void handleRoleChange(user.id, "superUser");
+                    }}
+                  >
+                    Super User
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={user.role === "event_manager"}
+                    onClick={() => {
+                      void handleRoleChange(user.id, "event_manager");
+                    }}
+                  >
+                    Event Manager
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={user.role === "user"}
+                    onClick={() => {
+                      void handleRoleChange(user.id, "user");
+                    }}
+                  >
+                    User
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+        enableSorting: true,
+        header: ({ column }) => {
+          return (
+            <Button
+              onClick={() => {
+                column.toggleSorting(column.getIsSorted() === "asc");
+              }}
+              variant="ghost"
+            >
+              Status
+              <ArrowUpDown />
+            </Button>
+          );
+        },
+      },
+    ],
+    [handleRoleChange],
+  );
 
   const table = useReactTable({
     columns,
@@ -192,7 +221,7 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
       rowSelection,
       sorting,
     },
-  })
+  });
 
   return (
     <div className="px-6 w-full">
@@ -201,9 +230,7 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
       <div className="flex items-center py-4 overflow-x-scroll">
         <Input
           className="max-w-sm"
-          onChange={(event) =>
-            table.getColumn("email")?.setFilterValue(event.target.value)
-          }
+          onChange={(event) => table.getColumn("email")?.setFilterValue(event.target.value)}
           placeholder="Filter emails..."
           value={(table.getColumn("email")?.getFilterValue() as string) || ""}
         />
@@ -244,10 +271,7 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -257,26 +281,17 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  data-state={row.getIsSelected() && "selected"}
-                  key={row.id}
-                >
+                <TableRow data-state={row.getIsSelected() && "selected"} key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  className="h-24 text-center"
-                  colSpan={columns.length}
-                >
+                <TableCell className="h-24 text-center" colSpan={columns.length}>
                   No results.
                 </TableCell>
               </TableRow>
@@ -292,7 +307,9 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
         <div className="space-x-2">
           <Button
             disabled={!table.getCanPreviousPage()}
-            onClick={() => { table.previousPage(); }}
+            onClick={() => {
+              table.previousPage();
+            }}
             size="sm"
             variant="outline"
           >
@@ -300,7 +317,9 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
           </Button>
           <Button
             disabled={!table.getCanNextPage()}
-            onClick={() => { table.nextPage(); }}
+            onClick={() => {
+              table.nextPage();
+            }}
             size="sm"
             variant="outline"
           >
