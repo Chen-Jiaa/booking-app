@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { getUserAndRole } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 import Footer from "../(main)/components/footer";
 import { AppSidebar } from "./admin/components/app-sidebar";
@@ -11,11 +13,14 @@ export const metadata: Metadata = {
   title: "Admin | Collective Booking App",
 };
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { role } = await getUserAndRole();
+  if (role !== "admin") redirect("/");
+
   return (
     <SidebarProvider>
       <AppSidebar />

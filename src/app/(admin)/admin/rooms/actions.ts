@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { rooms } from "@/db/schema";
 import { getUserAndRole } from "@/lib/supabase/server";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 
 const AddRoomSchema = z
@@ -46,6 +46,7 @@ export async function addRoom(data: z.infer<typeof AddRoomSchema>) {
       name: parsed.data.name,
     });
     revalidatePath("/admin/rooms");
+    revalidateTag("rooms");
     return { success: true };
   } catch (error) {
     console.error("Failed to add room:", error);
@@ -57,6 +58,7 @@ export async function updateRoomApprovers(roomId: string, newApprovers: string[]
   try {
     await db.update(rooms).set({ approvers: newApprovers }).where(eq(rooms.id, roomId));
     revalidatePath("/admin/rooms");
+    revalidateTag("rooms");
     return { success: true };
   } catch (error) {
     console.error("Failed to update approvers:", error);
@@ -71,6 +73,7 @@ export async function updateRoomAvailabilityTo(
   try {
     await db.update(rooms).set({ availableTo: value }).where(eq(rooms.id, roomId));
     revalidatePath("/admin/rooms");
+    revalidateTag("rooms");
     return { success: true };
   } catch (error) {
     console.error("Failed to update availableTo:", error);
@@ -88,7 +91,8 @@ export async function updateRoomBoolean(
       .update(rooms)
       .set({ [field]: value })
       .where(eq(rooms.id, roomId));
-    revalidatePath("/admin/rooms"); // Revalidate the page to show fresh data
+    revalidatePath("/admin/rooms");
+    revalidateTag("rooms"); // Revalidate the page to show fresh data
     return { success: true };
   } catch (error) {
     console.error(`Failed to update ${field}:`, error);

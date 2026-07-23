@@ -1,8 +1,10 @@
 import { CALENDAR_ACCESS } from "@/lib/config";
+import { filterRoomsByRole } from "@/lib/roles";
 import { getUserAndRole } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-import { fetchCalendarBookings, fetchCalendarRooms } from "./actions/fetchCalendarBookings";
+import { fetchRooms } from "@/app/(main)/actions/fetchRooms";
+import { fetchCalendarBookings } from "./actions/fetchCalendarBookings";
 import { EventCalendarLoader } from "./components/EventCalendarLoader";
 
 export default async function CalendarPage() {
@@ -11,8 +13,8 @@ export default async function CalendarPage() {
   const rangeStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
   const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 1).toISOString();
 
-  const [rooms, { role, user }, { events: initialEvents }] = await Promise.all([
-    fetchCalendarRooms(),
+  const [allRooms, { role, user }, { events: initialEvents }] = await Promise.all([
+    fetchRooms(),
     getUserAndRole(),
     fetchCalendarBookings(rangeStart, rangeEnd),
   ]);
@@ -23,6 +25,8 @@ export default async function CalendarPage() {
   ) {
     redirect("/");
   }
+
+  const rooms = filterRoomsByRole(allRooms, role).map((r) => ({ id: r.id, name: r.name }));
 
   return (
     <main className="container mx-auto px-6 py-8">

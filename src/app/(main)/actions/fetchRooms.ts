@@ -1,21 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/db";
+import { rooms, type Rooms } from "@/db/schema";
+import { asc, eq } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 
-import { Rooms } from "../../../types/room";
-
-export async function fetchRooms(): Promise<Rooms[] | undefined> {
-  const supabase = await createClient();
-
-  await supabase.auth.getSession();
-
-  const { data, error } = await supabase.from("rooms").select().eq("availability", true);
-
-  if (error) {
-    console.error("Error fetching rooms:", error);
-  }
-
-  if (data) {
-    const sortedRooms = [...(data as Rooms[])].sort((a, b) => a.name.localeCompare(b.name));
-
-    return sortedRooms;
-  }
-}
+export const fetchRooms = unstable_cache(
+  async (): Promise<Rooms[]> => {
+    return db.select().from(rooms).where(eq(rooms.availability, true)).orderBy(asc(rooms.name));
+  },
+  ["rooms-list"],
+  { revalidate: 300, tags: ["rooms"] },
+);
