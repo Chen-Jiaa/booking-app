@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { fetchRooms } from "@/app/(main)/actions/fetchRooms";
 import { addDays, format, parseISO, startOfWeek } from "date-fns";
 
 import { fetchWeekBookings } from "./actions/fetch-week-bookings";
@@ -8,11 +8,6 @@ import { WeekNavigator } from "./components/week-navigator";
 
 interface PageProps {
   searchParams: Promise<{ week?: string }>;
-}
-
-interface Room {
-  id: string;
-  name: string;
 }
 
 export default async function AdminCalendarPage({ searchParams }: PageProps) {
@@ -54,19 +49,3 @@ export default async function AdminCalendarPage({ searchParams }: PageProps) {
   );
 }
 
-async function fetchRooms(): Promise<Room[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("rooms")
-    .select("id, name")
-    .eq("availability", true)
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching rooms:", error);
-    return [];
-  }
-
-  return data as Room[];
-}

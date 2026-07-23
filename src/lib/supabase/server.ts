@@ -43,7 +43,7 @@ export const getAuthUser = cache(async () => {
   return user ?? null;
 });
 
-export async function getUserAndRole() {
+export const getUserAndRole = cache(async () => {
   const user = await getAuthUser();
 
   if (!user) {
@@ -65,4 +65,4 @@ export async function getUserAndRole() {
   }
 
   return { role, user };
-}
+});

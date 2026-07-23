@@ -1,5 +1,6 @@
 "use server";
 
+import { fetchRooms } from "@/app/(main)/actions/fetchRooms";
 import { createClient, getAuthUser } from "@/lib/supabase/server";
 
 export interface CalendarEvent {
@@ -164,18 +165,6 @@ export async function fetchCalendarBookings(
 }
 
 export async function fetchCalendarRooms(): Promise<CalendarRoom[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("rooms")
-    .select("id, name")
-    .eq("availability", true)
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching rooms:", error);
-    return [];
-  }
-
-  return data as CalendarRoom[];
+  const rooms = await fetchRooms();
+  return rooms.map((r) => ({ id: r.id, name: r.name }));
 }

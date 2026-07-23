@@ -1,8 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import { db } from "@/db";
-import { bookingDays, bookings, rooms } from "@/db/schema";
-import { createClient } from "@/lib/supabase/server";
+import { bookingDays, bookings } from "@/db/schema";
+import { fetchRooms } from "@/app/(main)/actions/fetchRooms";
+import { filterRoomsByRole } from "@/lib/roles";
+import { getUserAndRole } from "@/lib/supabase/server";
 import { eq } from "drizzle-orm";
 
 import EditBookingForm from "../../../components/EditBookingForm";
@@ -19,10 +21,7 @@ export default async function EditBookingPage({ params }: PageProps) {
     return <p className="text-center mt-10">Invalid booking ID.</p>;
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { role, user } = await getUserAndRole();
 
   if (!user) {
     return <p className="text-center mt-10">Please log in to edit bookings.</p>;
@@ -50,8 +49,7 @@ export default async function EditBookingPage({ params }: PageProps) {
     days = await db.select().from(bookingDays).where(eq(bookingDays.bookingId, id));
   }
 
-  // Fetch rooms for availability checking
-  const roomData = await db.select().from(rooms).where(eq(rooms.availability, true));
+  const roomData = filterRoomsByRole(await fetchRooms(), role);
 
   return (
     <div className="container mx-auto py-6 px-6 max-w-2xl">
