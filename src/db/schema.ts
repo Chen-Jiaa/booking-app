@@ -1,5 +1,6 @@
 import { InferSelectModel } from "drizzle-orm";
 import {
+  bigint,
   bigserial,
   boolean,
   integer,
@@ -95,6 +96,14 @@ export const bookingDays = pgTable("booking_days", {
   id: uuid("id").primaryKey().defaultRandom(),
   isAllDay: boolean("is_all_day").default(false),
   startTime: timestamp("start_time", { withTimezone: true }),
+});
+
+// Single-row table — always upserted with id = 'main'
+export const calendarWatchChannels = pgTable("calendar_watch_channels", {
+  channelId: text("channel_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  expiration: bigint("expiration", { mode: "number" }).notNull(), // ms timestamp from Google
+  id: text("id").primaryKey(), // always "main"
 });
 
 export type BookingDays = InferSelectModel<typeof bookingDays>;

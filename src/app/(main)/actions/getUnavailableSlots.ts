@@ -64,13 +64,26 @@ export async function getUnavailableSlots(
         .or(`parent_booking_id.is.null,parent_booking_id.neq.${excludeBookingId.toString()}`);
     }
 
-    // Queries 1, 2, and 3 are independent — run them in parallel
-    const [{ data: standardBookings }, { data: multiDayBookings }, dependencyBlocked] =
-      await Promise.all([
-        standardQuery,
-        multiQuery,
-        getDependencyBlockedSlots(roomId, selectedDate, timezone, excludeBookingId),
-      ]);
+    // 3. Unavailable periods (admin-blocked slots + external GCal events)
+    const unavailableQuery = supabase
+      .from("unavailable_periods")
+      .select<string, BookingType>("start_time, end_time")
+      .eq("room_id", roomId)
+      .lt("start_time", dayEndISO)
+      .gt("end_time", dayStartISO);
+
+    // Queries are independent — run them in parallel
+    const [
+      { data: standardBookings },
+      { data: multiDayBookings },
+      { data: unavailablePeriods },
+      dependencyBlocked,
+    ] = await Promise.all([
+      standardQuery,
+      multiQuery,
+      unavailableQuery,
+      getDependencyBlockedSlots(roomId, selectedDate, timezone, excludeBookingId),
+    ]);
 
     const booked = new Set<string>();
 
@@ -118,6 +131,17 @@ export async function getUnavailableSlots(
               currentSlot = addMinutes(currentSlot, 30);
             }
           }
+        }
+      }
+    }
+
+    if (unavailablePeriods && unavailablePeriods.length > 0) {
+      for (const period of unavailablePeriods) {
+        let currentSlot = toZonedTime(parseISO(period.start_time), timezone);
+        const endTimeLocal = toZonedTime(parseISO(period.end_time), timezone);
+        while (currentSlot < endTimeLocal) {
+          booked.add(format(currentSlot, "HH:mm"));
+          currentSlot = addMinutes(currentSlot, 30);
         }
       }
     }

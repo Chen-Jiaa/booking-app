@@ -7,6 +7,7 @@ export function getPurposeLabel(value: string) {
     { label: "Zone Meeting", value: "zone_meeting" },
     { label: "Practice (Email Admin for approval)", value: "practice" },
     { label: "Event (Email Admin for approval)", value: "event" },
+    { label: "Wedding", value: "Wedding" },
     { label: "Others", value: "others" },
   ];
 

@@ -33,7 +33,7 @@ import { ArrowUpDown, ChevronDown } from "lucide-react";
 import * as React from "react";
 import { useCallback, useMemo, useState } from "react";
 
-import { updateUserRole } from "../actions";
+import { backfillCollectiveUsers, updateUserRole } from "../actions";
 
 interface User {
   email: null | string;
@@ -47,6 +47,25 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [users, setUsers] = useState<User[]>(initialUsers);
+  const [backfilling, setBackfilling] = useState(false);
+
+  const handleBackfill = useCallback(async () => {
+    setBackfilling(true);
+    const result = await backfillCollectiveUsers();
+    setBackfilling(false);
+    if (result.success) {
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.email?.endsWith("@collective.my") && user.role !== "admin"
+            ? { ...user, role: "superUser" }
+            : user,
+        ),
+      );
+      alert(`Done — ${result.count} user(s) upgraded to superUser.`);
+    } else {
+      alert(`Error: ${result.error}`);
+    }
+  }, []);
 
   const handleRoleChange = useCallback(
     async (id: string, newRole: "admin" | "event_manager" | "superUser" | "user") => {
@@ -227,13 +246,21 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
     <div className="px-6 w-full">
       <h2 className="font-bold">Users Table</h2>
       <p>Change user role here</p>
-      <div className="flex items-center py-4 overflow-x-scroll">
+      <div className="flex items-center py-4 overflow-x-scroll gap-3">
         <Input
           className="max-w-sm"
           onChange={(event) => table.getColumn("email")?.setFilterValue(event.target.value)}
           placeholder="Filter emails..."
           value={(table.getColumn("email")?.getFilterValue() as string) || ""}
         />
+        <Button
+          disabled={backfilling}
+          onClick={handleBackfill}
+          size="sm"
+          variant="outline"
+        >
+          {backfilling ? "Upgrading..." : "Upgrade @collective.my → superUser"}
+        </Button>
         {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="ml-auto" variant="outline">
