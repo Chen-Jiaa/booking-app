@@ -247,6 +247,54 @@ export async function updateMultiDayCalendarEvents(
   }
 }
 
+// --- Function: REGISTER a push notification watch channel ---
+export async function registerCalendarWatch(
+  webhookUrl: string,
+  token: string,
+): Promise<{ channelId: string; expiration: number }> {
+  try {
+    const response = await calendar.events.watch({
+      calendarId,
+      requestBody: {
+        address: webhookUrl,
+        id: crypto.randomUUID(),
+        token,
+        type: "web_hook",
+      },
+    });
+
+    const channelId = response.data.id;
+    const expiration = response.data.expiration;
+
+    if (!channelId || !expiration) {
+      throw new Error("Google did not return a channel ID or expiration.");
+    }
+
+    return { channelId, expiration: Number(expiration) };
+  } catch (error) {
+    console.error("Failed to register calendar watch:", error);
+    throw new Error("Failed to register Google Calendar watch channel.");
+  }
+}
+
+// --- Function: LIST events from Google Calendar in a time range ---
+export async function listCalendarEvents(timeMin: Date, timeMax: Date) {
+  try {
+    const response = await calendar.events.list({
+      calendarId,
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: 500,
+    });
+    return response.data.items ?? [];
+  } catch (error) {
+    console.error("Failed to list calendar events:", error);
+    throw new Error("Failed to list Google Calendar events.");
+  }
+}
+
 // --- Helper: Format date as YYYY-MM-DD for all-day events ---
 function formatDateOnly(date: Date): string {
   const year = date.getFullYear().toString();

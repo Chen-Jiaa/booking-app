@@ -54,13 +54,19 @@ const formSchema = z
     }
   });
 
-const purposeOptions = [
+const BASE_PURPOSE_OPTIONS = [
   { label: "Connect Group", value: "Connect Group" },
   { label: "Combine Connect Group", value: "Combine Connect Group" },
   { label: "Bible Study", value: "Bible Study" },
   { label: "Prayer Meeting", value: "Prayer Meeting" },
   { label: "Zone Meeting", value: "Zone Meeting" },
   { label: "Others", value: "others" },
+];
+
+const LOBBY_PURPOSE_OPTIONS = [
+  ...BASE_PURPOSE_OPTIONS.slice(0, -1),
+  { label: "Wedding", value: "Wedding" },
+  BASE_PURPOSE_OPTIONS[BASE_PURPOSE_OPTIONS.length - 1],
 ];
 
 export default function BookingForm2(props: BookingFormProps) {
@@ -77,6 +83,8 @@ export default function BookingForm2(props: BookingFormProps) {
   });
   const selectedPurpose = form.watch("purpose");
   const [isLoading, setIsLoading] = useState(false);
+  const isLobby = selectedRoom.name.toLowerCase().includes("lobby");
+  const purposeOptions = isLobby ? LOBBY_PURPOSE_OPTIONS : BASE_PURPOSE_OPTIONS;
   const router = useRouter();
 
   async function onSubmit(values: z.infer<typeof formSchema>) {

@@ -4,6 +4,7 @@ import { addDays, format, parseISO, startOfWeek } from "date-fns";
 import { fetchWeekBookings } from "./actions/fetch-week-bookings";
 import { CalendarGrid } from "./components/calendar-grid";
 import { CalendarList } from "./components/calendar-list";
+import { SyncCalendarButton } from "./components/sync-calendar-button";
 import { WeekNavigator } from "./components/week-navigator";
 
 interface PageProps {
@@ -35,7 +36,10 @@ export default async function AdminCalendarPage({ searchParams }: PageProps) {
           <h1 className="text-2xl font-bold">Room Calendar</h1>
           <p className="text-muted-foreground">View and manage room bookings</p>
         </div>
-        <WeekNavigator weekStart={weekStart} />
+        <div className="flex flex-wrap items-center gap-2">
+          <SyncCalendarButton />
+          <WeekNavigator weekStart={weekStart} />
+        </div>
       </div>
 
       <div className="hidden md:block">

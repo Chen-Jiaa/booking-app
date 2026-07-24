@@ -1,231 +1,128 @@
 import { createClient } from "@/lib/supabase/server";
+import { addMinutes, format, parseISO } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 
 interface RoomInfo {
-  dependency_group: null | string;
   id: string;
   name: string;
 }
 
-/**
- * Given a booked room and its day type, returns an array of room IDs
- * that should be blocked or restricted.
- *
- * Rules:
- * - Main Hall booked as "main_event" → Lobby is blocked
- * - Main Hall booked as "rehearsal_setup" → Lobby remains available (no blocked rooms)
- * - Lobby booked as "main_event" → Main Hall is blocked for "main_event" only
- *   (this is handled at query time; here we return the Main Hall ID so callers can check)
- * - Lobby booked independently or as "rehearsal_setup" → no rooms blocked
- * - Stage 8 and other rooms → no dependency
- */
-export function getBlockedRoomIds(
-  roomId: string,
-  dayType: null | string,
-  rooms: RoomInfo[],
-): string[] {
-  const room = rooms.find((r) => r.id === roomId);
-  if (!room?.dependency_group) return [];
-
-  const relatedRooms = rooms.filter(
-    (r) => r.id !== roomId && r.dependency_group === room.dependency_group,
-  );
-
-  if (relatedRooms.length === 0) return [];
-
-  const isMainHall = room.name === "Main Hall";
-  const isLobby = room.name === "Lobby to Main Hall";
-
-  // Main Hall booked as Main Event Day → block Lobby
-  if (isMainHall && dayType === "main_event") {
-    return relatedRooms.map((r) => r.id);
-  }
-
-  // Lobby booked as Main Event → block Main Hall (for main_event only, handled by caller)
-  if (isLobby && dayType === "main_event") {
-    return relatedRooms.map((r) => r.id);
-  }
-
-  return [];
+interface DependencyRule {
+  blocks: string[]; // partial name patterns to match blocked rooms (case-insensitive)
+  condition?: "wedding"; // only applies when source booking purpose contains "wedding"
+  source: string; // partial name pattern to match the source room (case-insensitive)
 }
 
-/**
- * Gets unavailable slots for a room based on dependency rules.
- * Returns a set of time slot strings (e.g., "09:00", "09:30") that are
- * blocked due to dependency conflicts.
- */
+// Blocking rules based on physical space constraints.
+// Lobby is the entrance to Main Hall and Glass Room.
+// Main Hall access also blocks the Lobby and Glass Room area.
+const DEPENDENCY_RULES: DependencyRule[] = [
+  { blocks: ["main hall", "glass"], source: "lobby" },
+  { blocks: ["vip"], condition: "wedding", source: "lobby" },
+  { blocks: ["lobby", "glass"], source: "main hall" },
+];
+
+function matchesName(roomName: string, pattern: string): boolean {
+  return roomName.toLowerCase().includes(pattern.toLowerCase());
+}
+
+function isWedding(text: string): boolean {
+  return text.toLowerCase().includes("wedding");
+}
+
+// Given a booked source room and its purpose, returns all room IDs that should be blocked.
+// Used by the GCal sync to cascade unavailable_periods into dependent rooms.
+export function getBlockedRoomIds(
+  sourceRoom: RoomInfo,
+  purpose: string,
+  allRooms: RoomInfo[],
+): string[] {
+  const blocked = new Set<string>();
+
+  for (const rule of DEPENDENCY_RULES) {
+    if (!matchesName(sourceRoom.name, rule.source)) continue;
+    if (rule.condition === "wedding" && !isWedding(purpose)) continue;
+
+    for (const pattern of rule.blocks) {
+      for (const room of allRooms) {
+        if (room.id !== sourceRoom.id && matchesName(room.name, pattern)) {
+          blocked.add(room.id);
+        }
+      }
+    }
+  }
+
+  return Array.from(blocked);
+}
+
+// Returns the set of time slot strings blocked for targetRoomId due to
+// other rooms' existing bookings, based on DEPENDENCY_RULES.
 export async function getDependencyBlockedSlots(
-  roomId: string,
+  targetRoomId: string,
   selectedDate: Date,
   timezone: string,
   excludeBookingId?: number,
 ): Promise<Set<string>> {
-  const { addMinutes, format, parseISO } = await import("date-fns");
-  const { toZonedTime } = await import("date-fns-tz");
-
   const blocked = new Set<string>();
-
   const supabase = await createClient();
 
-  // Fetch all rooms to determine dependency relationships
-  const { data: allRooms } = await supabase.from("rooms").select("id, name, dependency_group");
-
+  const { data: allRooms } = await supabase.from("rooms").select("id, name");
   if (!allRooms) return blocked;
 
-  const room = allRooms.find((r: RoomInfo) => r.id === roomId);
-  if (!room?.dependency_group) return blocked;
+  const targetRoom = allRooms.find((r: RoomInfo) => r.id === targetRoomId);
+  if (!targetRoom) return blocked;
 
-  const relatedRooms = allRooms.filter(
-    (r: RoomInfo) => r.id !== roomId && r.dependency_group === room.dependency_group,
+  // Find rules where the target room appears in the `blocks` list
+  const relevantRules = DEPENDENCY_RULES.filter((rule) =>
+    rule.blocks.some((pattern) => matchesName(targetRoom.name, pattern)),
   );
 
-  if (relatedRooms.length === 0) return blocked;
-
-  const relatedRoomIds = relatedRooms.map((r: RoomInfo) => r.id);
+  if (relevantRules.length === 0) return blocked;
 
   const startOfDayLocal = toZonedTime(selectedDate, timezone);
   startOfDayLocal.setHours(0, 0, 0, 0);
   const endOfDayLocal = toZonedTime(selectedDate, timezone);
   endOfDayLocal.setHours(23, 59, 59, 999);
-
   const dayStartISO = startOfDayLocal.toISOString();
   const dayEndISO = endOfDayLocal.toISOString();
 
-  const isMainHall = room.name === "Main Hall";
-  const isLobby = room.name === "Lobby to Main Hall";
+  for (const rule of relevantRules) {
+    // Find source rooms matching this rule
+    const sourceRooms = allRooms.filter(
+      (r: RoomInfo) => r.id !== targetRoomId && matchesName(r.name, rule.source),
+    );
+    if (sourceRooms.length === 0) continue;
 
-  // 1. Standard (non-multi-day) bookings for related rooms overlapping this day
-  let stdQuery = supabase
-    .from("bookings")
-    .select("id, room_id, start_time, end_time, booking_type")
-    .in("room_id", relatedRoomIds)
-    .in("status", ["pending", "confirmed"])
-    .or("is_multi_day.is.null,is_multi_day.eq.false")
-    .lt("start_time", dayEndISO)
-    .gt("end_time", dayStartISO);
+    const sourceRoomIds = sourceRooms.map((r: RoomInfo) => r.id);
 
-  if (excludeBookingId != null) {
-    stdQuery = stdQuery
-      .neq("id", excludeBookingId)
-      .or(`parent_booking_id.is.null,parent_booking_id.neq.${excludeBookingId.toString()}`);
-  }
+    // Query bookings for source rooms in the time range
+    let query = supabase
+      .from("bookings")
+      .select("id, start_time, end_time, purpose, event_name")
+      .in("room_id", sourceRoomIds)
+      .in("status", ["pending", "confirmed"])
+      .lt("start_time", dayEndISO)
+      .gt("end_time", dayStartISO);
 
-  const { data: standardBookings } = await stdQuery;
-
-  if (standardBookings && standardBookings.length > 0) {
-    // Get booking_days for these bookings to check day types
-    const { data: stdBookingDays } = await supabase
-      .from("booking_days")
-      .select("booking_id, day_type")
-      .in(
-        "booking_id",
-        standardBookings.map((b: { id: number }) => b.id),
-      );
-
-    const dayTypeMap = new Map<number, string>();
-    if (stdBookingDays) {
-      for (const day of stdBookingDays) {
-        dayTypeMap.set(Number(day.booking_id), String(day.day_type));
-      }
+    if (excludeBookingId != null) {
+      query = query.neq("id", excludeBookingId);
     }
 
-    for (const booking of standardBookings) {
-      const relatedRoom = relatedRooms.find((r: RoomInfo) => r.id === booking.room_id);
-      if (!relatedRoom) continue;
+    const { data: sourceBookings } = await query;
+    if (!sourceBookings || sourceBookings.length === 0) continue;
 
-      const existingDayType = dayTypeMap.get(Number(booking.id)) ?? null;
-      let shouldBlock = false;
-
-      if (isLobby && relatedRoom.name === "Main Hall" && existingDayType === "main_event") {
-        shouldBlock = true;
-      }
-      if (
-        isMainHall &&
-        relatedRoom.name === "Lobby to Main Hall" &&
-        existingDayType === "main_event"
-      ) {
-        shouldBlock = true;
+    for (const booking of sourceBookings) {
+      // Apply the wedding condition if present
+      if (rule.condition === "wedding") {
+        const purposeText = `${booking.purpose ?? ""} ${booking.event_name ?? ""}`;
+        if (!isWedding(purposeText)) continue;
       }
 
-      if (shouldBlock) {
-        let currentSlot = toZonedTime(parseISO(String(booking.start_time)), timezone);
-        const endTimeLocal = toZonedTime(parseISO(String(booking.end_time)), timezone);
-
-        while (currentSlot < endTimeLocal) {
-          blocked.add(format(currentSlot, "HH:mm"));
-          currentSlot = addMinutes(currentSlot, 30);
-        }
-      }
-    }
-  }
-
-  // 2. Multi-day bookings for related rooms: check booking_days on this date
-  let mdQuery = supabase
-    .from("bookings")
-    .select("id, room_id")
-    .in("room_id", relatedRoomIds)
-    .in("status", ["pending", "confirmed"])
-    .eq("is_multi_day", true);
-
-  if (excludeBookingId != null) {
-    mdQuery = mdQuery
-      .neq("id", excludeBookingId)
-      .or(`parent_booking_id.is.null,parent_booking_id.neq.${excludeBookingId.toString()}`);
-  }
-
-  const { data: multiDayBookings } = await mdQuery;
-
-  if (multiDayBookings && multiDayBookings.length > 0) {
-    const bookingIds = multiDayBookings.map((b: { id: number }) => b.id);
-    const { data: mdDays } = await supabase
-      .from("booking_days")
-      .select("booking_id, day_type, start_time, end_time, is_all_day")
-      .in("booking_id", bookingIds)
-      .gte("date", dayStartISO)
-      .lt("date", dayEndISO);
-
-    if (mdDays && mdDays.length > 0) {
-      for (const day of mdDays) {
-        const booking = multiDayBookings.find(
-          (b: { id: number }) => b.id === Number(day.booking_id),
-        );
-        if (!booking) continue;
-        const relatedRoom = relatedRooms.find((r: RoomInfo) => r.id === booking.room_id);
-        if (!relatedRoom) continue;
-
-        const existingDayType = String(day.day_type);
-        let shouldBlock = false;
-
-        if (isLobby && relatedRoom.name === "Main Hall" && existingDayType === "main_event") {
-          shouldBlock = true;
-        }
-        if (
-          isMainHall &&
-          relatedRoom.name === "Lobby to Main Hall" &&
-          existingDayType === "main_event"
-        ) {
-          shouldBlock = true;
-        }
-
-        if (shouldBlock) {
-          if (day.is_all_day) {
-            const allDayStart = toZonedTime(selectedDate, timezone);
-            allDayStart.setHours(8, 0, 0, 0);
-            const allDayEnd = toZonedTime(selectedDate, timezone);
-            allDayEnd.setHours(23, 30, 0, 0);
-            let currentSlot = new Date(allDayStart);
-            while (currentSlot < allDayEnd) {
-              blocked.add(format(currentSlot, "HH:mm"));
-              currentSlot = addMinutes(currentSlot, 30);
-            }
-          } else if (day.start_time && day.end_time) {
-            let currentSlot = toZonedTime(parseISO(String(day.start_time)), timezone);
-            const endTimeLocal = toZonedTime(parseISO(String(day.end_time)), timezone);
-            while (currentSlot < endTimeLocal) {
-              blocked.add(format(currentSlot, "HH:mm"));
-              currentSlot = addMinutes(currentSlot, 30);
-            }
-          }
-        }
+      let currentSlot = toZonedTime(parseISO(String(booking.start_time)), timezone);
+      const endTimeLocal = toZonedTime(parseISO(String(booking.end_time)), timezone);
+      while (currentSlot < endTimeLocal) {
+        blocked.add(format(currentSlot, "HH:mm"));
+        currentSlot = addMinutes(currentSlot, 30);
       }
     }
   }
@@ -233,96 +130,58 @@ export async function getDependencyBlockedSlots(
   return blocked;
 }
 
-/**
- * Server-side check that queries existing bookings and returns whether
- * the proposed booking is allowed based on dependency rules.
- *
- * Returns { allowed: true } or { allowed: false, reason: string }
- */
+// Server-side check: returns whether the proposed booking is allowed
+// given existing dependency bookings.
 export async function isBookingAllowed(
   roomId: string,
-  dayType: null | string,
-  date: string,
+  _dayType: null | string,
+  _date: string,
   startTime: string,
   endTime: string,
+  purpose?: string,
 ): Promise<{ allowed: boolean; reason?: string }> {
   const supabase = await createClient();
 
-  // Fetch all rooms to determine dependency relationships
-  const { data: allRooms } = await supabase.from("rooms").select("id, name, dependency_group");
-
+  const { data: allRooms } = await supabase.from("rooms").select("id, name");
   if (!allRooms) return { allowed: true };
 
-  const room = allRooms.find((r: RoomInfo) => r.id === roomId);
-  if (!room?.dependency_group) return { allowed: true };
+  const targetRoom = allRooms.find((r: RoomInfo) => r.id === roomId);
+  if (!targetRoom) return { allowed: true };
 
-  const relatedRooms = allRooms.filter(
-    (r: RoomInfo) => r.id !== roomId && r.dependency_group === room.dependency_group,
+  const relevantRules = DEPENDENCY_RULES.filter((rule) =>
+    rule.blocks.some((pattern) => matchesName(targetRoom.name, pattern)),
   );
+  if (relevantRules.length === 0) return { allowed: true };
 
-  if (relatedRooms.length === 0) return { allowed: true };
+  for (const rule of relevantRules) {
+    const sourceRooms = allRooms.filter(
+      (r: RoomInfo) => r.id !== roomId && matchesName(r.name, rule.source),
+    );
+    if (sourceRooms.length === 0) continue;
 
-  const relatedRoomIds = relatedRooms.map((r: RoomInfo) => r.id);
+    const { data: conflicts } = await supabase
+      .from("bookings")
+      .select("id, purpose, event_name, room_name")
+      .in(
+        "room_id",
+        sourceRooms.map((r: RoomInfo) => r.id),
+      )
+      .in("status", ["pending", "confirmed"])
+      .lt("start_time", endTime)
+      .gt("end_time", startTime);
 
-  // Query existing bookings for related rooms that overlap with the proposed time
-  const { data: conflictingBookings } = await supabase
-    .from("bookings")
-    .select("id, room_id, start_time, end_time, booking_type")
-    .in("room_id", relatedRoomIds)
-    .in("status", ["pending", "confirmed"])
-    .lt("start_time", endTime)
-    .gt("end_time", startTime);
+    if (!conflicts || conflicts.length === 0) continue;
 
-  if (!conflictingBookings || conflictingBookings.length === 0) {
-    return { allowed: true };
-  }
+    for (const conflict of conflicts) {
+      if (rule.condition === "wedding") {
+        const purposeText = `${conflict.purpose ?? ""} ${conflict.event_name ?? ""}`;
+        if (!isWedding(purposeText)) continue;
+      }
 
-  // Also check booking_days for multi-day bookings with day types
-  const conflictingBookingIds = conflictingBookings.map((b: { id: number }) => b.id);
-  const { data: conflictingDays } = await supabase
-    .from("booking_days")
-    .select("booking_id, day_type, start_time, end_time, is_all_day")
-    .in("booking_id", conflictingBookingIds)
-    .gte("date", date)
-    .lte("date", date);
-
-  // Build a map of booking_id to day_type from booking_days
-  const dayTypeMap = new Map<number, string>();
-  if (conflictingDays) {
-    for (const day of conflictingDays) {
-      dayTypeMap.set(Number(day.booking_id), String(day.day_type));
-    }
-  }
-
-  const isMainHall = room.name === "Main Hall";
-  const isLobby = room.name === "Lobby to Main Hall";
-
-  for (const booking of conflictingBookings) {
-    const existingDayType = dayTypeMap.get(Number(booking.id)) ?? null;
-    const relatedRoom = relatedRooms.find((r: RoomInfo) => r.id === booking.room_id);
-
-    if (!relatedRoom) continue;
-
-    // Rule: Main Hall has a "main_event" booking → Lobby is blocked entirely
-    if (isLobby && relatedRoom.name === "Main Hall" && existingDayType === "main_event") {
+      const sourceName = sourceRooms[0]?.name ?? "another room";
       return {
         allowed: false,
-        reason:
-          "The Main Hall has a Main Event booking during this time. The Lobby is unavailable.",
-      };
-    }
-
-    // Rule: Lobby has a "main_event" booking → Main Hall cannot be "main_event"
-    if (
-      isMainHall &&
-      relatedRoom.name === "Lobby to Main Hall" &&
-      existingDayType === "main_event" &&
-      dayType === "main_event"
-    ) {
-      return {
-        allowed: false,
-        reason:
-          "The Lobby has a Main Event booking during this time. The Main Hall cannot be booked as a Main Event Day, but can be booked for Rehearsal / Setup.",
+        reason: `${sourceName} is booked during this time, which blocks access to ${targetRoom.name}.`,
       };
     }
   }
