@@ -21,16 +21,32 @@ function extractRoomFromTitle(title: string): string | null {
   return match ? match[1].trim().toLowerCase() : null;
 }
 
-// Finds the best-matching room for a given identifier string.
-// "lobby" → "Lobby to Main Hall" (room name starts with identifier)
+// Finds the best-matching room for a single identifier token.
 function matchRoom(identifier: string, rooms: Room[]): Room | null {
+  const id = identifier.trim().toLowerCase();
   for (const room of rooms) {
     const nameLower = room.name.toLowerCase();
-    if (nameLower.startsWith(identifier) || identifier.startsWith(nameLower.split(" ")[0])) {
+    if (nameLower.startsWith(id) || id.startsWith(nameLower.split(" ")[0])) {
       return room;
     }
   }
   return null;
+}
+
+// Handles comma-separated room identifiers extracted from a title.
+// "lobby, auditorium, vip room 3, green room" → [Room, Room, Room, Room]
+function matchAllRooms(identifier: string, rooms: Room[]): Room[] {
+  const parts = identifier.split(",");
+  const matched: Room[] = [];
+  const seenIds = new Set<string>();
+  for (const part of parts) {
+    const room = matchRoom(part.trim(), rooms);
+    if (room && !seenIds.has(room.id)) {
+      matched.push(room);
+      seenIds.add(room.id);
+    }
+  }
+  return matched;
 }
 
 export interface SyncResult {
@@ -123,8 +139,9 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
         continue;
       }
 
-      const room = matchRoom(roomIdentifier, rooms as Room[]);
-      if (!room) {
+      // Support comma-separated room names, e.g. "LOBBY, AUDITORIUM, VIP ROOM 3 BOOKED FOR X"
+      const matchedRooms = matchAllRooms(roomIdentifier, rooms as Room[]);
+      if (matchedRooms.length === 0) {
         skipped++;
         continue;
       }
@@ -146,30 +163,34 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
         continue;
       }
 
-      // Determine all rooms that should be blocked by this event (primary + dependents)
-      const blockedRoomIds = getBlockedRoomIds(room, event.summary, rooms as Room[]);
-      const allAffectedRoomIds = [room.id, ...blockedRoomIds];
-
-      // Insert booking for primary room (for admin calendar display)
-      if (!existingEventIds.has(event.id)) {
-        const { error: bookingError } = await supabase.from("bookings").insert({
-          booking_type: "external",
-          email: event.creator?.email ?? "",
-          end_time: endTime.toISOString(),
-          event_id: event.id,
-          name: event.creator?.displayName ?? event.creator?.email ?? "External Calendar Event",
-          phone: "",
-          purpose: event.summary,
-          room_id: room.id,
-          room_name: room.name,
-          start_time: startTime.toISOString(),
-          status: "confirmed",
-        });
-        if (bookingError) {
-          console.error("Failed to insert external booking:", bookingError);
-          skipped++;
-          continue;
+      // Collect all affected room IDs: every matched room + their dependents
+      const allAffectedRoomIds = new Set<string>();
+      for (const room of matchedRooms) {
+        allAffectedRoomIds.add(room.id);
+        for (const depId of getBlockedRoomIds(room, event.summary, rooms as Room[])) {
+          allAffectedRoomIds.add(depId);
         }
+      }
+
+      // Insert booking for the primary (first) room for admin calendar display
+      const primaryRoom = matchedRooms[0];
+      const { error: bookingError } = await supabase.from("bookings").insert({
+        booking_type: "external",
+        email: event.creator?.email ?? "",
+        end_time: endTime.toISOString(),
+        event_id: event.id,
+        name: event.creator?.displayName ?? event.creator?.email ?? "External Calendar Event",
+        phone: "",
+        purpose: event.summary,
+        room_id: primaryRoom.id,
+        room_name: matchedRooms.map((r) => r.name).join(", "),
+        start_time: startTime.toISOString(),
+        status: "confirmed",
+      });
+      if (bookingError) {
+        console.error("Failed to insert external booking:", bookingError);
+        skipped++;
+        continue;
       }
 
       // Insert unavailable_periods for all affected rooms (blocks user booking form)
