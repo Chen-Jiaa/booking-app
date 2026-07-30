@@ -27,6 +27,7 @@ export default async function CalendarPage() {
   }
 
   const rooms = filterRoomsByRole(allRooms, role).map((r) => ({ id: r.id, name: r.name }));
+  const isAdmin = role === "admin" || role === "event_manager";
 
   return (
     <main className="container mx-auto px-6 py-8">
@@ -34,7 +35,7 @@ export default async function CalendarPage() {
         <h1 className="text-2xl font-bold">Event Calendar</h1>
         <p className="text-muted-foreground">View all room bookings and availability</p>
       </div>
-      <EventCalendarLoader initialEvents={initialEvents} isLoggedIn={!!user} rooms={rooms} />
+      <EventCalendarLoader initialEvents={initialEvents} isAdmin={isAdmin} isLoggedIn={!!user} rooms={rooms} />
     </main>
   );
 }
