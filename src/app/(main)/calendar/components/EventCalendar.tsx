@@ -2,6 +2,7 @@
 
 import type { DatesSetArg, EventClickArg } from "@fullcalendar/core";
 
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -14,8 +15,11 @@ import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import { RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { syncExternalCalendarEvents } from "@/app/(admin)/admin/calendar/actions/sync-external-events";
 import {
   type CalendarEvent,
   type CalendarRoom,
@@ -26,16 +30,21 @@ import { BookingDetailPopover } from "./BookingDetailPopover";
 
 interface EventCalendarProps {
   initialEvents: CalendarEvent[];
+  isAdmin?: boolean;
   isLoggedIn: boolean;
   rooms: CalendarRoom[];
 }
 
-export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalendarProps) {
+export function EventCalendar({ initialEvents, isAdmin, isLoggedIn, rooms }: EventCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null);
+  const router = useRouter();
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selectedRoom, setSelectedRoom] = useState<string>("all");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const visibleRangeRef = useRef<{ end: Date; start: Date } | null>(null);
 
   // Client-side event cache keyed by "YYYY-MM" — seed with server-prefetched data
   const cacheRef = useRef(
@@ -94,6 +103,32 @@ export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalenda
     [],
   );
 
+  const handleSync = useCallback(async () => {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const result = await syncExternalCalendarEvents();
+      if (result.error) {
+        setSyncMessage(`Sync failed: ${result.error}`);
+      } else {
+        setSyncMessage(`Synced: +${result.inserted.toString()} new, ${result.cancelled.toString()} cancelled`);
+        cacheRef.current.clear();
+        if (visibleRangeRef.current) {
+          const { start, end } = visibleRangeRef.current;
+          const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+          while (cursor < end) {
+            await fetchAndCacheMonth(cursor.getFullYear(), cursor.getMonth());
+            cursor.setMonth(cursor.getMonth() + 1);
+          }
+        }
+        setEvents([...cacheRef.current.values()].flat());
+        router.refresh();
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }, [fetchAndCacheMonth, router]);
+
   const handleDatesSet = useCallback(
     (dateInfo: DatesSetArg) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -101,6 +136,7 @@ export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalenda
       debounceRef.current = setTimeout(() => {
         const viewStart = dateInfo.start;
         const viewEnd = dateInfo.end;
+        visibleRangeRef.current = { end: viewEnd, start: viewStart };
 
         // Collect all months the current view spans
         const monthKeys: { month: number; year: number }[] = [];
@@ -169,7 +205,7 @@ export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalenda
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm font-medium">Filter by Room:</span>
         <Select onValueChange={setSelectedRoom} value={selectedRoom}>
           <SelectTrigger className="w-[200px]">
@@ -184,6 +220,16 @@ export function EventCalendar({ initialEvents, isLoggedIn, rooms }: EventCalenda
             ))}
           </SelectContent>
         </Select>
+
+        {isAdmin && (
+          <div className="flex items-center gap-2">
+            {syncMessage && <span className="text-muted-foreground text-sm">{syncMessage}</span>}
+            <Button disabled={syncing} onClick={handleSync} variant="outline">
+              <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing..." : "Sync from Calendar"}
+            </Button>
+          </div>
+        )}
 
         <div className="ml-auto hidden items-center gap-3 sm:flex">
           <div className="flex items-center gap-1.5">

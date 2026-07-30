@@ -27,12 +27,14 @@ const EventCalendar = dynamic(
 
 export function EventCalendarLoader({
   initialEvents,
+  isAdmin,
   isLoggedIn,
   rooms,
 }: {
   initialEvents: CalendarEvent[];
+  isAdmin?: boolean;
   isLoggedIn: boolean;
   rooms: CalendarRoom[];
 }) {
-  return <EventCalendar initialEvents={initialEvents} isLoggedIn={isLoggedIn} rooms={rooms} />;
+  return <EventCalendar initialEvents={initialEvents} isAdmin={isAdmin} isLoggedIn={isLoggedIn} rooms={rooms} />;
 }
