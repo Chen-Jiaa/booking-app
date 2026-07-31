@@ -26,6 +26,18 @@ export async function updateBookingStatus(
   }
 
   try {
+    const existing = await db
+      .select({ status: bookings.status })
+      .from(bookings)
+      .where(eq(bookings.id, bookingId))
+      .limit(1);
+
+    if (!existing[0]) {
+      throw new Error(`Booking with ID ${bookingId.toString()} not found.`);
+    }
+
+    const previousStatus = existing[0].status;
+
     const result = await db
       .update(bookings)
       .set({ status: newStatus })
@@ -73,23 +85,26 @@ export async function updateBookingStatus(
       }
     }
 
-    // Schedule email sending after the response is sent — non-blocking
-    const bookingEmail = updatedBooking.email;
-    const bookingIdStr = updatedBooking.id.toString();
-    after(async () => {
-      if (!bookingEmail) {
-        console.warn(
-          `Booking ID ${bookingIdStr} was updated to "${newStatus}", but no email is on file.`,
-        );
-        return;
-      }
+    // Only send email when the status actually changed — prevents duplicate emails
+    // if the approve/reject URL is visited more than once.
+    if (previousStatus !== newStatus) {
+      const bookingEmail = updatedBooking.email;
+      const bookingIdStr = updatedBooking.id.toString();
+      after(async () => {
+        if (!bookingEmail) {
+          console.warn(
+            `Booking ID ${bookingIdStr} was updated to "${newStatus}", but no email is on file.`,
+          );
+          return;
+        }
 
-      if (newStatus === "confirmed") {
-        await sendBookingConfirmationEmail({ ...updatedBooking, to: bookingEmail });
-      } else if (newStatus === "rejected") {
-        await sendBookingRejectionEmail({ ...updatedBooking, to: bookingEmail });
-      }
-    });
+        if (newStatus === "confirmed") {
+          await sendBookingConfirmationEmail({ ...updatedBooking, to: bookingEmail });
+        } else if (newStatus === "rejected") {
+          await sendBookingRejectionEmail({ ...updatedBooking, to: bookingEmail });
+        }
+      });
+    }
 
     return {
       booking: {
