@@ -99,3 +99,21 @@ export async function updateRoomBoolean(
     return { error: `Failed to update ${field}`, success: false };
   }
 }
+
+export async function deleteRoom(roomId: string) {
+  const { role } = await getUserAndRole();
+
+  if (role !== "admin") {
+    return { error: "Unauthorized", success: false };
+  }
+
+  try {
+    await db.delete(rooms).where(eq(rooms.id, roomId));
+    revalidatePath("/admin/rooms");
+    revalidateTag("rooms");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete room:", error);
+    return { error: "Failed to delete room", success: false };
+  }
+}
