@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -30,12 +41,12 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Trash2 } from "lucide-react";
 import * as React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { updateRoomApprovers, updateRoomAvailabilityTo, updateRoomBoolean } from "../actions";
+import { deleteRoom, updateRoomApprovers, updateRoomAvailabilityTo, updateRoomBoolean } from "../actions";
 
 interface RoomTableProps {
   adminEmails: string[];
@@ -78,6 +89,18 @@ export default function RoomTable({ adminEmails, initialData }: RoomTableProps) 
     },
     [rooms],
   );
+
+  const handleDelete = useCallback(async (id: string) => {
+    setRooms((prev) => prev.filter((r) => r.id !== id));
+
+    const result = await deleteRoom(id);
+    if (!result.success) {
+      toast.error(result.error);
+      setRooms(initialData); // revert — refetch not available, fall back to initial
+    } else {
+      toast.success("Room deleted");
+    }
+  }, [initialData]);
 
   const toggleApprover = useCallback(async (room: Rooms, email: string) => {
     const originalApprovers = room.approvers ?? [];
@@ -311,8 +334,47 @@ export default function RoomTable({ adminEmails, initialData }: RoomTableProps) 
           </Button>
         ),
       },
+      {
+        id: "delete",
+        cell: ({ row }) => {
+          const room = row.original;
+          return (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  className="text-destructive hover:text-destructive"
+                  size="icon"
+                  title="Delete room"
+                  variant="ghost"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete {room.name}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. The room will be permanently removed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => void handleDelete(room.id)}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          );
+        },
+        enableSorting: false,
+        header: () => null,
+      },
     ],
-    [adminEmails, handleToggle, handleAvailabilityTo, toggleApprover],
+    [adminEmails, handleToggle, handleAvailabilityTo, toggleApprover, handleDelete],
   );
 
   const table = useReactTable({
