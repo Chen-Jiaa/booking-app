@@ -7,8 +7,8 @@ import {
   ChevronsRight,
   type LucideIcon,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { createElement, type ReactElement } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createElement, type ReactElement, Suspense } from "react";
 import { Button } from "./button";
 
 interface PaginationButtonProps {
@@ -25,7 +25,7 @@ interface PaginationProps {
 export function Pagination(props: PaginationProps): null | ReactElement {
   const { page, pageCount } = props;
 
-  if (pageCount === 1) {
+  if (pageCount <= 1) {
     return null;
   }
 
@@ -34,16 +34,18 @@ export function Pagination(props: PaginationProps): null | ReactElement {
       <span className="text-sm">
         Page {page} of {pageCount}
       </span>
-      <div className="flex items-center gap-x-2">
-        <PaginationButton disabled={page === 1} icon={ChevronsLeft} pageNumber={1} />
-        <PaginationButton disabled={page === 1} icon={ChevronLeft} pageNumber={page - 1} />
-        <PaginationButton disabled={page === pageCount} icon={ChevronRight} pageNumber={page + 1} />
-        <PaginationButton
-          disabled={page === pageCount}
-          icon={ChevronsRight}
-          pageNumber={pageCount}
-        />
-      </div>
+      <Suspense fallback={null}>
+        <div className="flex items-center gap-x-2">
+          <PaginationButton disabled={page === 1} icon={ChevronsLeft} pageNumber={1} />
+          <PaginationButton disabled={page === 1} icon={ChevronLeft} pageNumber={page - 1} />
+          <PaginationButton disabled={page === pageCount} icon={ChevronRight} pageNumber={page + 1} />
+          <PaginationButton
+            disabled={page === pageCount}
+            icon={ChevronsRight}
+            pageNumber={pageCount}
+          />
+        </div>
+      </Suspense>
     </div>
   );
 }
@@ -52,12 +54,14 @@ function PaginationButton(props: PaginationButtonProps): ReactElement {
   const { disabled, icon, pageNumber } = props;
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   return (
     <Button
       className="h-8 w-8 rounded-xl border border-border disabled:text-muted-foreground"
       disabled={disabled}
       onClick={() => {
-        const query = new URLSearchParams([["page", String(pageNumber)]]);
+        const query = new URLSearchParams(searchParams);
+        query.set("page", String(pageNumber));
         router.push(`${pathname}?${query.toString()}`);
       }}
     >

@@ -34,7 +34,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown } from "lucide-react";
-import { type ReactElement, useState } from "react";
+import { type ReactElement, useEffect, useState } from "react";
 
 import { updateBookingStatus } from "../../actions/booking-status-change";
 
@@ -234,6 +234,10 @@ export function Table2({ bookingData, page, pageCount }: TableProps): ReactEleme
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const [localData, setLocalData] = useState<Bookings[]>(bookingData);
+
+  useEffect(() => {
+    setLocalData(bookingData);
+  }, [bookingData]);
 
   const handleStatusChange: StatusUpdater = (id, newStatus) => {
     setLocalData((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)));
