@@ -3,8 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-
 export function AuthButton() {
   return (
     <>
@@ -19,12 +17,9 @@ export function AuthButton() {
 }
 
 export function SignOutButton() {
-  const router = useRouter();
-
   async function handleSignOut() {
     await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
   return (

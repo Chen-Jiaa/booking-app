@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type Rooms } from "@/db/schema";
-import { canCreateMultiDayBooking } from "@/lib/roles";
+import { canBookRoom, canCreateMultiDayBooking } from "@/lib/roles";
 import type { User } from "@supabase/supabase-js";
 import { Circle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -41,6 +41,7 @@ function RoomCard({ initialProfile, role, room, rooms, user }: RoomCardProps) {
   const router = useRouter();
 
   const showMultiDayOption = canCreateMultiDayBooking(role);
+  const userCanBook = canBookRoom(role, room.availableTo);
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsDialogOpen(open);
@@ -74,7 +75,17 @@ function RoomCard({ initialProfile, role, room, rooms, user }: RoomCardProps) {
       </CardHeader>
       <CardContent>
         <Dialog onOpenChange={handleDialogOpenChange} open={isDialogOpen}>
-          {user ? (
+          {user && !userCanBook ? (
+            <a
+              href="https://api.whatsapp.com/send?phone=60108257573"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Button className="w-full" variant="outline">
+                Contact Us
+              </Button>
+            </a>
+          ) : user ? (
             <DialogTrigger asChild>
               <Button
                 className="w-full"
