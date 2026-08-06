@@ -1,6 +1,42 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+import {
+  getSupabaseAuthCookieName,
+  isInvalidRefreshTokenError,
+  isMissingAuthSessionError,
+  isSupabaseAuthCookieName,
+} from "./auth-cookies";
+
+function clearSupabaseAuthCookies(
+  request: NextRequest,
+  response: NextResponse,
+  supabaseUrl: string,
+) {
+  const authCookieName = getSupabaseAuthCookieName(supabaseUrl);
+
+  for (const cookie of request.cookies.getAll()) {
+    if (!isSupabaseAuthCookieName(authCookieName, cookie.name)) continue;
+
+    request.cookies.delete(cookie.name);
+    response.cookies.set(cookie.name, "", {
+      httpOnly: false,
+      maxAge: 0,
+      path: "/",
+      sameSite: "lax",
+    });
+  }
+
+  return response;
+}
+
+function redirectToLoginWithClearedAuthCookies(request: NextRequest, supabaseUrl: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  const response = NextResponse.redirect(url);
+  return clearSupabaseAuthCookies(request, response, supabaseUrl);
+}
+
 export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -36,9 +72,35 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: DO NOT REMOVE auth.getUser()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+
+  try {
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        return redirectToLoginWithClearedAuthCookies(request, supabaseUrl);
+      }
+
+      if (isMissingAuthSessionError(error)) {
+        user = null;
+      } else {
+        throw error;
+      }
+    } else {
+      user = data.user;
+    }
+  } catch (error) {
+    if (isInvalidRefreshTokenError(error)) {
+      return redirectToLoginWithClearedAuthCookies(request, supabaseUrl);
+    }
+
+    if (isMissingAuthSessionError(error)) {
+      user = null;
+    } else {
+      throw error;
+    }
+  }
 
   if (
     !user &&

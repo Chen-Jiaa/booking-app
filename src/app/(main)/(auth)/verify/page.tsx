@@ -25,30 +25,31 @@ function VerifyForm() {
   const [isPending, startTransition] = useTransition();
   const otpSlots = [0, 1, 2, 3, 4, 5];
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (otp.length !== 6) {
-      setError("Please enter the full 6-digit code.");
-      return;
-    }
-
+  const submitOtp = (otpValue: string) => {
+    if (otpValue.length !== 6 || isPending) return;
+    setError(null);
     const formData = new FormData();
     formData.set("email", email);
-    formData.set("otp", otp);
-
+    formData.set("otp", otpValue);
     startTransition(async () => {
       const result = await handleVerify(formData);
-
       if (result.error) {
         setError("Invalid or expired code. Please try again.");
         return;
       }
-
       if (result.success) {
         globalThis.location.href = "/";
       }
     });
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (otp.length !== 6) {
+      setError("Please enter the full 6-digit code.");
+      return;
+    }
+    submitOtp(otp);
   };
 
   return (
@@ -64,6 +65,7 @@ function VerifyForm() {
           maxLength={6}
           onChange={(val) => {
             setOtp(val);
+            if (val.length === 6) submitOtp(val);
           }}
         >
           <InputOTPGroup>

@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { cache } from "react";
 
+import { isInvalidRefreshTokenError, isMissingAuthSessionError } from "./auth-cookies";
+
 interface Profile {
   role: string;
 }
@@ -37,10 +39,25 @@ export async function createClient() {
 
 export const getAuthUser = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user ?? null;
+
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error) {
+      if (isInvalidRefreshTokenError(error)) return null;
+      if (isMissingAuthSessionError(error)) return null;
+      throw error;
+    }
+
+    return user ?? null;
+  } catch (error) {
+    if (isInvalidRefreshTokenError(error)) return null;
+    if (isMissingAuthSessionError(error)) return null;
+    throw error;
+  }
 });
 
 export const getUserAndRole = cache(async () => {
