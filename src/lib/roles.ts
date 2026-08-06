@@ -15,6 +15,12 @@ export function filterRoomsByRole<T extends { availableTo: null | string }>(
   return rooms.filter((r) => r.availableTo !== null && allowed.includes(r.availableTo));
 }
 
+export function canBookRoom(role: null | string, availableTo: null | string): boolean {
+  if (!availableTo) return false;
+  const allowed = role ? (ROLE_ROOM_ACCESS[role] ?? ["user"]) : ["user"];
+  return allowed.includes(availableTo);
+}
+
 export function canCreateMultiDayBooking(role: null | string): boolean {
   return role === "event_manager" || role === "admin";
 }
