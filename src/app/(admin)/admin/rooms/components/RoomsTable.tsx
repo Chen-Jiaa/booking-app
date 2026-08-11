@@ -46,7 +46,12 @@ import * as React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { deleteRoom, updateRoomApprovers, updateRoomAvailabilityTo, updateRoomBoolean } from "../actions";
+import {
+  deleteRoom,
+  updateRoomApprovers,
+  updateRoomAvailabilityTo,
+  updateRoomBoolean,
+} from "../actions";
 
 interface RoomTableProps {
   adminEmails: string[];
@@ -90,17 +95,20 @@ export default function RoomTable({ adminEmails, initialData }: RoomTableProps) 
     [rooms],
   );
 
-  const handleDelete = useCallback(async (id: string) => {
-    setRooms((prev) => prev.filter((r) => r.id !== id));
+  const handleDelete = useCallback(
+    async (id: string) => {
+      setRooms((prev) => prev.filter((r) => r.id !== id));
 
-    const result = await deleteRoom(id);
-    if (!result.success) {
-      toast.error(result.error);
-      setRooms(initialData); // revert — refetch not available, fall back to initial
-    } else {
-      toast.success("Room deleted");
-    }
-  }, [initialData]);
+      const result = await deleteRoom(id);
+      if (!result.success) {
+        toast.error(result.error);
+        setRooms(initialData); // revert — refetch not available, fall back to initial
+      } else {
+        toast.success("Room deleted");
+      }
+    },
+    [initialData],
+  );
 
   const toggleApprover = useCallback(async (room: Rooms, email: string) => {
     const originalApprovers = room.approvers ?? [];
@@ -158,25 +166,25 @@ export default function RoomTable({ adminEmails, initialData }: RoomTableProps) 
       {
         accessorKey: "availability",
         cell: ({ row }) => {
-          const rooms = row.original;
+          const room = row.original;
 
           return (
             <div className="capitalize">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild className="px-1 py-1 rounded text-sm">
                   <Button className="flex" variant="ghost">
-                    {rooms.availability ? "Available" : "Unvailable"} <ChevronDown />
+                    {room.availability ? "Available" : "Unvailable"} <ChevronDown />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Make room</DropdownMenuLabel>
                   <DropdownMenuItem
-                    onClick={() => void handleToggle(rooms.id, "availability", true)}
+                    onClick={() => void handleToggle(room.id, "availability", true)}
                   >
                     Available
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => void handleToggle(rooms.id, "availability", false)}
+                    onClick={() => void handleToggle(room.id, "availability", false)}
                   >
                     Unavailable
                   </DropdownMenuItem>
@@ -203,16 +211,16 @@ export default function RoomTable({ adminEmails, initialData }: RoomTableProps) 
       {
         accessorKey: "available_to",
         cell: ({ row }) => {
-          const rooms = row.original;
+          const room = row.original;
 
           return (
             <div className="capitalize">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild className="px-1 py-1 rounded text-sm">
                   <Button className="flex capitalize" variant="ghost">
-                    {rooms.availableTo === "superUser"
+                    {room.availableTo === "superUser"
                       ? "super user"
-                      : rooms.availableTo === "event_manager"
+                      : room.availableTo === "event_manager"
                         ? "event manager"
                         : "user"}{" "}
                     <ChevronDown />
@@ -221,25 +229,25 @@ export default function RoomTable({ adminEmails, initialData }: RoomTableProps) 
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Make Available To</DropdownMenuLabel>
                   <DropdownMenuItem
-                    disabled={rooms.availableTo === "user"}
+                    disabled={room.availableTo === "user"}
                     onClick={() => {
-                      void handleAvailabilityTo(rooms.id, "user");
+                      void handleAvailabilityTo(room.id, "user");
                     }}
                   >
                     User
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    disabled={rooms.availableTo === "event_manager"}
+                    disabled={room.availableTo === "event_manager"}
                     onClick={() => {
-                      void handleAvailabilityTo(rooms.id, "event_manager");
+                      void handleAvailabilityTo(room.id, "event_manager");
                     }}
                   >
                     Event Manager
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    disabled={rooms.availableTo === "superUser"}
+                    disabled={room.availableTo === "superUser"}
                     onClick={() => {
-                      void handleAvailabilityTo(rooms.id, "superUser");
+                      void handleAvailabilityTo(room.id, "superUser");
                     }}
                   >
                     Super User
@@ -267,14 +275,12 @@ export default function RoomTable({ adminEmails, initialData }: RoomTableProps) 
       {
         accessorKey: "approval_required",
         cell: ({ row }) => {
-          const rooms = row.original;
+          const room = row.original;
 
           return (
             <Checkbox
-              checked={rooms.approvalRequired === true}
-              onClick={() =>
-                void handleToggle(rooms.id, "approvalRequired", !rooms.approvalRequired)
-              }
+              checked={room.approvalRequired === true}
+              onClick={() => void handleToggle(room.id, "approvalRequired", !room.approvalRequired)}
             />
           );
         },

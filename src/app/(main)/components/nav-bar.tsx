@@ -17,7 +17,7 @@ export default async function NavBar() {
 
   return (
     <nav className="border-b">
-      <div className="container mx-auto py-3 px-6">
+      <div className="container mx-auto py-4 px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link className="text-xl font-bold" href="/">

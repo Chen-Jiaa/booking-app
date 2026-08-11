@@ -94,6 +94,7 @@ export function CalendarGrid({ bookings, rooms, weekStart }: CalendarGridProps) 
                           roomName={room.name}
                         >
                           <button
+                            aria-label={`Create booking for ${room.name} on ${format(day, "MMMM d, yyyy")} at ${format(setHours(day, hour), "h a")}`}
                             className={cn(
                               "w-full h-10 rounded border border-border bg-muted/50 hover:bg-muted cursor-pointer transition-colors",
                               isToday && "border-info/30 bg-info/10",

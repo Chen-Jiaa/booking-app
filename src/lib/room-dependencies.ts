@@ -138,7 +138,6 @@ export async function isBookingAllowed(
   _date: string,
   startTime: string,
   endTime: string,
-  purpose?: string,
 ): Promise<{ allowed: boolean; reason?: string }> {
   const supabase = await createClient();
 

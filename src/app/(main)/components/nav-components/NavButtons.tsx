@@ -3,6 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
+
+async function handleSignOut() {
+  await supabase.auth.signOut();
+  window.location.href = "/";
+}
+
 export function AuthButton() {
   return (
     <>
@@ -17,11 +23,6 @@ export function AuthButton() {
 }
 
 export function SignOutButton() {
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  }
-
   return (
     <Button onClick={() => void handleSignOut()} variant="outline">
       Log Out
