@@ -79,7 +79,7 @@ export async function createBookingDayCalendarEvent(
     return event.data.id;
   } catch (error) {
     console.error("Failed to create booking day calendar event:", error);
-    throw new Error("Failed to create Google Calendar event for booking day.");
+    throw new Error("Failed to create Google Calendar event for booking day.", { cause: error });
   }
 }
 
@@ -112,7 +112,7 @@ export async function createCalendarEvent(booking: Bookings) {
     return event.data.id;
   } catch (error) {
     console.error(`Failed to create calendar event for booking ${booking.id.toString()}:`, error);
-    throw new Error("Failed to create Google Calendar event.");
+    throw new Error("Failed to create Google Calendar event.", { cause: error });
   }
 }
 
@@ -154,7 +154,7 @@ export async function deleteCalendarEvent(eventId: string): Promise<void> {
     // 410 Gone means already deleted — treat as success
     if ((error as { status?: number }).status === 410) return;
     console.error(`Failed to delete calendar event ${eventId}:`, error);
-    throw new Error("Failed to delete Google Calendar event.");
+    throw new Error("Failed to delete Google Calendar event.", { cause: error });
   }
 }
 
@@ -168,7 +168,7 @@ export async function patchCalendarEventSummary(eventId: string, summary: string
     });
   } catch (error) {
     console.error(`Failed to patch calendar event ${eventId}:`, error);
-    throw new Error("Failed to update Google Calendar event.");
+    throw new Error("Failed to update Google Calendar event.", { cause: error });
   }
 }
 
@@ -214,7 +214,7 @@ export async function updateCalendarEvent(booking: Bookings) {
     }
   } catch (error) {
     console.error(`Failed to update calendar for event ${booking.eventId}:`, error);
-    throw new Error("Failed to sync status with Google Calendar.");
+    throw new Error("Failed to sync status with Google Calendar.", { cause: error });
   }
 }
 
@@ -273,7 +273,7 @@ export async function registerCalendarWatch(
     return { channelId, expiration: Number(expiration) };
   } catch (error) {
     console.error("Failed to register calendar watch:", error);
-    throw new Error("Failed to register Google Calendar watch channel.");
+    throw new Error("Failed to register Google Calendar watch channel.", { cause: error });
   }
 }
 
@@ -291,7 +291,7 @@ export async function listCalendarEvents(timeMin: Date, timeMax: Date) {
     return response.data.items ?? [];
   } catch (error) {
     console.error("Failed to list calendar events:", error);
-    throw new Error("Failed to list Google Calendar events.");
+    throw new Error("Failed to list Google Calendar events.", { cause: error });
   }
 }
 

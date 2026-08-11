@@ -9,7 +9,11 @@ export default async function Home() {
   ]);
 
   if (allRooms.length === 0) {
-    return <p className="text-center mt-10">No rooms available.</p>;
+    return (
+      <div className="container mx-auto px-6 py-16 text-center">
+        <p className="text-muted-foreground">No rooms are available at this time.</p>
+      </div>
+    );
   }
 
   return <RoomList initialProfile={initialProfile} roomData={allRooms} />;

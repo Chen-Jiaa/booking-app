@@ -15,13 +15,13 @@ export async function cancelUserBooking(id: number): Promise<void> {
         .where(eq(bookings.id, id))
         .returning();
 
-      const cancelledBooking = result[0] as (typeof result)[0] | undefined;
+      const updatedBooking = result[0] as (typeof result)[0] | undefined;
 
-      if (!cancelledBooking) {
+      if (!updatedBooking) {
         throw new Error("Failed to cancel booking: Booking not found.");
       }
 
-      if (cancelledBooking.isMultiDay) {
+      if (updatedBooking.isMultiDay) {
         // Cancel linked bookings (e.g., lobby booking with parentBookingId)
         const linkedBookings = await tx
           .select()
@@ -33,10 +33,10 @@ export async function cancelUserBooking(id: number): Promise<void> {
         }
       } else {
         // Standard booking — delete calendar event inside transaction (existing pattern)
-        await updateCalendarEvent(cancelledBooking);
+        await updateCalendarEvent(updatedBooking);
       }
 
-      return cancelledBooking;
+      return updatedBooking;
     });
 
     // For multi-day bookings, delete calendar events outside transaction
@@ -82,6 +82,6 @@ export async function cancelUserBooking(id: number): Promise<void> {
   } catch (error) {
     console.error("Error in cancelUserBooking:", error);
     // Re-throw the error so the client-side code knows the operation failed.
-    throw new Error("Failed to cancel the booking.");
+    throw new Error("Failed to cancel the booking.", { cause: error });
   }
 }

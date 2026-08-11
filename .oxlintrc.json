@@ -16,6 +16,7 @@
     "suspicious": "warn"
   },
   "rules": {
+    "react/no-unstable-nested-components": ["warn", { "allowAsProps": true }],
     "react/react-in-jsx-scope": "off",
     "unicorn/filename-case": "off",
     "unicorn/no-array-reduce": "off",

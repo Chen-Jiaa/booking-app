@@ -3,12 +3,12 @@
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 
 const COLLECTIVE_DOMAIN = "@collective.my";
 
 export async function handleVerify(formData: FormData) {
-  const email = formData.get("email") as string;
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const token = formData.get("otp") as string;
 
   const supabase = await createClient();
@@ -18,7 +18,7 @@ export async function handleVerify(formData: FormData) {
     type: "email",
   });
 
-  if (error || !data.session) {
+  if (error || !data.session || !data.user) {
     console.error("OTP verification failed:", error?.message);
     return { error: true };
   }
@@ -27,7 +27,9 @@ export async function handleVerify(formData: FormData) {
     await db
       .update(profiles)
       .set({ role: "superUser" })
-      .where(and(eq(profiles.email, email), ne(profiles.role, "admin")));
+      .where(
+        and(eq(profiles.id, data.user.id), or(isNull(profiles.role), eq(profiles.role, "user"))),
+      );
   }
 
   return { success: true };

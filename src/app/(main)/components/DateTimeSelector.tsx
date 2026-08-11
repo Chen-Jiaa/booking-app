@@ -62,7 +62,6 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
   const isAdmin = role === "admin";
 
   const selectedRoomId = selectedRoom?.id;
-  const dateString = date?.toDateString();
 
   const handleRoomChange = (roomId: string) => {
     const newRoom = rooms.find((r) => r.id === roomId);
@@ -84,14 +83,14 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
 
       setBookedSlots(new Set());
 
-      if (!date || !selectedRoom) return;
+      if (!date || !selectedRoomId) return;
 
       setIsCheckingAvailability(true);
 
       try {
         const userTimezone =
           Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kuala_Lumpur";
-        const booked = await getUnavailableSlots(selectedRoom.id, date, userTimezone);
+        const booked = await getUnavailableSlots(selectedRoomId, date, userTimezone);
 
         if (!isCancelled) {
           setBookedSlots(booked);
@@ -115,7 +114,7 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
     return () => {
       isCancelled = true;
     };
-  }, [selectedRoomId, dateString, setStartTime, setEndTime]);
+  }, [date, selectedRoomId, setEndTime, setStartTime]);
 
   const getNextTimeSlot = (currentTime: string): null | string => {
     const currentIndex = timeSlots.indexOf(currentTime);
@@ -200,32 +199,35 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
     }
   };
 
-  const isTimeSlotAvailable = (timeSlots: string) => {
+  const isTimeSlotAvailable = (slot: string) => {
     if (!date || isCheckingAvailability) return false;
 
-    return !bookedSlots.has(timeSlots);
+    return !bookedSlots.has(slot);
   };
 
-  const isTimeSlotSelected = (timeSlots: string) => {
+  const isTimeSlotSelected = (slot: string) => {
     if (!startTime) return false;
 
     if (!endTime) {
-      return timeSlots === startTime;
+      return slot === startTime;
     }
 
-    return timeSlots >= startTime && timeSlots < endTime;
+    return slot >= startTime && slot < endTime;
   };
 
   return (
     <Card>
       <CardContent className="grid grid-cols-1">
-        <Label className="mt-6 mb-2">Select Room</Label>
+        <Label className="mt-6 mb-2" htmlFor="room-select">
+          Select Room
+        </Label>
         <Popover onOpenChange={setOpen} open={open}>
           <PopoverTrigger asChild>
             <Button
               aria-expanded={open}
+              aria-haspopup="listbox"
               className="w-[200px] justify-between"
-              role="combobox"
+              id="room-select"
               variant="outline"
             >
               {selectedRoom?.name}
@@ -259,8 +261,9 @@ export default function DateTimeSelector(props: DateTimeSelectorProps) {
           className=""
           disabled={
             isAdmin
-              ? (date) => date < startOfToday()
-              : (date) => date < startOfToday() || date > addWeeks(new Date(), 1)
+              ? (candidateDate) => candidateDate < startOfToday()
+              : (candidateDate) =>
+                  candidateDate < startOfToday() || candidateDate > addWeeks(new Date(), 1)
           }
           mode="single"
           onSelect={handleDateSelect}

@@ -10,7 +10,7 @@ import { canBookRoom, canCreateMultiDayBooking } from "@/lib/roles";
 import type { User } from "@supabase/supabase-js";
 import { Circle, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 
 import BookingForm2 from "./BookingForm";
 import BookingSummary from "./BookingSummary";
@@ -30,7 +30,7 @@ interface RoomCardProps {
   user: null | User;
 }
 
-function RoomCard({ initialProfile, role, room, rooms, user }: RoomCardProps) {
+const RoomCard = memo(function RoomCard({ initialProfile, role, room, rooms, user }: RoomCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [step, setStep] = useState("1");
   const [startTime, setStartTime] = useState<string | undefined>();
@@ -43,7 +43,7 @@ function RoomCard({ initialProfile, role, room, rooms, user }: RoomCardProps) {
   const showMultiDayOption = canCreateMultiDayBooking(role);
   const userCanBook = canBookRoom(role, room.availableTo);
 
-  const handleDialogOpenChange = (open: boolean) => {
+  const handleDialogOpenChange = useCallback((open: boolean) => {
     setIsDialogOpen(open);
     if (!open) {
       setStep("1");
@@ -52,28 +52,36 @@ function RoomCard({ initialProfile, role, room, rooms, user }: RoomCardProps) {
       setBookingMode("standard");
       setSelectedRoom(room);
     }
-  };
+  }, [room]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-5">
-            <span>{room.name}</span>
-            <span className="flex items-center gap-1 text-sm font-normal">
-              <Users size={16} />
-              {room.capacity}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 bg-success-bg rounded-[20px] px-3">
-            <Circle className="fill-success stroke-none w-[10px]" />
-            <span className="text-sm font-normal text-success">
+    <Card className="flex flex-col">
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <CardTitle className="text-base leading-snug">{room.name}</CardTitle>
+          <div
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 shrink-0 ${
+              room.availability ? "bg-success-bg" : "bg-muted"
+            }`}
+          >
+            <Circle
+              className={`w-2 h-2 stroke-none ${room.availability ? "fill-success" : "fill-muted-foreground"}`}
+            />
+            <span
+              className={`text-xs font-medium ${room.availability ? "text-success" : "text-muted-foreground"}`}
+            >
               {room.availability ? "Available" : "Unavailable"}
             </span>
           </div>
-        </CardTitle>
+        </div>
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2">
+          <Users size={14} />
+          <span>
+            {room.capacity} {room.capacity === 1 ? "person" : "people"}
+          </span>
+        </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="mt-auto pt-0">
         <Dialog onOpenChange={handleDialogOpenChange} open={isDialogOpen}>
           {user && !userCanBook ? (
             <a
@@ -108,7 +116,7 @@ function RoomCard({ initialProfile, role, room, rooms, user }: RoomCardProps) {
               Book now
             </Button>
           )}
-          <DialogContent className="max-h-[90vh] overflow-y-scroll">
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogTitle>Availability</DialogTitle>
             {showMultiDayOption && (
               <div className="flex gap-2 mb-2">
@@ -184,14 +192,17 @@ function RoomCard({ initialProfile, role, room, rooms, user }: RoomCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
 
 export function RoomList({ initialProfile, roomData }: RoomListProps) {
   const { role, user } = useSupabase();
 
   return (
-    <div className="container mt-2 mx-auto py-3 px-6">
-      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+    <div className="container mx-auto py-8 px-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight">Available Rooms</h1>
+      </div>
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
         {roomData.map((room) => (
           <RoomCard
             key={room.id}

@@ -129,16 +129,78 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
   const overallEnd = new Date(overallEndMs);
 
   // 2. DB transaction
-  const { approvers, insertedBooking, insertedDays, insertedLobbyBooking, insertedLobbyDays } =
-    await db.transaction(async (tx) => {
-      // Direct room conflict check for each day (standard bookings)
+  const {
+    approvers: roomApprovers,
+    insertedBooking: createdBooking,
+    insertedDays: createdDays,
+    insertedLobbyBooking: createdLobbyBooking,
+    insertedLobbyDays: createdLobbyDays,
+  } = await db.transaction(async (tx) => {
+    // Direct room conflict check for each day (standard bookings)
+    for (const day of daysWithTimestamps) {
+      const conflicts = await tx
+        .select({ id: bookings.id })
+        .from(bookings)
+        .where(
+          and(
+            eq(bookings.roomId, roomId),
+            inArray(bookings.status, ["pending", "confirmed"]),
+            or(eq(bookings.isMultiDay, false), isNull(bookings.isMultiDay)),
+            lt(bookings.startTime, day.endTimestamp),
+            gt(bookings.endTime, day.startTimestamp),
+          ),
+        )
+        .limit(1);
+
+      if (conflicts.length > 0) {
+        const dateLabel = day.date.toLocaleDateString("en-MY", {
+          day: "numeric",
+          month: "short",
+        });
+        throw new Error(`Conflict on ${dateLabel}: room is already booked.`);
+      }
+    }
+
+    // Multi-day booking conflict check for each day via booking_days
+    for (const day of daysWithTimestamps) {
+      const dayStart = new Date(day.date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(day.date);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const multiDayConflicts = await tx
+        .select({ id: bookingDays.id })
+        .from(bookingDays)
+        .innerJoin(bookings, eq(bookingDays.bookingId, bookings.id))
+        .where(
+          and(
+            eq(bookings.roomId, roomId),
+            inArray(bookings.status, ["pending", "confirmed"]),
+            eq(bookings.isMultiDay, true),
+            gte(bookingDays.date, dayStart),
+            lt(bookingDays.date, dayEnd),
+          ),
+        )
+        .limit(1);
+
+      if (multiDayConflicts.length > 0) {
+        const dateLabel = day.date.toLocaleDateString("en-MY", {
+          day: "numeric",
+          month: "short",
+        });
+        throw new Error(`Conflict on ${dateLabel}: room already has a multi-day booking.`);
+      }
+    }
+
+    // Lobby conflict check inside transaction
+    if (needsLobby && lobbyRoom) {
       for (const day of daysWithTimestamps) {
-        const conflicts = await tx
+        const lobbyConflicts = await tx
           .select({ id: bookings.id })
           .from(bookings)
           .where(
             and(
-              eq(bookings.roomId, roomId),
+              eq(bookings.roomId, lobbyRoom.id),
               inArray(bookings.status, ["pending", "confirmed"]),
               or(eq(bookings.isMultiDay, false), isNull(bookings.isMultiDay)),
               lt(bookings.startTime, day.endTimestamp),
@@ -147,29 +209,29 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
           )
           .limit(1);
 
-        if (conflicts.length > 0) {
+        if (lobbyConflicts.length > 0) {
           const dateLabel = day.date.toLocaleDateString("en-MY", {
             day: "numeric",
             month: "short",
           });
-          throw new Error(`Conflict on ${dateLabel}: room is already booked.`);
+          throw new Error(`Lobby conflict on ${dateLabel}: lobby is already booked.`);
         }
       }
 
-      // Multi-day booking conflict check for each day via booking_days
+      // Multi-day lobby conflict check via booking_days
       for (const day of daysWithTimestamps) {
         const dayStart = new Date(day.date);
         dayStart.setHours(0, 0, 0, 0);
         const dayEnd = new Date(day.date);
         dayEnd.setHours(23, 59, 59, 999);
 
-        const multiDayConflicts = await tx
+        const lobbyMultiDayConflicts = await tx
           .select({ id: bookingDays.id })
           .from(bookingDays)
           .innerJoin(bookings, eq(bookingDays.bookingId, bookings.id))
           .where(
             and(
-              eq(bookings.roomId, roomId),
+              eq(bookings.roomId, lobbyRoom.id),
               inArray(bookings.status, ["pending", "confirmed"]),
               eq(bookings.isMultiDay, true),
               gte(bookingDays.date, dayStart),
@@ -178,89 +240,74 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
           )
           .limit(1);
 
-        if (multiDayConflicts.length > 0) {
+        if (lobbyMultiDayConflicts.length > 0) {
           const dateLabel = day.date.toLocaleDateString("en-MY", {
             day: "numeric",
             month: "short",
           });
-          throw new Error(`Conflict on ${dateLabel}: room already has a multi-day booking.`);
+          throw new Error(`Lobby conflict on ${dateLabel}: lobby already has a multi-day booking.`);
         }
       }
+    }
 
-      // Lobby conflict check inside transaction
-      if (needsLobby && lobbyRoom) {
-        for (const day of daysWithTimestamps) {
-          const lobbyConflicts = await tx
-            .select({ id: bookings.id })
-            .from(bookings)
-            .where(
-              and(
-                eq(bookings.roomId, lobbyRoom.id),
-                inArray(bookings.status, ["pending", "confirmed"]),
-                or(eq(bookings.isMultiDay, false), isNull(bookings.isMultiDay)),
-                lt(bookings.startTime, day.endTimestamp),
-                gt(bookings.endTime, day.startTimestamp),
-              ),
-            )
-            .limit(1);
+    // Look up room for approval settings
+    const selectedRoom = await tx
+      .select({ approvalRequired: rooms.approvalRequired, approvers: rooms.approvers })
+      .from(rooms)
+      .where(eq(rooms.id, roomId))
+      .limit(1);
 
-          if (lobbyConflicts.length > 0) {
-            const dateLabel = day.date.toLocaleDateString("en-MY", {
-              day: "numeric",
-              month: "short",
-            });
-            throw new Error(`Lobby conflict on ${dateLabel}: lobby is already booked.`);
-          }
-        }
+    const room = selectedRoom[0] as (typeof selectedRoom)[0] | undefined;
+    if (!room) throw new Error("Room not found.");
 
-        // Multi-day lobby conflict check via booking_days
-        for (const day of daysWithTimestamps) {
-          const dayStart = new Date(day.date);
-          dayStart.setHours(0, 0, 0, 0);
-          const dayEnd = new Date(day.date);
-          dayEnd.setHours(23, 59, 59, 999);
+    const approvers = room.approvers ?? [];
 
-          const lobbyMultiDayConflicts = await tx
-            .select({ id: bookingDays.id })
-            .from(bookingDays)
-            .innerJoin(bookings, eq(bookingDays.bookingId, bookings.id))
-            .where(
-              and(
-                eq(bookings.roomId, lobbyRoom.id),
-                inArray(bookings.status, ["pending", "confirmed"]),
-                eq(bookings.isMultiDay, true),
-                gte(bookingDays.date, dayStart),
-                lt(bookingDays.date, dayEnd),
-              ),
-            )
-            .limit(1);
+    // Insert parent booking
+    const insertResult = await tx
+      .insert(bookings)
+      .values({
+        bookingType: "multi_day",
+        clientName,
+        email,
+        endTime: overallEnd,
+        eventName,
+        expectedAttendance,
+        isMultiDay: true,
+        name: managerName,
+        phone: managerPhone,
+        purpose: eventName,
+        roomId,
+        roomName,
+        startTime: overallStart,
+        status: "pending",
+        userId,
+      })
+      .returning();
 
-          if (lobbyMultiDayConflicts.length > 0) {
-            const dateLabel = day.date.toLocaleDateString("en-MY", {
-              day: "numeric",
-              month: "short",
-            });
-            throw new Error(
-              `Lobby conflict on ${dateLabel}: lobby already has a multi-day booking.`,
-            );
-          }
-        }
-      }
+    const insertedBooking = insertResult[0] as (typeof insertResult)[0] | undefined;
+    if (!insertedBooking) throw new Error("Failed to create booking.");
 
-      // Look up room for approval settings
-      const selectedRoom = await tx
-        .select({ approvalRequired: rooms.approvalRequired, approvers: rooms.approvers })
-        .from(rooms)
-        .where(eq(rooms.id, roomId))
-        .limit(1);
+    // Insert booking_days
+    const insertedDays = await tx
+      .insert(bookingDays)
+      .values(
+        daysWithTimestamps.map((day) => ({
+          bookingId: insertedBooking.id,
+          date: day.date,
+          dayType: day.dayType,
+          endTime: day.isAllDay ? null : day.endTimestamp,
+          isAllDay: day.isAllDay,
+          startTime: day.isAllDay ? null : day.startTimestamp,
+        })),
+      )
+      .returning();
 
-      const room = selectedRoom[0] as (typeof selectedRoom)[0] | undefined;
-      if (!room) throw new Error("Room not found.");
+    // Insert linked lobby booking if needed
+    let insertedLobbyBooking: null | typeof insertedBooking = null;
+    let insertedLobbyDays: null | typeof insertedDays = null;
 
-      const approvers = room.approvers ?? [];
-
-      // Insert parent booking
-      const insertResult = await tx
+    if (needsLobby && lobbyRoom) {
+      const lobbyInsertResult = await tx
         .insert(bookings)
         .values({
           bookingType: "multi_day",
@@ -271,87 +318,43 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
           expectedAttendance,
           isMultiDay: true,
           name: managerName,
+          parentBookingId: insertedBooking.id,
           phone: managerPhone,
           purpose: eventName,
-          roomId,
-          roomName,
+          roomId: lobbyRoom.id,
+          roomName: lobbyRoom.name,
           startTime: overallStart,
           status: "pending",
           userId,
         })
         .returning();
 
-      const insertedBooking = insertResult[0] as (typeof insertResult)[0] | undefined;
-      if (!insertedBooking) throw new Error("Failed to create booking.");
+      const lobbyBooking =
+        (lobbyInsertResult[0] as (typeof lobbyInsertResult)[0] | undefined) ?? null;
+      insertedLobbyBooking = lobbyBooking;
 
-      // Insert booking_days
-      const insertedDays = await tx
-        .insert(bookingDays)
-        .values(
-          daysWithTimestamps.map((day) => ({
-            bookingId: insertedBooking.id,
-            date: day.date,
-            dayType: day.dayType,
-            endTime: day.isAllDay ? null : day.endTimestamp,
-            isAllDay: day.isAllDay,
-            startTime: day.isAllDay ? null : day.startTimestamp,
-          })),
-        )
-        .returning();
-
-      // Insert linked lobby booking if needed
-      let insertedLobbyBooking: null | typeof insertedBooking = null;
-      let insertedLobbyDays: null | typeof insertedDays = null;
-
-      if (needsLobby && lobbyRoom) {
-        const lobbyInsertResult = await tx
-          .insert(bookings)
-          .values({
-            bookingType: "multi_day",
-            clientName,
-            email,
-            endTime: overallEnd,
-            eventName,
-            expectedAttendance,
-            isMultiDay: true,
-            name: managerName,
-            parentBookingId: insertedBooking.id,
-            phone: managerPhone,
-            purpose: eventName,
-            roomId: lobbyRoom.id,
-            roomName: lobbyRoom.name,
-            startTime: overallStart,
-            status: "pending",
-            userId,
-          })
+      if (lobbyBooking) {
+        insertedLobbyDays = await tx
+          .insert(bookingDays)
+          .values(
+            daysWithTimestamps.map((day) => ({
+              bookingId: lobbyBooking.id,
+              date: day.date,
+              dayType: day.dayType,
+              endTime: day.isAllDay ? null : day.endTimestamp,
+              isAllDay: day.isAllDay,
+              startTime: day.isAllDay ? null : day.startTimestamp,
+            })),
+          )
           .returning();
-
-        const lobbyBooking =
-          (lobbyInsertResult[0] as (typeof lobbyInsertResult)[0] | undefined) ?? null;
-        insertedLobbyBooking = lobbyBooking;
-
-        if (lobbyBooking) {
-          insertedLobbyDays = await tx
-            .insert(bookingDays)
-            .values(
-              daysWithTimestamps.map((day) => ({
-                bookingId: lobbyBooking.id,
-                date: day.date,
-                dayType: day.dayType,
-                endTime: day.isAllDay ? null : day.endTimestamp,
-                isAllDay: day.isAllDay,
-                startTime: day.isAllDay ? null : day.startTimestamp,
-              })),
-            )
-            .returning();
-        }
       }
+    }
 
-      return { approvers, insertedBooking, insertedDays, insertedLobbyBooking, insertedLobbyDays };
-    });
+    return { approvers, insertedBooking, insertedDays, insertedLobbyBooking, insertedLobbyDays };
+  });
 
   // 3. Google Calendar: create events for each day (outside transaction)
-  for (const day of insertedDays) {
+  for (const day of createdDays) {
     try {
       const gcalEventId = await createBookingDayCalendarEvent({
         clientName,
@@ -379,8 +382,8 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
   }
 
   // Calendar events for lobby days
-  if (insertedLobbyBooking && insertedLobbyDays) {
-    for (const day of insertedLobbyDays) {
+  if (createdLobbyBooking && createdLobbyDays) {
+    for (const day of createdLobbyDays) {
       try {
         const gcalEventId = await createBookingDayCalendarEvent({
           clientName,
@@ -391,7 +394,7 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
           eventName,
           isAllDay: day.isAllDay ?? false,
           phone: managerPhone,
-          roomName: insertedLobbyBooking.roomName,
+          roomName: createdLobbyBooking.roomName,
           startTime: day.startTime,
           status: "pending",
         });
@@ -431,8 +434,8 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
     }
 
     // Send email to approvers
-    if (approvers.length > 0) {
-      const daysDetails = insertedDays.map((d) => ({
+    if (roomApprovers.length > 0) {
+      const daysDetails = createdDays.map((d) => ({
         date: d.date,
         dayType: d.dayType,
         endTime: d.endTime,
@@ -441,9 +444,9 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
       }));
 
       await Promise.all(
-        approvers.map((approverEmail) =>
+        roomApprovers.map((approverEmail) =>
           sendMultiDayBookingEmail({
-            ...insertedBooking,
+            ...createdBooking,
             bookingDaysDetails: daysDetails,
             to: approverEmail,
           }),
@@ -452,5 +455,5 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
     }
   });
 
-  return { booking: insertedBooking, success: true as const };
+  return { booking: createdBooking, success: true as const };
 }

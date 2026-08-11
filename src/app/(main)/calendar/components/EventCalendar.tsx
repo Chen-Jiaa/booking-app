@@ -111,14 +111,18 @@ export function EventCalendar({ initialEvents, isAdmin, isLoggedIn, rooms }: Eve
       if (result.error) {
         setSyncMessage(`Sync failed: ${result.error}`);
       } else {
-        setSyncMessage(`Synced: +${result.inserted.toString()} new, ${result.cancelled.toString()} cancelled`);
+        setSyncMessage(
+          `Synced: +${result.inserted.toString()} new, ${result.cancelled.toString()} cancelled`,
+        );
         cacheRef.current.clear();
         if (visibleRangeRef.current) {
           const { start, end } = visibleRangeRef.current;
-          const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-          while (cursor < end) {
+          for (
+            let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+            cursor < end;
+            cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
+          ) {
             await fetchAndCacheMonth(cursor.getFullYear(), cursor.getMonth());
-            cursor.setMonth(cursor.getMonth() + 1);
           }
         }
         setEvents([...cacheRef.current.values()].flat());
@@ -140,10 +144,12 @@ export function EventCalendar({ initialEvents, isAdmin, isLoggedIn, rooms }: Eve
 
         // Collect all months the current view spans
         const monthKeys: { month: number; year: number }[] = [];
-        const cursor = new Date(viewStart.getFullYear(), viewStart.getMonth(), 1);
-        while (cursor < viewEnd) {
+        for (
+          let cursor = new Date(viewStart.getFullYear(), viewStart.getMonth(), 1);
+          cursor < viewEnd;
+          cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
+        ) {
           monthKeys.push({ month: cursor.getMonth(), year: cursor.getFullYear() });
-          cursor.setMonth(cursor.getMonth() + 1);
         }
 
         // Show all cached events immediately — FullCalendar filters by view range internally.
@@ -157,6 +163,7 @@ export function EventCalendar({ initialEvents, isAdmin, isLoggedIn, rooms }: Eve
         if (missing.length > 0) {
           void Promise.all(missing.map((m) => fetchAndCacheMonth(m.year, m.month))).then(() => {
             setEvents([...cacheRef.current.values()].flat());
+            return undefined;
           });
         }
 

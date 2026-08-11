@@ -17,7 +17,9 @@
 /.next/
 /out/
 
-/supabase/ 
+/supabase/*
+!/supabase/migrations/
+!/supabase/migrations/*.sql
 
 # production
 /build

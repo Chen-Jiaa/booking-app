@@ -508,8 +508,8 @@ function checkMultiDayDatesChanged(
 ): boolean {
   if (originalDays.length !== newDays.length) return true;
 
-  const sortedOriginal = [...originalDays].sort((a, b) => a.date.getTime() - b.date.getTime());
-  const sortedNew = [...newDays].sort((a, b) => a.date.getTime() - b.date.getTime());
+  const sortedOriginal = originalDays.toSorted((a, b) => a.date.getTime() - b.date.getTime());
+  const sortedNew = newDays.toSorted((a, b) => a.date.getTime() - b.date.getTime());
 
   for (const [i, orig] of sortedOriginal.entries()) {
     const updated = sortedNew[i];

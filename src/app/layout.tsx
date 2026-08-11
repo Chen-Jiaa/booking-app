@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+// oxlint-disable-next-line import/no-unassigned-import -- Next.js loads global CSS through a root-layout side-effect import.
 import "./globals.css";
 
 import { SupabaseProvider } from "@/components/providers/supabase-providers";

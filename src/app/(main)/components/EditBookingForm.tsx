@@ -73,7 +73,7 @@ function EditMultiDayForm({
   );
 
   const [sortedDays] = useState(() => {
-    return [...initialDays].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return initialDays.toSorted((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   });
   const firstDay = sortedDays[0] as (typeof sortedDays)[0] | undefined;
   const lastDay = sortedDays.at(-1);
