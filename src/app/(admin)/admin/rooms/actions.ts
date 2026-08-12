@@ -12,6 +12,7 @@ const AddRoomSchema = z
     approval_required: z.boolean(),
     approvers: z.array(z.string().email()).optional(),
     available_to: z.string().min(1, "Please select who is this room viewable to"),
+    building: z.string().min(1, "Please select a building"),
     capacity: z.coerce.number().int().positive("Capacity must be a positive number"),
     name: z.string().min(2, "Name is required"),
   })
@@ -42,6 +43,7 @@ export async function addRoom(data: z.infer<typeof AddRoomSchema>) {
       approvalRequired: parsed.data.approval_required,
       approvers: parsed.data.approvers ?? [],
       availableTo: parsed.data.available_to,
+      building: parsed.data.building,
       capacity: parsed.data.capacity,
       name: parsed.data.name,
     });

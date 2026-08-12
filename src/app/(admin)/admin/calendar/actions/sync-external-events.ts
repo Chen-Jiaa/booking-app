@@ -3,7 +3,7 @@
 import { getBlockedRoomIds } from "@/lib/room-dependencies";
 import { listCalendarEvents } from "@/lib/google-calendar";
 import { createClient } from "@/lib/supabase/server";
-import { addMonths } from "date-fns";
+import { addMonths, addYears } from "date-fns";
 
 interface Room {
   id: string;
@@ -17,7 +17,7 @@ const CALENDAR_ROOM_ALIASES: Readonly<Record<string, readonly string[]>> = {
   "artist room": ["VIP Room 4"],
   "class room 1": ["Holding Room 1"],
   "class room 2": ["Holding Room 2"],
-  "ex eight": ["Auditorium", "Glass Room", "Lobby", "Stage 8"],
+  "ex eight": ["Auditorium", "Glass Room", "Green Room", "Lobby", "Stage 8"],
   greenroom: ["Green Room"],
   "main hall": ["Auditorium"],
   "vip room": ["VIP Room 3"],
@@ -107,11 +107,11 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
 
     const now = new Date();
     const threeMonthsBack = addMonths(now, -3);
-    const threeMonthsAhead = addMonths(now, 3);
+    const oneYearAhead = addYears(now, 1);
 
     const [gcalEvents, { data: rooms }, { data: existingExternal }, { data: existingPeriods }] =
       await Promise.all([
-        listCalendarEvents(threeMonthsBack, threeMonthsAhead),
+        listCalendarEvents(threeMonthsBack, oneYearAhead),
         supabase.from("rooms").select("id, name"),
         supabase
           .from("bookings")
