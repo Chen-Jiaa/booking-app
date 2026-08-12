@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { bookingDays, bookings, profiles, rooms } from "@/db/schema";
+import { bookingDays, bookings, profiles, rooms, unavailablePeriods } from "@/db/schema";
 import { combineDateAndTime } from "@/lib/date-utils";
 import { createBookingDayCalendarEvent } from "@/lib/google-calendar";
 import { isBookingAllowed } from "@/lib/room-dependencies";
@@ -84,11 +84,7 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
   // Check lobby conflicts if needed
   let lobbyRoom: null | typeof rooms.$inferSelect = null;
   if (needsLobby) {
-    const lobbyResult = await db
-      .select()
-      .from(rooms)
-      .where(eq(rooms.name, "Lobby to Main Hall"))
-      .limit(1);
+    const lobbyResult = await db.select().from(rooms).where(eq(rooms.name, "Lobby")).limit(1);
 
     lobbyRoom = (lobbyResult[0] as (typeof lobbyResult)[0] | undefined) ?? null;
 
@@ -159,6 +155,26 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
         });
         throw new Error(`Conflict on ${dateLabel}: room is already booked.`);
       }
+
+      const unavailableConflict = await tx
+        .select({ id: unavailablePeriods.id })
+        .from(unavailablePeriods)
+        .where(
+          and(
+            eq(unavailablePeriods.roomId, roomId),
+            lt(unavailablePeriods.startTime, day.endTimestamp),
+            gt(unavailablePeriods.endTime, day.startTimestamp),
+          ),
+        )
+        .limit(1);
+
+      if (unavailableConflict.length > 0) {
+        const dateLabel = day.date.toLocaleDateString("en-MY", {
+          day: "numeric",
+          month: "short",
+        });
+        throw new Error(`Conflict on ${dateLabel}: room is unavailable due to an external event.`);
+      }
     }
 
     // Multi-day booking conflict check for each day via booking_days
@@ -215,6 +231,28 @@ export async function submitMultiDayBooking(values: SubmitMultiDayInput) {
             month: "short",
           });
           throw new Error(`Lobby conflict on ${dateLabel}: lobby is already booked.`);
+        }
+
+        const lobbyUnavailableConflict = await tx
+          .select({ id: unavailablePeriods.id })
+          .from(unavailablePeriods)
+          .where(
+            and(
+              eq(unavailablePeriods.roomId, lobbyRoom.id),
+              lt(unavailablePeriods.startTime, day.endTimestamp),
+              gt(unavailablePeriods.endTime, day.startTimestamp),
+            ),
+          )
+          .limit(1);
+
+        if (lobbyUnavailableConflict.length > 0) {
+          const dateLabel = day.date.toLocaleDateString("en-MY", {
+            day: "numeric",
+            month: "short",
+          });
+          throw new Error(
+            `Lobby conflict on ${dateLabel}: lobby is unavailable due to an external event.`,
+          );
         }
       }
 

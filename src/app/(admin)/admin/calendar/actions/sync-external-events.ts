@@ -10,9 +10,27 @@ interface Room {
   name: string;
 }
 
+// Calendar labels that intentionally refer to a differently named website room.
+// Keep this explicit: fuzzy prefix matching previously turned "Office Common Area"
+// into "Office Pantry" and "VIP Room 3" into the wrong room.
+const CALENDAR_ROOM_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  "artist room": ["VIP Room 4"],
+  "class room 1": ["Holding Room 1"],
+  "class room 2": ["Holding Room 2"],
+  "ex eight": ["Auditorium", "Glass Room", "Lobby", "Stage 8"],
+  greenroom: ["Green Room"],
+  "main hall": ["Auditorium"],
+  "vip room": ["VIP Room 3"],
+  "vip room 1": ["VIP Room 3"],
+};
+
+function normalizeRoomName(name: string): string {
+  return name.trim().replaceAll(/\s+/g, " ").toLowerCase();
+}
+
 // Extracts the room identifier from a GCal event title.
 // "LOBBY BOOKED FOR WEDDING REHEARSAL" → "lobby"
-// "MAIN HALL BOOKED FOR CONCERT" → "main hall"
+// "AUDITORIUM BOOKED FOR CONCERT" → "auditorium"
 function extractRoomFromTitle(title: string): string | null {
   // Skip events the app itself created (e.g. "[CONFIRMED] Lobby by John...")
   if (title.trimStart().startsWith("[")) return null;
@@ -21,31 +39,27 @@ function extractRoomFromTitle(title: string): string | null {
   return match ? match[1].trim().toLowerCase() : null;
 }
 
-// Finds the best-matching room for a single identifier token.
-function matchRoom(identifier: string, rooms: Room[]): Room | null {
-  const id = identifier.trim().toLowerCase();
-  for (const room of rooms) {
-    const nameLower = room.name.toLowerCase();
-    if (nameLower.startsWith(id) || id.startsWith(nameLower.split(" ")[0])) {
-      return room;
-    }
-  }
-  return null;
-}
-
 // Handles comma-separated room identifiers extracted from a title.
-// "lobby, auditorium, vip room 3, green room" → [Room, Room, Room, Room]
+// "lobby, auditorium, vip room 3, green room" → [Room, Room, Room, Room].
+// "EX Eight" expands to its four rooms because it represents a whole-venue hold.
 function matchAllRooms(identifier: string, rooms: Room[]): Room[] {
-  const parts = identifier.split(",");
+  const roomsByName = new Map(rooms.map((room) => [normalizeRoomName(room.name), room]));
   const matched: Room[] = [];
   const seenIds = new Set<string>();
-  for (const part of parts) {
-    const room = matchRoom(part.trim(), rooms);
-    if (room && !seenIds.has(room.id)) {
-      matched.push(room);
-      seenIds.add(room.id);
+
+  for (const part of identifier.split(",")) {
+    const calendarName = normalizeRoomName(part);
+    const targetRoomNames = CALENDAR_ROOM_ALIASES[calendarName] ?? [calendarName];
+
+    for (const targetRoomName of targetRoomNames) {
+      const room = roomsByName.get(normalizeRoomName(targetRoomName));
+      if (room && !seenIds.has(room.id)) {
+        matched.push(room);
+        seenIds.add(room.id);
+      }
     }
   }
+
   return matched;
 }
 
@@ -104,10 +118,7 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
           .select("id, event_id")
           .eq("booking_type", "external")
           .not("event_id", "is", null),
-        supabase
-          .from("unavailable_periods")
-          .select("id, reason")
-          .like("reason", "gcal:%"),
+        supabase.from("unavailable_periods").select("id, reason").like("reason", "gcal:%"),
       ]);
 
     if (!rooms) return { cancelled: 0, error: "Failed to fetch rooms", inserted: 0, skipped: 0 };
@@ -117,9 +128,7 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
       (existingExternal ?? []).map((b) => [b.event_id as string, b.id]),
     );
     // reason format: "gcal:<eventId>:<roomId>" → period row id for updates
-    const existingPeriodMap = new Map(
-      (existingPeriods ?? []).map((p) => [p.reason, p.id]),
-    );
+    const existingPeriodMap = new Map((existingPeriods ?? []).map((p) => [p.reason, p.id]));
     const gcalEventIds = new Set(gcalEvents.map((e) => e.id).filter(Boolean) as string[]);
 
     // Cancel bookings and remove unavailable_periods whose GCal event was deleted
@@ -168,7 +177,8 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
         continue;
       }
 
-      // Support comma-separated room names, e.g. "LOBBY, AUDITORIUM, VIP ROOM 3 BOOKED FOR X"
+      // Support comma-separated room names, e.g. "LOBBY, AUDITORIUM, VIP ROOM 3 BOOKED FOR X".
+      // Unknown labels (such as Office Common Area) are intentionally ignored.
       const matchedRooms = matchAllRooms(roomIdentifier, rooms as Room[]);
       if (matchedRooms.length === 0) {
         skipped++;
@@ -214,7 +224,14 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
           })
           .eq("id", existingBookingId);
         // Upsert unavailable_periods for all affected rooms (fixes stale times + adds missing rooms)
-        await upsertPeriods(supabase, event.id, allAffectedRoomIds, startTime, endTime, existingPeriodMap);
+        await upsertPeriods(
+          supabase,
+          event.id,
+          allAffectedRoomIds,
+          startTime,
+          endTime,
+          existingPeriodMap,
+        );
         skipped++;
         continue;
       }
@@ -241,7 +258,14 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
       }
 
       // Upsert unavailable_periods for all affected rooms (blocks user booking form)
-      await upsertPeriods(supabase, event.id, allAffectedRoomIds, startTime, endTime, existingPeriodMap);
+      await upsertPeriods(
+        supabase,
+        event.id,
+        allAffectedRoomIds,
+        startTime,
+        endTime,
+        existingPeriodMap,
+      );
 
       inserted++;
     }
