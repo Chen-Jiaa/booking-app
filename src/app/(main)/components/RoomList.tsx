@@ -20,22 +20,7 @@ import MultiDayBookingForm from "./MultiDayBookingForm";
 type RoomAction = "book" | "contact" | "sign-in";
 type RoomStatus = "available" | "contact" | "unavailable";
 
-const ROOM_GROUPS = [
-  {
-    roomNames: ["VIP Room 3", "VIP Room 4", "Green Room", "Office Pantry"],
-    title: "Office Block",
-  },
-  {
-    roomNames: ["Glass Room", "Lobby", "Auditorium"],
-    title: "Main Hall",
-  },
-  {
-    roomNames: ["Holding Room 1", "Holding Room 2", "Stage 8"],
-    title: "Stage 8",
-  },
-];
-
-const GROUPED_ROOM_NAMES = new Set(ROOM_GROUPS.flatMap((group) => group.roomNames));
+const BUILDING_ORDER = ["Office Block", "Main Hall", "Stage 8"];
 
 const ROOM_PICKER_DETAILS: Record<string, null | string> = {
   Auditorium: null,
@@ -266,15 +251,19 @@ const RoomCard = memo(function RoomCard({
 
 export function RoomList({ initialProfile, roomData }: RoomListProps) {
   const { role, user } = useSupabase();
-  const roomsByName = new Map(roomData.map((room) => [room.name, room]));
-  const groups = ROOM_GROUPS.map((group) => ({
-    rooms: group.roomNames.flatMap((roomName) => {
-      const room = roomsByName.get(roomName);
-      return room ? [room] : [];
-    }),
-    title: group.title,
-  })).filter((group) => group.rooms.length > 0);
-  const otherRooms = roomData.filter((room) => !GROUPED_ROOM_NAMES.has(room.name));
+  const roomsByBuilding = new Map<string, Rooms[]>();
+
+  for (const room of roomData) {
+    const roomsInBuilding = roomsByBuilding.get(room.building) ?? [];
+    roomsInBuilding.push(room);
+    roomsByBuilding.set(room.building, roomsInBuilding);
+  }
+
+  const groups = BUILDING_ORDER.flatMap((title) => {
+    const rooms = roomsByBuilding.get(title);
+    return rooms ? [{ rooms, title }] : [];
+  });
+  const otherRooms = roomData.filter((room) => !BUILDING_ORDER.includes(room.building));
 
   if (otherRooms.length > 0) {
     groups.push({ rooms: otherRooms, title: "Other rooms" });

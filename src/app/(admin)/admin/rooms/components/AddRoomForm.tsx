@@ -32,6 +32,7 @@ const RoomSchema = z
     approval_required: z.boolean(),
     approvers: z.array(z.string().email()).optional(),
     available_to: z.string().min(1, "Please select who is this room viewable to"),
+    building: z.string().min(1, "Please select a building"),
     capacity: z.coerce.number().int().positive("Capacity must be a positive number"),
     name: z.string().min(2, "Name is required"),
   })
@@ -52,6 +53,8 @@ const userOptions = [
   { label: "Admin", value: "admin" },
 ];
 
+const buildingOptions = ["Office Block", "Main Hall", "Stage 8"];
+
 type RoomFormData = z.infer<typeof RoomSchema>;
 
 export default function AddRooms({ adminEmails }: { adminEmails: string[] }) {
@@ -68,6 +71,7 @@ export default function AddRooms({ adminEmails }: { adminEmails: string[] }) {
       approval_required: false,
       approvers: [],
       available_to: "",
+      building: "",
       capacity: 0,
       name: "",
     },
@@ -122,6 +126,31 @@ export default function AddRooms({ adminEmails }: { adminEmails: string[] }) {
               <FormControl>
                 <Input placeholder="20" {...field} type="number" />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="building"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Building:</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select the building for this room" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {buildingOptions.map((building) => (
+                    <SelectItem key={building} value={building}>
+                      {building}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

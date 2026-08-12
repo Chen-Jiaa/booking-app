@@ -280,15 +280,24 @@ export async function registerCalendarWatch(
 // --- Function: LIST events from Google Calendar in a time range ---
 export async function listCalendarEvents(timeMin: Date, timeMax: Date) {
   try {
-    const response = await calendar.events.list({
-      calendarId,
-      timeMin: timeMin.toISOString(),
-      timeMax: timeMax.toISOString(),
-      singleEvents: true,
-      orderBy: "startTime",
-      maxResults: 500,
-    });
-    return response.data.items ?? [];
+    const events: calendar_v3.Schema$Event[] = [];
+    let pageToken: string | undefined;
+
+    do {
+      const response = await calendar.events.list({
+        calendarId,
+        maxResults: 500,
+        orderBy: "startTime",
+        pageToken,
+        singleEvents: true,
+        timeMax: timeMax.toISOString(),
+        timeMin: timeMin.toISOString(),
+      });
+      events.push(...(response.data.items ?? []));
+      pageToken = response.data.nextPageToken ?? undefined;
+    } while (pageToken);
+
+    return events;
   } catch (error) {
     console.error("Failed to list calendar events:", error);
     throw new Error("Failed to list Google Calendar events.", { cause: error });

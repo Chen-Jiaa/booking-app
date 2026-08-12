@@ -60,6 +60,7 @@ export const rooms = pgTable("rooms", {
   approvers: text("approvers").array(),
   availability: boolean("availability").default(true),
   availableTo: text("available_to"),
+  building: varchar("building", { length: 255 }).notNull(),
   capacity: integer("capacity").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   dependencyGroup: text("dependency_group"),
