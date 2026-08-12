@@ -65,14 +65,14 @@ export default function MultiDayBookingForm({ rooms, selectedRoom }: MultiDayBoo
     }
   }, [user]);
 
-  const isMainHall = selectedRoom.name === "Main Hall";
+  const isAuditorium = selectedRoom.name === "Auditorium";
 
   const canContinue =
     eventName.trim() !== "" &&
     clientName.trim() !== "" &&
     dateRange?.from != null &&
     dateRange.to != null &&
-    (!isMainHall || needsLobby !== null);
+    (!isAuditorium || needsLobby !== null);
 
   const handleContinue = () => {
     if (!dateRange?.from || !dateRange.to) return;
@@ -97,7 +97,7 @@ export default function MultiDayBookingForm({ rooms, selectedRoom }: MultiDayBoo
     (day) => day.isAllDay || (day.startTime && day.endTime),
   );
 
-  const lobbyRoom = rooms.find((r) => r.name === "Lobby to Main Hall");
+  const lobbyRoom = rooms.find((r) => r.name === "Lobby");
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -219,8 +219,8 @@ export default function MultiDayBookingForm({ rooms, selectedRoom }: MultiDayBoo
             )}
           </div>
 
-          {/* Lobby prompt for Main Hall */}
-          {isMainHall && (
+          {/* Lobby prompt for Auditorium */}
+          {isAuditorium && (
             <div className="border rounded-lg p-4 bg-muted/50">
               <p className="font-medium mb-2">
                 Will the client also need the Lobby for setup/event?
@@ -247,7 +247,7 @@ export default function MultiDayBookingForm({ rooms, selectedRoom }: MultiDayBoo
               </div>
               {needsLobby && lobbyRoom && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  The Lobby to Main Hall will be included and blocked for the same dates/times.
+                  The Lobby will be included and blocked for the same dates/times.
                 </p>
               )}
             </div>

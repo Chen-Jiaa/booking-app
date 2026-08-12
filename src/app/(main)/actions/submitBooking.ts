@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { bookings, profiles, rooms } from "@/db/schema";
+import { bookings, profiles, rooms, unavailablePeriods } from "@/db/schema";
 import { createCalendarEvent } from "@/lib/google-calendar";
 import { sendBookingConfirmationEmail, sendBookingEmail } from "@/lib/sendBookingEmail";
 import { getAuthUser } from "@/lib/supabase/server";
@@ -103,6 +103,25 @@ export async function submitBooking(values: z.infer<typeof formSchema>) {
         .limit(1);
 
       if (overlapping.length > 0) {
+        throw new BookingConflictError();
+      }
+
+      // The direct calendar sync stores external holds as unavailable periods.
+      // Check them again at write time so a manually submitted request cannot
+      // bypass the disabled time slots in the client.
+      const externalOverlap = await tx
+        .select({ id: unavailablePeriods.id })
+        .from(unavailablePeriods)
+        .where(
+          and(
+            eq(unavailablePeriods.roomId, selectedRoomId),
+            lt(unavailablePeriods.startTime, endTime),
+            gt(unavailablePeriods.endTime, startTime),
+          ),
+        )
+        .limit(1);
+
+      if (externalOverlap.length > 0) {
         throw new BookingConflictError();
       }
 

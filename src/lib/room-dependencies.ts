@@ -14,12 +14,12 @@ interface DependencyRule {
 }
 
 // Blocking rules based on physical space constraints.
-// Lobby is the entrance to Main Hall and Glass Room.
-// Main Hall access also blocks the Lobby and Glass Room area.
+// Lobby is the entrance to Auditorium and Glass Room.
+// Auditorium access also blocks the Lobby and Glass Room area.
 const DEPENDENCY_RULES: DependencyRule[] = [
-  { blocks: ["main hall", "glass"], source: "lobby" },
+  { blocks: ["auditorium", "glass"], source: "lobby" },
   { blocks: ["vip"], condition: "wedding", source: "lobby" },
-  { blocks: ["lobby", "glass"], source: "main hall" },
+  { blocks: ["lobby", "glass"], source: "auditorium" },
 ];
 
 function matchesName(roomName: string, pattern: string): boolean {
@@ -146,6 +146,23 @@ export async function isBookingAllowed(
 
   const targetRoom = allRooms.find((r: RoomInfo) => r.id === roomId);
   if (!targetRoom) return { allowed: true };
+
+  // External calendar events (including an EX Eight whole-venue hold) are
+  // represented as unavailable periods rather than ordinary user bookings.
+  const { data: unavailablePeriods } = await supabase
+    .from("unavailable_periods")
+    .select("id")
+    .eq("room_id", roomId)
+    .lt("start_time", endTime)
+    .gt("end_time", startTime)
+    .limit(1);
+
+  if (unavailablePeriods && unavailablePeriods.length > 0) {
+    return {
+      allowed: false,
+      reason: `${targetRoom.name} is unavailable during this time due to an external calendar event.`,
+    };
+  }
 
   const relevantRules = DEPENDENCY_RULES.filter((rule) =>
     rule.blocks.some((pattern) => matchesName(targetRoom.name, pattern)),
