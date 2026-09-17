@@ -214,11 +214,12 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
 
       const existingBookingId = existingBookingMap.get(event.id);
       if (existingBookingId) {
-        // Update times and room_name in case they were stored incorrectly
+        // Update the primary room, times, and displayed room names in case they were stored incorrectly.
         await supabase
           .from("bookings")
           .update({
             end_time: endTime.toISOString(),
+            room_id: matchedRooms[0].id,
             room_name: matchedRooms.map((r) => r.name).join(", "),
             start_time: startTime.toISOString(),
           })
@@ -232,6 +233,20 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
           endTime,
           existingPeriodMap,
         );
+        const stalePeriodIds = (existingPeriods ?? [])
+          .filter(
+            (period) =>
+              period.reason.startsWith(`gcal:${event.id}:`) &&
+              !allAffectedRoomIds.has(period.reason.slice(`gcal:${event.id}:`.length)),
+          )
+          .map((period) => period.id);
+        if (stalePeriodIds.length > 0) {
+          const { error } = await supabase
+            .from("unavailable_periods")
+            .delete()
+            .in("id", stalePeriodIds);
+          if (error) console.error("Failed to delete stale unavailable periods:", error);
+        }
         skipped++;
         continue;
       }
