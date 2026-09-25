@@ -1,4 +1,4 @@
-import { syncExternalCalendarEvents } from "@/app/(admin)/admin/calendar/actions/sync-external-events";
+import { syncExternalCalendarEventsFromWebhook } from "@/app/(admin)/admin/calendar/actions/sync-external-events";
 import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
 
   // Google sends a minimal ping — just tells us something changed.
   // Run a sync to pick up whatever it was.
-  await syncExternalCalendarEvents();
+  const result = await syncExternalCalendarEventsFromWebhook(token);
+  if (result.error || result.failed > 0) {
+    return new Response(result.error ?? "Calendar sync completed with errors", { status: 500 });
+  }
 
   return new Response("OK", { status: 200 });
 }
