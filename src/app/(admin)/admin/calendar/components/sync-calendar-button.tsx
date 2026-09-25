@@ -19,9 +19,13 @@ export function SyncCalendarButton() {
       if (result.error) {
         setMessage(`Sync failed: ${result.error}`);
       } else {
-        setMessage(`Synced: +${result.inserted.toString()} new, ${result.cancelled.toString()} cancelled`);
+        setMessage(
+          `Synced: +${result.inserted.toString()} new, ${result.cancelled.toString()} cancelled${result.failed ? `, ${result.failed.toString()} failed` : ""}`,
+        );
         router.refresh();
       }
+    } catch {
+      setMessage("Sync failed. Please try again.");
     } finally {
       setLoading(false);
     }

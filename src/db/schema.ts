@@ -1,4 +1,4 @@
-import { InferSelectModel } from "drizzle-orm";
+import { InferSelectModel, sql } from "drizzle-orm";
 import {
   bigint,
   bigserial,
@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -15,29 +16,37 @@ export const authUsers = pgTable("auth.users", {
   id: uuid("id").primaryKey(),
 });
 
-export const bookings = pgTable("bookings", {
-  bookingType: text("booking_type").default("standard"),
-  clientName: text("client_name"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  email: text("email").notNull(),
-  endTime: timestamp("end_time", { withTimezone: true }).notNull(),
-  eventId: text("event_id"),
-  eventName: text("event_name"),
-  expectedAttendance: integer("expected_attendance"),
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  isMultiDay: boolean("is_multi_day").default(false),
-  name: text("name").notNull(),
-  parentBookingId: integer("parent_booking_id"),
-  phone: text("phone").notNull(),
-  purpose: text("purpose").notNull(),
-  roomId: uuid("room_id").references(() => rooms.id),
-  roomName: text("room_name").notNull(),
-  startTime: timestamp("start_time", { withTimezone: true }).notNull(),
-  status: text("status").default("pending").notNull(),
-  userId: uuid("user_id").references(() => authUsers.id, {
-    onDelete: "set null",
-  }),
-});
+export const bookings = pgTable(
+  "bookings",
+  {
+    bookingType: text("booking_type").default("standard"),
+    clientName: text("client_name"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    email: text("email").notNull(),
+    endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+    eventId: text("event_id"),
+    eventName: text("event_name"),
+    expectedAttendance: integer("expected_attendance"),
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    isMultiDay: boolean("is_multi_day").default(false),
+    name: text("name").notNull(),
+    parentBookingId: integer("parent_booking_id"),
+    phone: text("phone").notNull(),
+    purpose: text("purpose").notNull(),
+    roomId: uuid("room_id").references(() => rooms.id),
+    roomName: text("room_name").notNull(),
+    startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+    status: text("status").default("pending").notNull(),
+    userId: uuid("user_id").references(() => authUsers.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    uniqueIndex("bookings_external_event_id_key")
+      .on(table.eventId)
+      .where(sql`booking_type = 'external' and event_id is not null`),
+  ],
+);
 
 export const profiles = pgTable("profiles", {
   avatarUrl: text("avatar_url"),
@@ -70,18 +79,22 @@ export const rooms = pgTable("rooms", {
   name: varchar("name", { length: 255 }).notNull(),
 });
 
-export const unavailablePeriods = pgTable("unavailable_periods", {
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  endTime: timestamp("end_time", { withTimezone: true }).notNull(),
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  reason: text("reason").notNull(),
-  roomId: uuid("room_id")
-    .notNull()
-    .references(() => rooms.id, {
-      onDelete: "cascade",
-    }),
-  startTime: timestamp("start_time", { withTimezone: true }).notNull(),
-});
+export const unavailablePeriods = pgTable(
+  "unavailable_periods",
+  {
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    reason: text("reason").notNull(),
+    roomId: uuid("room_id")
+      .notNull()
+      .references(() => rooms.id, {
+        onDelete: "cascade",
+      }),
+    startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+  },
+  (table) => [uniqueIndex("unavailable_periods_room_reason_key").on(table.roomId, table.reason)],
+);
 
 export const bookingDays = pgTable("booking_days", {
   bookingId: integer("booking_id")

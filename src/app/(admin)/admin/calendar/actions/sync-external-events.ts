@@ -2,7 +2,7 @@
 
 import { getBlockedRoomIds } from "@/lib/room-dependencies";
 import { listCalendarEvents } from "@/lib/google-calendar";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient, getUserAndRole } from "@/lib/supabase/server";
 import { addMonths, addYears } from "date-fns";
 
 interface Room {
@@ -66,11 +66,23 @@ function matchAllRooms(identifier: string, rooms: Room[]): Room[] {
 export interface SyncResult {
   cancelled: number;
   error?: string;
+  failed: number;
   inserted: number;
   skipped: number;
 }
 
-type SupabaseClient = Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
+type SupabaseClient = ReturnType<typeof createServiceClient>;
+
+interface ExistingPeriod {
+  end_time: string;
+  id: string;
+  reason: string;
+  start_time: string;
+}
+
+function sameTime(left: string, right: Date): boolean {
+  return new Date(left).getTime() === right.getTime();
+}
 
 async function upsertPeriods(
   supabase: SupabaseClient,
@@ -78,32 +90,44 @@ async function upsertPeriods(
   roomIds: Set<string>,
   startTime: Date,
   endTime: Date,
-  existingPeriodMap: Map<string, string>,
-) {
-  for (const roomId of roomIds) {
-    const reason = `gcal:${eventId}:${roomId}`;
-    const existingId = existingPeriodMap.get(reason);
-    if (existingId) {
-      const { error } = await supabase
-        .from("unavailable_periods")
-        .update({ end_time: endTime.toISOString(), start_time: startTime.toISOString() })
-        .eq("id", existingId);
-      if (error) console.error(`Failed to update unavailable period ${existingId}:`, error);
-    } else {
-      const { error } = await supabase.from("unavailable_periods").insert({
-        end_time: endTime.toISOString(),
-        reason,
-        room_id: roomId,
-        start_time: startTime.toISOString(),
-      });
-      if (error) console.error(`Failed to insert unavailable period for room ${roomId}:`, error);
-    }
-  }
+  existingPeriodMap: Map<string, ExistingPeriod>,
+): Promise<number> {
+  const errors = await Promise.all(
+    [...roomIds].map(async (roomId) => {
+      const reason = `gcal:${eventId}:${roomId}`;
+      const existing = existingPeriodMap.get(reason);
+      if (existing) {
+        if (sameTime(existing.start_time, startTime) && sameTime(existing.end_time, endTime)) {
+          return false;
+        }
+        const { error } = await supabase
+          .from("unavailable_periods")
+          .update({ end_time: endTime.toISOString(), start_time: startTime.toISOString() })
+          .eq("id", existing.id);
+        if (error) console.error(`Failed to update unavailable period ${existing.id}:`, error);
+        return Boolean(error);
+      } else {
+        const { error } = await supabase.from("unavailable_periods").upsert(
+          {
+            end_time: endTime.toISOString(),
+            reason,
+            room_id: roomId,
+            start_time: startTime.toISOString(),
+          },
+          { onConflict: "room_id,reason" },
+        );
+        if (error) console.error(`Failed to insert unavailable period for room ${roomId}:`, error);
+        return Boolean(error);
+      }
+    }),
+  );
+
+  return errors.filter(Boolean).length;
 }
 
-export async function syncExternalCalendarEvents(): Promise<SyncResult> {
+async function syncCalendarEvents(): Promise<SyncResult> {
   try {
-    const supabase = await createClient();
+    const supabase = createServiceClient();
 
     const now = new Date();
     const threeMonthsBack = addMonths(now, -3);
@@ -115,24 +139,32 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
         supabase.from("rooms").select("id, name"),
         supabase
           .from("bookings")
-          .select("id, event_id")
+          .select("id, event_id, start_time, end_time, room_id, room_name")
           .eq("booking_type", "external")
           .not("event_id", "is", null),
-        supabase.from("unavailable_periods").select("id, reason").like("reason", "gcal:%"),
+        supabase
+          .from("unavailable_periods")
+          .select("id, reason, start_time, end_time")
+          .like("reason", "gcal:%"),
       ]);
 
-    if (!rooms) return { cancelled: 0, error: "Failed to fetch rooms", inserted: 0, skipped: 0 };
+    if (!rooms) {
+      return { cancelled: 0, error: "Failed to fetch rooms", failed: 0, inserted: 0, skipped: 0 };
+    }
 
     // event_id → booking row id, for updating times on existing bookings
     const existingBookingMap = new Map(
-      (existingExternal ?? []).map((b) => [b.event_id as string, b.id]),
+      (existingExternal ?? []).map((b) => [b.event_id as string, b]),
     );
     // reason format: "gcal:<eventId>:<roomId>" → period row id for updates
-    const existingPeriodMap = new Map((existingPeriods ?? []).map((p) => [p.reason, p.id]));
+    const existingPeriodMap = new Map(
+      (existingPeriods ?? []).map((p) => [p.reason, p as ExistingPeriod]),
+    );
     const gcalEventIds = new Set(gcalEvents.map((e) => e.id).filter(Boolean) as string[]);
 
     // Cancel bookings and remove unavailable_periods whose GCal event was deleted
     let cancelled = 0;
+    let failed = 0;
     const toCancel = (existingExternal ?? []).filter((b) => !gcalEventIds.has(b.event_id!));
     if (toCancel.length > 0) {
       const { error } = await supabase
@@ -142,7 +174,8 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
           "id",
           toCancel.map((b) => b.id),
         );
-      if (!error) cancelled = toCancel.length;
+      if (error) failed++;
+      else cancelled = toCancel.length;
     }
 
     // Delete unavailable_periods whose GCal event no longer exists
@@ -152,13 +185,14 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
       return eventId ? !gcalEventIds.has(eventId) : false;
     });
     if (periodsToDelete.length > 0) {
-      await supabase
+      const { error } = await supabase
         .from("unavailable_periods")
         .delete()
         .in(
           "id",
           periodsToDelete.map((p) => p.id),
         );
+      if (error) failed++;
     }
 
     // Insert new external events
@@ -212,20 +246,28 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
         }
       }
 
-      const existingBookingId = existingBookingMap.get(event.id);
-      if (existingBookingId) {
+      const existingBooking = existingBookingMap.get(event.id);
+      if (existingBooking) {
         // Update the primary room, times, and displayed room names in case they were stored incorrectly.
-        await supabase
-          .from("bookings")
-          .update({
-            end_time: endTime.toISOString(),
-            room_id: matchedRooms[0].id,
-            room_name: matchedRooms.map((r) => r.name).join(", "),
-            start_time: startTime.toISOString(),
-          })
-          .eq("id", existingBookingId);
-        // Upsert unavailable_periods for all affected rooms (fixes stale times + adds missing rooms)
-        await upsertPeriods(
+        const roomName = matchedRooms.map((r) => r.name).join(", ");
+        if (
+          !sameTime(existingBooking.start_time, startTime) ||
+          !sameTime(existingBooking.end_time, endTime) ||
+          existingBooking.room_id !== matchedRooms[0].id ||
+          existingBooking.room_name !== roomName
+        ) {
+          const { error } = await supabase
+            .from("bookings")
+            .update({
+              end_time: endTime.toISOString(),
+              room_id: matchedRooms[0].id,
+              room_name: roomName,
+              start_time: startTime.toISOString(),
+            })
+            .eq("id", existingBooking.id);
+          if (error) failed++;
+        }
+        failed += await upsertPeriods(
           supabase,
           event.id,
           allAffectedRoomIds,
@@ -245,7 +287,10 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
             .from("unavailable_periods")
             .delete()
             .in("id", stalePeriodIds);
-          if (error) console.error("Failed to delete stale unavailable periods:", error);
+          if (error) {
+            console.error("Failed to delete stale unavailable periods:", error);
+            failed++;
+          }
         }
         skipped++;
         continue;
@@ -266,14 +311,16 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
         start_time: startTime.toISOString(),
         status: "confirmed",
       });
-      if (bookingError) {
+      const bookingAlreadyExists = bookingError?.code === "23505";
+      if (bookingError && !bookingAlreadyExists) {
         console.error("Failed to insert external booking:", bookingError);
+        failed++;
         skipped++;
         continue;
       }
 
       // Upsert unavailable_periods for all affected rooms (blocks user booking form)
-      await upsertPeriods(
+      failed += await upsertPeriods(
         supabase,
         event.id,
         allAffectedRoomIds,
@@ -282,17 +329,50 @@ export async function syncExternalCalendarEvents(): Promise<SyncResult> {
         existingPeriodMap,
       );
 
-      inserted++;
+      if (bookingAlreadyExists) skipped++;
+      else inserted++;
     }
 
-    return { cancelled, inserted, skipped };
+    return { cancelled, failed, inserted, skipped };
   } catch (error) {
     console.error("Sync failed:", error);
     return {
       cancelled: 0,
       error: error instanceof Error ? error.message : "Unknown error",
+      failed: 0,
       inserted: 0,
       skipped: 0,
     };
   }
+}
+
+export async function syncExternalCalendarEvents(): Promise<SyncResult> {
+  const { role } = await getUserAndRole();
+  if (role !== "admin" && role !== "superUser") {
+    return {
+      cancelled: 0,
+      error: "Only admins can sync the external calendar.",
+      failed: 0,
+      inserted: 0,
+      skipped: 0,
+    };
+  }
+
+  return syncCalendarEvents();
+}
+
+export async function syncExternalCalendarEventsFromWebhook(
+  webhookToken: string | null,
+): Promise<SyncResult> {
+  if (!process.env.GOOGLE_WEBHOOK_SECRET || webhookToken !== process.env.GOOGLE_WEBHOOK_SECRET) {
+    return {
+      cancelled: 0,
+      error: "Unauthorized webhook sync.",
+      failed: 0,
+      inserted: 0,
+      skipped: 0,
+    };
+  }
+
+  return syncCalendarEvents();
 }

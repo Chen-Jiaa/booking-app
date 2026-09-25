@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/google-calendar`;
+  const webhookUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/google-calendar`;
 
   const { channelId, expiration } = await registerCalendarWatch(
     webhookUrl,

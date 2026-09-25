@@ -112,7 +112,7 @@ export function EventCalendar({ initialEvents, isAdmin, isLoggedIn, rooms }: Eve
         setSyncMessage(`Sync failed: ${result.error}`);
       } else {
         setSyncMessage(
-          `Synced: +${result.inserted.toString()} new, ${result.cancelled.toString()} cancelled`,
+          `Synced: +${result.inserted.toString()} new, ${result.cancelled.toString()} cancelled${result.failed ? `, ${result.failed.toString()} failed` : ""}`,
         );
         cacheRef.current.clear();
         if (visibleRangeRef.current) {
@@ -128,6 +128,8 @@ export function EventCalendar({ initialEvents, isAdmin, isLoggedIn, rooms }: Eve
         setEvents([...cacheRef.current.values()].flat());
         router.refresh();
       }
+    } catch {
+      setSyncMessage("Sync failed. Please try again.");
     } finally {
       setSyncing(false);
     }

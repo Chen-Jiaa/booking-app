@@ -18,11 +18,7 @@ export async function GET(request: NextRequest) {
     .from(calendarWatchChannels)
     .where(eq(calendarWatchChannels.id, "main"));
 
-  if (!channel) {
-    return Response.json({ message: "No watch channel registered yet. Call /api/setup/register-calendar-watch first." }, { status: 200 });
-  }
-
-  const msUntilExpiry = channel.expiration - Date.now();
+  const msUntilExpiry = channel ? channel.expiration - Date.now() : 0;
 
   if (msUntilExpiry > RENEW_THRESHOLD_MS) {
     const hoursLeft = Math.floor(msUntilExpiry / 1000 / 60 / 60);
@@ -30,16 +26,19 @@ export async function GET(request: NextRequest) {
   }
 
   // Expiring within 24h — register a new watch
-  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/google-calendar`;
+  const webhookUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/google-calendar`;
   const { channelId, expiration } = await registerCalendarWatch(
     webhookUrl,
     process.env.GOOGLE_WEBHOOK_SECRET!,
   );
 
   await db
-    .update(calendarWatchChannels)
-    .set({ channelId, expiration })
-    .where(eq(calendarWatchChannels.id, "main"));
+    .insert(calendarWatchChannels)
+    .values({ channelId, expiration, id: "main" })
+    .onConflictDoUpdate({
+      set: { channelId, expiration },
+      target: calendarWatchChannels.id,
+    });
 
   return Response.json({ channelId, expiration, message: "Watch channel renewed." });
 }
