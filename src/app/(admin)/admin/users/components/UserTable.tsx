@@ -253,12 +253,7 @@ export default function UserTable({ users: initialUsers }: { users: User[] }) {
           placeholder="Filter emails..."
           value={(table.getColumn("email")?.getFilterValue() as string) || ""}
         />
-        <Button
-          disabled={backfilling}
-          onClick={handleBackfill}
-          size="sm"
-          variant="outline"
-        >
+        <Button disabled={backfilling} onClick={handleBackfill} size="sm" variant="outline">
           {backfilling ? "Upgrading..." : "Upgrade @collective.my → superUser"}
         </Button>
         {/* <DropdownMenu>
