@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { CalendarDays, ListChecks, Settings, Undo2, Users } from "lucide-react";
+import { Ban, CalendarDays, ListChecks, Settings, Undo2, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -34,6 +34,11 @@ const data = {
       icon: Settings,
       title: "Rooms Setting",
       url: "/admin/rooms",
+    },
+    {
+      icon: Ban,
+      title: "Closures",
+      url: "/admin/closures",
     },
     {
       icon: Users,
