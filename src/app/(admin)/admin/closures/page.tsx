@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { db } from "@/db";
 import { rooms, unavailablePeriods } from "@/db/schema";
 import { asc, like } from "drizzle-orm";
